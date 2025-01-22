@@ -1,0 +1,48 @@
+services:
+  database:
+    image: postgres:16
+    container_name: "${DB_HOST}"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 20s
+      timeout: 20s
+      retries: 20
+      start_period: 10s
+    hostname: "${DB_HOST}"
+    environment:
+      POSTGRES_USER: "${DB_USER}"
+      POSTGRES_DB: "${DB_NAME}"
+      POSTGRES_PASSWORD: "${DB_PASSWORD}"
+    ports:
+      - "${DB_PORT}:${DB_PORT}"
+
+  backend:
+    build: backend
+    container_name: "${API_HOST}"
+    depends_on:
+      database:
+        condition: service_healthy
+    environment:
+      API_CORS_ORIGINS: "${API_CORS_ORIGINS}"
+      API_PATH: "${API_PATH}"
+      DB_HOST: "${DB_HOST}"
+      DB_NAME: "${DB_NAME}"
+      DB_PASSWORD: "${DB_PASSWORD}"
+      DB_PORT: "${DB_PORT}"
+      DB_TYPE: "${DB_TYPE}"
+      DB_USER: "${DB_USER}"
+      PORT: "${API_PORT}"
+    hostname: "${API_HOST}"
+    ports:
+      - "${API_PORT}:${API_PORT}"
+    volumes:
+      - ./backend/app:/app/app
+      - ./backend/alembic:/app/alembic
+
+  # frontend:
+  #   hostname: "${UI_HOST}"
+  #   build: frontend
+  #   container_name: "${UI_HOST}"
+  #   environment:
+  #     PORT: "${UI_PORT}"
+  #     CHOKIDAR_USEPOLLING: true
