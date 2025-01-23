@@ -1,5 +1,6 @@
 from typing import List, Optional
 
+from sqlalchemy import delete
 from sqlalchemy.future import select
 
 from app.models.book import Author, Book
@@ -10,7 +11,7 @@ from app.services.author import AuthorService
 
 class BookService(Service):
     async def get_all(self) -> List[Book]:
-        query = select(Book)
+        query = select(Book).order_by(Book.id)
         result = await self.session.execute(query)
         return list(result.scalars().all())
 
@@ -35,9 +36,9 @@ class BookService(Service):
         await self.session.refresh(new_book)
         return new_book
 
-    async def update(self, book_data: UpdateBook) -> Optional[Book]:
+    async def update(self, id: int, book_data: UpdateBook) -> Optional[Book]:
         author = await self._get_author(book_data)
-        book = await self.get(book_data.id)
+        book = await self.get(id)
         if book:
             book.title = book_data.title
             book.year = book_data.year
@@ -46,3 +47,8 @@ class BookService(Service):
             await self.session.commit()
             await self.session.refresh(book)
         return book
+
+    async def delete(self, id: int) -> None:
+        query = delete(Book).where(Book.id == id)
+        await self.session.execute(query)
+        await self.session.commit()

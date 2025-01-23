@@ -35,14 +35,10 @@ services:
     hostname: "${API_HOST}"
     ports:
       - "${API_PORT}:${API_PORT}"
-    volumes:
-      - ./backend/app:/app/app
-      - ./backend/alembic:/app/alembic
 
-  # frontend:
-  #   hostname: "${UI_HOST}"
-  #   build: frontend
-  #   container_name: "${UI_HOST}"
-  #   environment:
-  #     PORT: "${UI_PORT}"
-  #     CHOKIDAR_USEPOLLING: true
+  frontend:
+    hostname: "${UI_HOST}"
+    build: books-app
+    container_name: "${UI_HOST}"
+    ports:
+      - "${UI_PORT}:${UI_PORT}"

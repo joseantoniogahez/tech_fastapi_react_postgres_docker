@@ -23,6 +23,11 @@ async def add_book(book_data: AddBook, book_service: BookServiceDependency) -> B
 
 @router.put("/{id}")
 async def update_book(
-    book_data: UpdateBook, book_service: BookServiceDependency
+    id: int, book_data: UpdateBook, book_service: BookServiceDependency
 ) -> Optional[Book]:
-    return await book_service.update(book_data)
+    return await book_service.update(id, book_data)
+
+
+@router.delete("/{id}")
+async def delete_book(id: int, book_service: BookServiceDependency) -> None:
+    await book_service.delete(id)
