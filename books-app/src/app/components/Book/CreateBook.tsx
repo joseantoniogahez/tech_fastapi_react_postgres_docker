@@ -1,7 +1,7 @@
+import { BookPayload } from "@/app/types/interfaces";
 import React, { useState } from "react";
-import CreateButton from "./CreateButton";
+import CreateBookButton from "./CreateBookButton";
 import SaveBook from "./SaveBook";
-import { BookPayload } from "./interfaces";
 
 interface CreateBookProps {
   sendSave: (book: BookPayload) => void;
@@ -17,7 +17,7 @@ const CreateBook: React.FC<CreateBookProps> = ({ sendSave }) => {
     return (
       <SaveBook book={null} handleClose={closeSaveForm} sendSave={sendSave} />
     );
-  else return <CreateButton handleClick={openSaveForm} />;
+  else return <CreateBookButton handleClick={openSaveForm} />;
 };
 
 export default CreateBook;

@@ -1,6 +1,6 @@
+import { fetchAuthors } from "@/app/services/authors";
+import { Author, Book, BookPayload, Status } from "@/app/types/interfaces";
 import React, { useEffect, useState } from "react";
-import { fetchAuthors } from "./api";
-import { Author, Book, BookPayload, Status } from "./interfaces";
 
 interface SaveBookProps {
   book: Book | null;
@@ -160,12 +160,14 @@ const SaveBook: React.FC<SaveBookProps> = ({ book, handleClose, sendSave }) => {
               type="button"
               onClick={handleClose}
               className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+              aria-label="Cancel"
             >
               Cancel
             </button>
             <button
               type="submit"
               className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+              aria-label="Save"
             >
               {book?.id ? "Update" : "Create"}
             </button>

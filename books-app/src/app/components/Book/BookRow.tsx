@@ -1,6 +1,6 @@
+import { StatusEnum } from "@/app/constants/enums";
+import { Book } from "@/app/types/interfaces";
 import React from "react";
-import { StatusEnum } from "./consts";
-import { Book } from "./interfaces";
 
 interface BookRowProps {
   book: Book;
@@ -32,12 +32,14 @@ const BookRow: React.FC<BookRowProps> = ({
         <button
           onClick={onEdit}
           className="px-4 py-2 w-24 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+          aria-label="Edit"
         >
           Edit
         </button>
         <button
           onClick={onDelete}
           className="px-4 py-2 w-24 bg-red-500 text-white rounded-md hover:bg-red-600"
+          aria-label="Delete"
         >
           Delete
         </button>

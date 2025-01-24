@@ -1,12 +1,4 @@
-import { BookPayload } from "./interfaces";
-
-export const fetchAuthors = async () => {
-  const response = await fetch("http://localhost:8000/api/authors/");
-  if (!response.ok) {
-    throw new Error(`Error: ${response.statusText}`);
-  }
-  return await response.json();
-};
+import { BookPayload } from "../types/interfaces";
 
 export const fetchBooks = async () => {
   const response = await fetch("http://localhost:8000/api/books/");

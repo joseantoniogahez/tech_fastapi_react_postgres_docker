@@ -1,12 +1,12 @@
+import { fetchBooks, removeBook, saveBook } from "@/app/services/books";
 import { useEffect, useState } from "react";
-import { fetchBooks, removeBook, saveBook } from "./api";
 
+import { Book, BookPayload } from "@/app/types/interfaces";
+import Loader from "../Loader/Loader";
+import Toast from "../Toast/Toast";
 import BookTable from "./BookTable";
 import CreateBook from "./CreateBook";
-import { Book, BookPayload } from "./interfaces";
-import Loader from "./Loader";
 import SaveBook from "./SaveBook";
-import Toast from "./Toast";
 
 const BookApp = () => {
   const [books, setBooks] = useState([]);

@@ -1,6 +1,6 @@
+import { Book } from "@/app/types/interfaces";
 import React from "react";
 import BookRow from "./BookRow";
-import { Book } from "./interfaces";
 
 interface BookTableProps {
   books: Array<Book>;

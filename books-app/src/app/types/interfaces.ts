@@ -1,4 +1,4 @@
-import { StatusEnum } from "./consts";
+import { StatusEnum } from "../constants/enums";
 
 export type Status = keyof typeof StatusEnum;
 
