@@ -1,0 +1,30 @@
+[
+  {
+    "id": 1,
+    "title": "Foundacion",
+    "year": 1950,
+    "status": "published",
+    "author_id": 1
+  },
+  {
+    "id": 2,
+    "title": "The Lion, the Witch and the Wardrobe",
+    "year": 1951,
+    "status": "published",
+    "author_id": 2
+  },
+  {
+    "id": 3,
+    "title": "The Fellowship of the Ring",
+    "year": 1954,
+    "status": "published",
+    "author_id": 3
+  },
+  {
+    "id": 4,
+    "title": "Python for dummies",
+    "year": 2025,
+    "status": "draft",
+    "author_id": 4
+  }
+]

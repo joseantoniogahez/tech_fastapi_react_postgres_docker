@@ -1,3 +1,4 @@
+from pydantic import ConfigDict
 from pydantic_settings import BaseSettings
 
 
@@ -19,6 +20,4 @@ class LocalDatabaseSettings(BaseSettings):
     DB_TYPE: str = ""
     DB_NAME: str = ""
 
-    class Config:
-        env_file = "local_db.env"
-        env_file_encoding = "utf-8"
+    model_config = ConfigDict(env_file="local_db.env", env_file_encoding="utf-8")
