@@ -1,7 +1,11 @@
 import { BookPayload } from "../types/interfaces";
 
-export const fetchBooks = async () => {
-  const response = await fetch("http://localhost:8000/api/books/");
+export const fetchBooks = async (authorFilter: number | null) => {
+  const url = new URL("http://localhost:8000/api/books/");
+  if (authorFilter !== null) {
+    url.searchParams.append("author_id", authorFilter.toString());
+  }
+  const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`Error: ${response.statusText}`);
   }

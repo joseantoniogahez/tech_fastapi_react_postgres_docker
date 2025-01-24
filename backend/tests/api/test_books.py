@@ -20,6 +20,21 @@ def test_get_books(mock_client: TestClient):
         assert "title" in book
 
 
+def test_get_books_by_author(mock_client: TestClient):
+    response = mock_client.get("/books?author_id=1")
+    assert response.status_code == HTTPStatus.OK
+
+    json_response = response.json()
+    assert isinstance(json_response, list)
+
+    for book in json_response:
+        assert isinstance(book, dict)
+        assert set(book.keys()) == {"id", "title", "year", "status", "author"}
+        assert isinstance(book["author"], dict)
+        assert set(book["author"].keys()) == {"id", "name"}
+        assert book["author"]["id"] == 1
+
+
 def test_add_book(mock_client: TestClient):
     book_data = {
         "title": "I, Robot",

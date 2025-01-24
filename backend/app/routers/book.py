@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 
 from app.dependencies import BookServiceDependency
 from app.schemas.book import AddBook, Book, UpdateBook
@@ -12,8 +12,11 @@ router = APIRouter(
 
 
 @router.get("/")
-async def get_books(book_service: BookServiceDependency) -> List[Book]:
-    return await book_service.get_all()
+async def get_books(
+    book_service: BookServiceDependency,
+    author_id: Optional[int] = Query(None, description="Filter books by author ID"),
+) -> List[Book]:
+    return await book_service.get_all(author_id)
 
 
 @router.post("/")

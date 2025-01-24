@@ -10,8 +10,10 @@ from app.services.author import AuthorService
 
 
 class BookService(Service):
-    async def get_all(self) -> List[Book]:
+    async def get_all(self, author_id: Optional[int] = None) -> List[Book]:
         query = select(Book).order_by(Book.id)
+        if author_id is not None:
+            query = query.filter(Book.author_id == author_id)
         result = await self.session.execute(query)
         return list(result.scalars().all())
 

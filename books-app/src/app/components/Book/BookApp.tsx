@@ -1,12 +1,13 @@
 import { fetchBooks, removeBook, saveBook } from "@/app/services/books";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { Book, BookPayload } from "@/app/types/interfaces";
 import Loader from "../Loader/Loader";
 import Toast from "../Toast/Toast";
+import BookFilter from "./BookFilter";
 import BookTable from "./BookTable";
 import CreateBook from "./CreateBook";
-import SaveBook from "./SaveBook";
+import SaveBookForm from "./SaveBookForm";
 
 const BookApp = () => {
   const [books, setBooks] = useState([]);
@@ -14,10 +15,11 @@ const BookApp = () => {
   const [error, setError] = useState<string | null>(null);
   const [showUpdate, setShowUpdate] = useState(false);
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
+  const [authorFilter, setAuthorFilter] = useState<number | null>(null);
 
-  const getBooks = async () => {
+  const getBooks = useCallback(async () => {
     try {
-      const data = await fetchBooks();
+      const data = await fetchBooks(authorFilter);
       setBooks(data);
     } catch (err) {
       if (err instanceof Error) {
@@ -28,7 +30,7 @@ const BookApp = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [authorFilter]);
 
   const sendSave = async (book: BookPayload) => {
     setLoading(true);
@@ -73,9 +75,12 @@ const BookApp = () => {
 
   const removeErrorMessage = () => setError("");
 
+  const changeAuthorFilter = (author_id: number | null) =>
+    setAuthorFilter(author_id);
+
   useEffect(() => {
     getBooks();
-  }, []);
+  }, [getBooks]);
 
   if (loading) return <Loader />;
 
@@ -83,6 +88,7 @@ const BookApp = () => {
     <div className="w-full p-8">
       <main className="">
         <p className="text-2xl pb-8">Books App</p>
+        <BookFilter changeAuthorFilter={changeAuthorFilter} />
         <BookTable
           books={books}
           openUpdateForm={openUpdateForm}
@@ -90,7 +96,7 @@ const BookApp = () => {
         />
         <CreateBook sendSave={sendSave} />
         {showUpdate && (
-          <SaveBook
+          <SaveBookForm
             book={selectedBook}
             handleClose={closeUpdateForm}
             sendSave={sendSave}

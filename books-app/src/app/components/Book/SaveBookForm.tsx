@@ -2,13 +2,17 @@ import { fetchAuthors } from "@/app/services/authors";
 import { Author, Book, BookPayload, Status } from "@/app/types/interfaces";
 import React, { useEffect, useState } from "react";
 
-interface SaveBookProps {
+interface SaveBookFormProps {
   book: Book | null;
   handleClose: () => void;
   sendSave: (book: BookPayload) => void;
 }
 
-const SaveBook: React.FC<SaveBookProps> = ({ book, handleClose, sendSave }) => {
+const SaveBookForm: React.FC<SaveBookFormProps> = ({
+  book,
+  handleClose,
+  sendSave,
+}) => {
   const [title, setTitle] = useState(book?.title || "");
   const [year, setYear] = useState(book?.year || "");
   const [status, setStatus] = useState(book?.status || "");
@@ -38,7 +42,7 @@ const SaveBook: React.FC<SaveBookProps> = ({ book, handleClose, sendSave }) => {
     }
   };
 
-  const handleSaveBook = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSaveBookForm = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     sendSave({
       id: book?.id,
@@ -61,7 +65,7 @@ const SaveBook: React.FC<SaveBookProps> = ({ book, handleClose, sendSave }) => {
         <h2 className="text-lg font-semibold mb-4">
           {book ? "Update Book" : "Create Book"}
         </h2>
-        <form onSubmit={handleSaveBook}>
+        <form onSubmit={handleSaveBookForm}>
           <div className="mb-4">
             <label
               htmlFor="title"
@@ -178,4 +182,4 @@ const SaveBook: React.FC<SaveBookProps> = ({ book, handleClose, sendSave }) => {
   );
 };
 
-export default SaveBook;
+export default SaveBookForm;

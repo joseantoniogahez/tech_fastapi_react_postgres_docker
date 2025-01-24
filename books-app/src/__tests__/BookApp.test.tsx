@@ -92,7 +92,7 @@ describe("BookApp Component", () => {
     expect(screen.getByLabelText(/title/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/year/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/status/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/author/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^author$/i)).toBeInTheDocument();
 
     expect(screen.getByRole("button", { name: /cancel/i })).toBeInTheDocument();
     const saveButton = screen.getByRole("button", { name: /save/i });
@@ -108,7 +108,7 @@ describe("BookApp Component", () => {
     fireEvent.change(screen.getByLabelText(/status/i), {
       target: { value: book.status },
     });
-    fireEvent.change(screen.getByLabelText(/author/i), {
+    fireEvent.change(screen.getByLabelText(/^author$/i), {
       target: { value: "new" },
     });
     fireEvent.change(screen.getByLabelText(/new author name/i), {
@@ -165,7 +165,7 @@ describe("BookApp Component", () => {
     expect(screen.getByLabelText(/title/i)).toHaveValue(mockBooks[0].title);
     expect(screen.getByLabelText(/year/i)).toHaveValue(mockBooks[0].year);
     expect(screen.getByLabelText(/status/i)).toHaveValue(mockBooks[0].status);
-    expect(screen.getByLabelText(/author/i)).toHaveValue(
+    expect(screen.getByLabelText(/^author$/i)).toHaveValue(
       mockBooks[0].author.id.toString()
     );
 
