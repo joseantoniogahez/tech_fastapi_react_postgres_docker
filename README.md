@@ -1,103 +1,114 @@
-# Project Description
+# Books App (FastAPI + Next.js + PostgreSQL)
 
-This project is a full-stack web application built with a FastAPI backend and a Next.js frontend, integrated with a PostgreSQL database. The application allows users to manage books and their respective authors, providing functionality for adding, editing, listing, filtering, and deleting books and authors. The project is containerized using Docker for easy deployment and setup.
+Full-stack sample application for managing books and authors.
 
----
+- Backend: FastAPI + SQLAlchemy (async) + Alembic
+- Frontend: Next.js (App Router, React 19)
+- Database: PostgreSQL 16
+- Orchestration: Docker Compose
+
+## Project Structure
+
+- `backend/`: FastAPI API, models, services, migrations, backend tests
+- `books-app/`: Next.js UI and frontend tests
+- `docker-compose.yaml`: multi-container local stack
+- `.env`: container configuration used by compose
 
 ## Features
 
-### Backend (FastAPI)
-- **Endpoints:**
-  - `GET /books`: Retrieve a list of all books along with their authors. Optionally, you can provide an `author_id` as a query parameter to filter books by a specific author.
-  - `POST /books`: Add a new book, including its title, year, and associated author. If the author does not exist, it will be created.
-  - `PUT /books/{id}`: Update details of a specific book, including its title, year, and associated author. If the author does not exist, it will be created or updated.
-  - `DELETE /books/{id}`: Delete a specific book by its ID.
-- **Database Design:**
-  - **Authors Table:**
-    - `id` (Primary Key, Integer)
-    - `name` (String)
-  - **Books Table:**
-    - `id` (Primary Key, Integer)
-    - `title` (String)
-    - `year` (Integer)
-    - `status` (Enum: [PUBLISHED, DRAFT])
-    - `author_id` (Foreign Key referencing Authors Table)
-- **Testing:**
-  - Pytest for unit tests.
-  - Pydantic for data validation.
+### Backend API
 
-### Frontend (Next.js)
-- **Features:**
-  - Form to add/edit books, including fields for title, year, and author selection (populated from the authors list).
-  - Support for creating or editing authors directly from the form.
-  - List view displaying all books with options to edit or delete each entry.
-  - Filter functionality to view books by a specific author.
-  - Validations for all inputs.
-- **Testing:**
-  - Jest for unit tests.
+- `GET /books/`
+  - Returns all books with embedded author
+  - Supports `author_id` query param for filtering
+- `POST /books/`
+  - Creates a book
+  - Creates author if needed (based on payload)
+- `PUT /books/{id}`
+  - Updates a book
+- `DELETE /books/{id}`
+  - Deletes a book
+- `GET /authors/`
+  - Returns all authors
 
-### Docker
-- Dockerfiles for both FastAPI and Next.js applications.
-- A `docker-compose.yml` file that sets up:
-  - FastAPI backend.
-  - Next.js frontend.
-  - PostgreSQL database service.
+Book `status` values:
+- `published`
+- `draft`
 
----
+### Frontend
 
-## Setup Instructions
+- List books
+- Filter books by author
+- Create/update/delete books
+- Create a new author from the book form
+- Error toast handling for request failures
 
-### Prerequisites
-- Install Docker and Docker Compose. Use Docker Desktop for ease of use.
-- Install Python (3.8 or later) and Node.js (16.x or later) for development or testing outside Docker.
+## Prerequisites
 
-### Running the Application
-1. Clone the repository from GitHub:
-   ```bash
-   git clone <repository-url>
-   cd <repository-directory>
-   ```
-2. Start Docker Compose:
-   ```bash
-   docker compose up
-   ```
-3. Access the application:
-   - API Documentation: [http://localhost:8000/api/docs](http://localhost:8000/api/docs)
-   - Frontend: [http://localhost:3000](http://localhost:3000)
+- Docker Desktop (or Docker Engine + Compose plugin)
+- Optional for non-Docker local runs:
+  - Python 3.11+
+  - Node.js 22+
 
-### Running Backend Tests
-1. Create a virtual environment:
-   ```bash
-   cd backend
-   python3 -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-2. Install dependencies:
-   ```bash
-   python -m pip install -r requirements.txt
-   python -m pip install -r tests/requirements.txt
-   ```
-3. Run tests:
-   ```bash
-   pytest
-   ```
+## Environment Configuration
 
-### Running Frontend Tests
-1. Navigate to the frontend directory:
-   ```bash
-   cd frontend
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Run tests:
-   ```bash
-   npm test
-   ```
+The root `.env` file is consumed by `docker compose`.
 
----
+Key values:
+- `API_HOST`, `API_PORT`, `API_PATH`
+- `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_TYPE`
+- `UI_HOST`, `UI_PORT`
+- `API_CORS_ORIGINS`
 
-## Additional Notes
-- Make sure Docker, Python (3.8 or later), and Node.js (16.x or later) are installed on your system.
-- For better development experience, it's recommended to use Visual Studio Code (VSCode) with appropriate extensions for Python and JavaScript.
+Set a real value for `DB_PASSWORD` before first run.
+
+## Run With Docker
+
+From repo root:
+
+```bash
+docker compose up --build
+```
+
+Endpoints:
+- Frontend: `http://localhost:3000`
+- API docs: `http://localhost:8000/docs`
+
+Notes:
+- Containers run Alembic migrations during backend startup (`backend/prestart.sh`).
+- Frontend is configured to call `http://localhost:8000/api/...` from the browser.
+
+## Backend: Local Development and Tests
+
+```bash
+cd backend
+python -m venv .venv
+# Windows PowerShell
+.venv\Scripts\Activate.ps1
+# macOS/Linux
+# source .venv/bin/activate
+
+python -m pip install -r requirements.txt
+python -m pip install -r tests/requirements.txt
+pytest
+```
+
+## Frontend: Local Development and Tests
+
+```bash
+cd books-app
+npm install
+npm run dev
+```
+
+Frontend tests:
+
+```bash
+npm test
+```
+
+## Known Caveats
+
+- Backend routes are declared as `/books/` and `/authors/`, while frontend requests use `/api/...`.
+- `API_PATH` is currently used as FastAPI `root_path`, which does not mount routes at `/api` by itself.
+- Depending on deployment/proxy setup, requests to `/api/...` may require an explicit reverse proxy rewrite.
