@@ -1,0 +1,3 @@
+-r backend/tests/requirements.txt
+
+pre-commit

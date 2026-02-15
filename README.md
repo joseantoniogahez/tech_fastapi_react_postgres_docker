@@ -47,7 +47,7 @@ Book `status` values:
 
 - Docker Desktop (or Docker Engine + Compose plugin)
 - Optional for non-Docker local runs:
-  - Python 3.11+
+  - Python 3.14.3
   - Node.js 22+
 
 ## Environment Configuration
@@ -59,6 +59,7 @@ Key values:
 - `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_TYPE`
 - `UI_HOST`, `UI_PORT`
 - `API_CORS_ORIGINS`
+- `PYTHON_VERSION` (optional, default `3.14.3` for backend image build)
 
 Set a real value for `DB_PASSWORD` before first run.
 
@@ -80,17 +81,59 @@ Notes:
 
 ## Backend: Local Development and Tests
 
-```bash
-cd backend
-python -m venv .venv
-# Windows PowerShell
-.venv\Scripts\Activate.ps1
-# macOS/Linux
-# source .venv/bin/activate
+This repository uses a local Python environment in the repo root:
 
+- `.venv`: repository tooling + backend test dependencies
+
+```bash
+# from repo root
+python -m venv .venv
+```
+
+Activate the virtualenv:
+
+```bash
+# Windows PowerShell
+.venv/Scripts/Activate.ps1
+
+# macOS/Linux
+source .venv/bin/activate
+```
+
+Install dependencies:
+
+```bash
+python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
-python -m pip install -r tests/requirements.txt
+pre-commit install --install-hooks
+```
+
+Note:
+- If a package version used by the `mypy` hook `additional_dependencies` is updated in `backend/requirements.txt` (or `backend/tests/requirements.txt` for test imports), update the same version in `.pre-commit-config.yaml` to keep pre-commit type-checking aligned with the project environment.
+
+## Local Commands
+
+Backend tests:
+
+```bash
+# Windows PowerShell
+.venv/Scripts/Activate.ps1
+
+# macOS/Linux
+source .venv/bin/activate
+
 pytest
+```
+
+Repository hooks:
+
+```bash
+# Windows PowerShell
+.venv/Scripts/Activate.ps1
+
+# macOS/Linux
+source .venv/bin/activate
+pre-commit run --all-files
 ```
 
 ## Frontend: Local Development and Tests

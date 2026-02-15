@@ -30,9 +30,7 @@ def mock_books(path: str) -> List[Dict[str, Any]]:
 
 
 @pytest.fixture(scope="module")
-def mock_data(
-    mock_authors: List[Dict[str, Any]], mock_books: List[Dict[str, Any]]
-) -> List[Dict[str, Any]]:
+def mock_data(mock_authors: List[Dict[str, Any]], mock_books: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return [
         {"class": Author, "json": mock_authors},
         {"class": Book, "json": mock_books},
@@ -40,9 +38,7 @@ def mock_data(
 
 
 @pytest.fixture(scope="module")
-def mock_database(
-    path: str, mock_data: List[Dict[str, Any]]
-) -> Generator[MockDatabase, None, None]:
+def mock_database(path: str, mock_data: List[Dict[str, Any]]) -> Generator[MockDatabase, None, None]:
     mock_db = MockDatabase(db_name="test_db.sql", path=path)
     asyncio.run(mock_db.setup(Base))
     asyncio.run(load_mock_data(mock_data, mock_db))

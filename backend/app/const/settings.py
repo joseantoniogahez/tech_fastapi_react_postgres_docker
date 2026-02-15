@@ -1,5 +1,9 @@
-from pydantic import ConfigDict
-from pydantic_settings import BaseSettings
+from pathlib import Path
+
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+LOCAL_DB_ENV_FILE = Path(__file__).resolve().parents[2] / "local_db.env"
 
 
 class ApiSettings(BaseSettings):
@@ -8,16 +12,16 @@ class ApiSettings(BaseSettings):
 
 
 class DatabaseSettings(BaseSettings):
-    DB_TYPE: str = ""
-    DB_USER: str = ""
-    DB_PASSWORD: str = ""
-    DB_HOST: str = ""
-    DB_PORT: int = 0
-    DB_NAME: str = ""
+    DB_TYPE: str = Field(..., min_length=1)
+    DB_USER: str = Field(..., min_length=1)
+    DB_PASSWORD: str = Field(..., min_length=1)
+    DB_HOST: str = Field(..., min_length=1)
+    DB_PORT: int = Field(..., gt=0)
+    DB_NAME: str = Field(..., min_length=1)
 
 
 class LocalDatabaseSettings(BaseSettings):
-    DB_TYPE: str = ""
-    DB_NAME: str = ""
+    DB_TYPE: str = Field(..., min_length=1)
+    DB_NAME: str = Field(..., min_length=1)
 
-    model_config = ConfigDict(env_file="local_db.env", env_file_encoding="utf-8")
+    model_config = SettingsConfigDict(env_file=str(LOCAL_DB_ENV_FILE), env_file_encoding="utf-8")

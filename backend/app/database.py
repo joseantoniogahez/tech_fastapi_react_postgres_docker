@@ -1,20 +1,48 @@
 from pydantic import ValidationError
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from sqlalchemy.engine import URL
+from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import declarative_base
 
-from app.const.settings import DatabaseSettings
-
-try:
-    vars = DatabaseSettings()
-    DATABASE_URL = f"{vars.DB_TYPE}://{vars.DB_USER}:{vars.DB_PASSWORD}@{vars.DB_HOST}:{vars.DB_PORT}/{vars.DB_NAME}"
-except ValidationError:
-    from app.const.settings import LocalDatabaseSettings
-
-    local_vars = LocalDatabaseSettings()
-    DATABASE_URL = f"{local_vars.DB_TYPE}:///{local_vars.DB_NAME}"
+from app.const.settings import LOCAL_DB_ENV_FILE, DatabaseSettings, LocalDatabaseSettings
 
 
-engine = create_async_engine(url=DATABASE_URL)
+class CustomDatabaseException(Exception):
+    pass
+
+
+def _build_postgres_url(db_settings: DatabaseSettings) -> str:
+    return str(
+        URL.create(
+            drivername=db_settings.DB_TYPE,
+            username=db_settings.DB_USER,
+            password=db_settings.DB_PASSWORD,
+            host=db_settings.DB_HOST,
+            port=db_settings.DB_PORT,
+            database=db_settings.DB_NAME,
+        )
+    )
+
+
+def _build_sqlite_url(local_settings: LocalDatabaseSettings) -> str:
+    return str(URL.create(drivername=local_settings.DB_TYPE, database=local_settings.DB_NAME))
+
+
+def build_database_url() -> str:
+    try:
+        return _build_postgres_url(DatabaseSettings())
+    except ValidationError:
+        try:
+            return _build_sqlite_url(LocalDatabaseSettings())
+        except ValidationError as exc:
+            raise CustomDatabaseException(f"Could not load local DB settings from file {LOCAL_DB_ENV_FILE}") from exc
+
+
+def build_engine(database_url: str) -> AsyncEngine:
+    return create_async_engine(url=database_url)
+
+
+DATABASE_URL = build_database_url()
+engine = build_engine(DATABASE_URL)
 
 AsyncSessionDatabase = async_sessionmaker(bind=engine)
 

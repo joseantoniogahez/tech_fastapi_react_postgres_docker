@@ -21,9 +21,7 @@ class BookService(Service):
         return await self.session.get(Book, id)
 
     async def _get_author(self, book_data: AddBook) -> Author:
-        return await AuthorService(session=self.session).get_or_add(
-            id=book_data.author_id, name=book_data.author_name
-        )
+        return await AuthorService(session=self.session).get_or_add(id=book_data.author_id, name=book_data.author_name)
 
     async def add(self, book_data: AddBook) -> Book:
         author = await self._get_author(book_data)

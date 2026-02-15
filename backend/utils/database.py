@@ -12,9 +12,7 @@ class MockDatabase:
     def __init__(self, db_name: str, path: str):
         self.sql_file = str(pathlib.Path(path) / db_name)
         self.delete_sqlite()
-        database_url = SQLITE_DATABASE_URL.format(
-            db_path=self.sql_file.replace("\\", "/")
-        )
+        database_url = SQLITE_DATABASE_URL.format(db_path=self.sql_file.replace("\\", "/"))
         self.engine = create_async_engine(database_url, echo=True)
         self.Session = async_sessionmaker(bind=self.engine)
 

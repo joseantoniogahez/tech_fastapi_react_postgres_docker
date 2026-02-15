@@ -33,9 +33,7 @@ def upgrade() -> None:
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
         sa.Column("title", sa.String(length=255), nullable=False),
         sa.Column("year", sa.Integer(), nullable=False),
-        sa.Column(
-            "status", sa.Enum("PUBLISHED", "DRAFT", name="bookstatus"), nullable=False
-        ),
+        sa.Column("status", sa.Enum("PUBLISHED", "DRAFT", name="bookstatus"), nullable=False),
         sa.Column("author_id", sa.Integer(), nullable=False),
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("updated_at", sa.DateTime(), nullable=False),

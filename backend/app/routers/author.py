@@ -13,4 +13,5 @@ router = APIRouter(
 
 @router.get("/")
 async def get_authors(author_service: AuthorServiceDependency) -> List[Author]:
-    return await author_service.get_all()
+    authors = await author_service.get_all()
+    return [Author.model_validate(author) for author in authors]
