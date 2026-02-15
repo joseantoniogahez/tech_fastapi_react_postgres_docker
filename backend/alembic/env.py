@@ -10,7 +10,6 @@ from app.models.author import Author  # noqa: F401
 from app.models.book import Book  # noqa: F401
 
 config = context.config
-config.set_main_option("sqlalchemy.url", DATABASE_URL)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
@@ -19,9 +18,8 @@ target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:
-    url = config.get_main_option("sqlalchemy.url")
     context.configure(
-        url=url,
+        url=DATABASE_URL,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
@@ -33,7 +31,7 @@ def run_migrations_offline() -> None:
 
 async def run_migrations_online() -> None:
     connectable = create_async_engine(
-        DATABASE_URL,
+        url=DATABASE_URL,
         poolclass=pool.NullPool,
         future=True,
     )

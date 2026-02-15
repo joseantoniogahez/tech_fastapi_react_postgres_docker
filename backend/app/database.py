@@ -10,24 +10,22 @@ class CustomDatabaseException(Exception):
     pass
 
 
-def _build_postgres_url(db_settings: DatabaseSettings) -> str:
-    return str(
-        URL.create(
-            drivername=db_settings.DB_TYPE,
-            username=db_settings.DB_USER,
-            password=db_settings.DB_PASSWORD,
-            host=db_settings.DB_HOST,
-            port=db_settings.DB_PORT,
-            database=db_settings.DB_NAME,
-        )
+def _build_postgres_url(db_settings: DatabaseSettings) -> URL:
+    return URL.create(
+        drivername=db_settings.DB_TYPE,
+        username=db_settings.DB_USER,
+        password=db_settings.DB_PASSWORD,
+        host=db_settings.DB_HOST,
+        port=db_settings.DB_PORT,
+        database=db_settings.DB_NAME,
     )
 
 
-def _build_sqlite_url(local_settings: LocalDatabaseSettings) -> str:
-    return str(URL.create(drivername=local_settings.DB_TYPE, database=local_settings.DB_NAME))
+def _build_sqlite_url(local_settings: LocalDatabaseSettings) -> URL:
+    return URL.create(drivername=local_settings.DB_TYPE, database=local_settings.DB_NAME)
 
 
-def build_database_url() -> str:
+def build_database_url() -> URL:
     try:
         return _build_postgres_url(DatabaseSettings())
     except ValidationError:
@@ -37,7 +35,7 @@ def build_database_url() -> str:
             raise CustomDatabaseException(f"Could not load local DB settings from file {LOCAL_DB_ENV_FILE}") from exc
 
 
-def build_engine(database_url: str) -> AsyncEngine:
+def build_engine(database_url: URL) -> AsyncEngine:
     return create_async_engine(url=database_url)
 
 

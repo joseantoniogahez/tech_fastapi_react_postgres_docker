@@ -1,6 +1,6 @@
 services:
   database:
-    image: postgres:16
+    image: postgres:18.2
     container_name: "${DB_HOST}"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
@@ -34,10 +34,20 @@ services:
       DB_PORT: "${DB_PORT}"
       DB_TYPE: "${DB_TYPE}"
       DB_USER: "${DB_USER}"
+      LOG_LEVEL: "${LOG_LEVEL:-INFO}"
       PORT: "${API_PORT}"
+      WATCHFILES_FORCE_POLLING: "true"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "${BACKEND_LOG_MAX_SIZE:-10m}"
+        max-file: "${BACKEND_LOG_MAX_FILE:-3}"
     hostname: "${API_HOST}"
     ports:
       - "${API_PORT}:${API_PORT}"
+    volumes:
+      - ./backend/app:/app/app
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "${API_PORT}", "--reload", "--reload-dir", "/app/app"]
 
   frontend:
     hostname: "${UI_HOST}"

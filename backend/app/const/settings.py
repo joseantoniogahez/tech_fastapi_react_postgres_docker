@@ -9,6 +9,7 @@ LOCAL_DB_ENV_FILE = Path(__file__).resolve().parents[2] / "local_db.env"
 class ApiSettings(BaseSettings):
     API_PATH: str = ""
     API_CORS_ORIGINS: str = ""
+    LOG_LEVEL: str = "INFO"
 
 
 class DatabaseSettings(BaseSettings):
