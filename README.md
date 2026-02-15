@@ -12,6 +12,7 @@ Full-stack sample application for managing books and authors.
 - `backend/`: FastAPI API, models, services, migrations, backend tests
 - `books-app/`: Next.js UI and frontend tests
 - `docker-compose.yaml`: multi-container local stack
+- `.env_examples`: environment template used to generate `.env`
 - `.env`: container configuration used by compose
 
 ## Features
@@ -52,16 +53,17 @@ Book `status` values:
 
 ## Environment Configuration
 
-The root `.env` file is consumed by `docker compose`.
+Use `.env_examples` as the template for the root `.env` file consumed by `docker compose`.
 
-Key values:
-- `API_HOST`, `API_PORT`, `API_PATH`
-- `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_TYPE`
-- `UI_HOST`, `UI_PORT`
-- `API_CORS_ORIGINS`
-- `PYTHON_VERSION` (optional, default `3.14.3` for backend image build)
+```bash
+# macOS/Linux
+cp .env_examples .env
 
-Set a real value for `DB_PASSWORD` before first run.
+# Windows PowerShell
+Copy-Item .env_examples .env
+```
+
+Variable groups and detailed descriptions live in `.env_examples`.
 
 ## Run With Docker
 
