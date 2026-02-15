@@ -25,6 +25,18 @@ services:
     depends_on:
       database:
         condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:${API_PORT:-8000}/health', timeout=2)",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
     environment:
       API_CORS_ORIGINS: "${API_CORS_ORIGINS}"
       API_PATH: "${API_PATH}"
@@ -53,5 +65,8 @@ services:
     hostname: "${UI_HOST}"
     build: books-app
     container_name: "${UI_HOST}"
+    depends_on:
+      backend:
+        condition: service_healthy
     ports:
       - "${UI_PORT}:${UI_PORT}"

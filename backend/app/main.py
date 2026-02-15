@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.const.settings import ApiSettings
-from app.routers import author, book
+from app.routers import author, book, health
 
 
 def _configure_logging(settings: ApiSettings) -> None:
@@ -42,6 +42,7 @@ def _attach_app_cors(app: FastAPI, settings: ApiSettings) -> None:
 
 
 def _attach_app_routers(app: FastAPI) -> None:
+    app.include_router(health.router)
     app.include_router(book.router)
     app.include_router(author.router)
 
