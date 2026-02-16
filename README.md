@@ -4,7 +4,7 @@ Full-stack sample application for managing books and authors.
 
 - Backend: FastAPI + SQLAlchemy (async) + Alembic
 - Frontend: Next.js (App Router, React 19)
-- Database: PostgreSQL 16
+- Database: PostgreSQL 18
 - Orchestration: Docker Compose
 
 ## Project Structure
