@@ -1,0 +1,34 @@
+services:
+  database:
+    container_name: "${DB_HOST}"
+    hostname: "${DB_HOST}"
+    ports:
+      - "${DB_PORT}:${DB_PORT}"
+
+  backend:
+    container_name: "${API_HOST}"
+    hostname: "${API_HOST}"
+    environment:
+      WATCHFILES_FORCE_POLLING: "true"
+    ports:
+      - "${API_PORT}:${API_PORT}"
+    volumes:
+      - ./backend/app:/app/app
+    command:
+      [
+        "uvicorn",
+        "app.main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "${API_PORT}",
+        "--reload",
+        "--reload-dir",
+        "/app/app",
+      ]
+
+  frontend:
+    container_name: "${UI_HOST}"
+    hostname: "${UI_HOST}"
+    ports:
+      - "${UI_PORT}:${UI_PORT}"

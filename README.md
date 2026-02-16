@@ -17,7 +17,10 @@ Full-stack sample application for managing books and authors.
 
 - `backend/`: FastAPI API, models, services, migrations, backend tests
 - `books-app/`: Next.js UI and frontend tests
-- `docker-compose.yaml`: multi-container local stack
+- `compose.yaml`: shared multi-container stack (base)
+- `compose.override.yaml`: local development overrides loaded automatically by `docker compose`
+- `compose.test.yaml`: isolated services for backend/frontend test runs
+- `compose.prod.yaml`: production overrides (restart policy, persistent DB volume, prod project name)
 - `.env_examples`: environment template used to generate `.env`
 - `.env`: container configuration used by compose
 
@@ -57,6 +60,46 @@ Endpoints:
 Notes:
 - Backend container runs Alembic migrations during startup (`backend/prestart.sh`).
 - Frontend API target is controlled by `NEXT_PUBLIC_API_ORIGIN` and `NEXT_PUBLIC_API_BASE_PATH`.
+
+## Run Tests With Docker Compose
+
+From repo root:
+
+```bash
+# Backend tests
+docker compose -f compose.test.yaml run --rm backend-test
+
+# Frontend tests
+docker compose -f compose.test.yaml run --rm frontend-test
+
+# Both (sequential)
+docker compose -f compose.test.yaml run --rm backend-test && docker compose -f compose.test.yaml run --rm frontend-test
+```
+
+`compose.test.yaml` sets `name: books-tests`, so test runs use a separate Compose project from local dev.
+
+## Run Production Profile With Docker Compose
+
+From repo root:
+
+```bash
+docker compose -f compose.yaml -f compose.prod.yaml up --build -d
+```
+
+Stop production stack:
+
+```bash
+docker compose -f compose.yaml -f compose.prod.yaml down
+```
+
+`compose.prod.yaml` sets `name: books-prod`, so production resources stay isolated from dev/test projects.
+
+If you previously created the production volume with an old mount path and `database` keeps restarting, recreate the prod volume:
+
+```bash
+docker compose -f compose.yaml -f compose.prod.yaml down -v
+docker compose -f compose.yaml -f compose.prod.yaml up --build -d
+```
 
 ## Integration Caveat (`/api` Path)
 

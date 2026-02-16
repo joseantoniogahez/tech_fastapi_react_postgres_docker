@@ -1,0 +1,32 @@
+name: books-tests
+
+services:
+  backend-test:
+    image: python:${PYTHON_VERSION:-3.14.3}-slim
+    working_dir: /workspace/backend
+    environment:
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      - ./backend:/workspace/backend
+    command:
+      [
+        "sh",
+        "-c",
+        "python -m pip install --upgrade pip && python -m pip install --no-cache-dir -r requirements.txt -r tests/requirements.txt && pytest tests",
+      ]
+
+  frontend-test:
+    image: node:22-alpine
+    working_dir: /workspace/books-app
+    environment:
+      CI: "true"
+      NEXT_PUBLIC_API_ORIGIN: "${NEXT_PUBLIC_API_ORIGIN}"
+      NEXT_PUBLIC_API_BASE_PATH: "${NEXT_PUBLIC_API_BASE_PATH}"
+    volumes:
+      - ./books-app:/workspace/books-app
+      - frontend_test_node_modules:/workspace/books-app/node_modules
+    command: ["sh", "-c", "npm install -g npm@11.10.0 && npm ci && npm test -- --runInBand"]
+
+volumes:
+  frontend_test_node_modules:
