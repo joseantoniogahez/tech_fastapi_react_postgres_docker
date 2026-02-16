@@ -1,11 +1,16 @@
-# books-app
+# books-app (Next.js Frontend)
 
-Frontend for the books management app.
+Frontend for the Books App.
 
-- Framework: Next.js 16 (App Router)
-- UI: React 19
-- Tests: Jest + Testing Library
-- Styling: Tailwind CSS 4
+For full-stack orchestration and shared environment setup, see `../README.md`.
+For backend-only setup and API details, see `../backend/README.md`.
+
+## Tech Stack
+
+- Next.js 16 (App Router)
+- React 19
+- Tailwind CSS 4
+- Jest + Testing Library
 
 ## Requirements
 
@@ -20,7 +25,19 @@ From `books-app/`:
 npm install
 ```
 
-Optional environment variables for API requests:
+## API Client Configuration
+
+Environment variables consumed by frontend code:
+
+- `NEXT_PUBLIC_API_ORIGIN` (example: `http://localhost:8000`)
+- `NEXT_PUBLIC_API_BASE_PATH` (example: `/api` or `/`)
+
+Defaults when variables are not set:
+
+- `NEXT_PUBLIC_API_ORIGIN`: empty string
+- `NEXT_PUBLIC_API_BASE_PATH`: `/api`
+
+Examples:
 
 ```bash
 # Windows PowerShell
@@ -44,10 +61,7 @@ npm run build      # production build
 npm run start      # run built app
 ```
 
-## Docker
+## Notes
 
-This app is usually run from the repo root with Docker Compose:
-
-```bash
-docker compose up --build
-```
+- If backend routes are exposed at root (`/books`, `/authors`), set `NEXT_PUBLIC_API_BASE_PATH=/`.
+- If backend routes are exposed under a proxy prefix (`/api/...`), keep `NEXT_PUBLIC_API_BASE_PATH=/api`.

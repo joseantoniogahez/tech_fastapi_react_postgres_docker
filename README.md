@@ -7,6 +7,12 @@ Full-stack sample application for managing books and authors.
 - Database: PostgreSQL 18
 - Orchestration: Docker Compose
 
+## README files in this project
+
+- `README.md` (this file): repository-level architecture and multi-service run flow.
+- `backend/README.md`: backend-only setup, API behavior, migrations, and backend tests.
+- `books-app/README.md`: frontend-only setup, scripts, tests, and API client configuration.
+
 ## Project Structure
 
 - `backend/`: FastAPI API, models, services, migrations, backend tests
@@ -15,39 +21,10 @@ Full-stack sample application for managing books and authors.
 - `.env_examples`: environment template used to generate `.env`
 - `.env`: container configuration used by compose
 
-## Features
-
-### Backend API
-
-- `GET /books/`
-  - Returns all books with embedded author
-  - Supports `author_id` query param for filtering
-- `POST /books/`
-  - Creates a book
-  - Creates author if needed (based on payload)
-- `PUT /books/{id}`
-  - Updates a book
-- `DELETE /books/{id}`
-  - Deletes a book
-- `GET /authors/`
-  - Returns all authors
-
-Book `status` values:
-- `published`
-- `draft`
-
-### Frontend
-
-- List books
-- Filter books by author
-- Create/update/delete books
-- Create a new author from the book form
-- Error toast handling for request failures
-
 ## Prerequisites
 
 - Docker Desktop (or Docker Engine + Compose plugin)
-- Optional for non-Docker local runs:
+- Optional for local non-Docker workflows:
   - Python 3.14.3
   - Node.js 22+
 
@@ -63,10 +40,9 @@ cp .env_examples .env
 Copy-Item .env_examples .env
 ```
 
-Variable groups and detailed descriptions live in `.env_examples`.
-For frontend API calls, configure `NEXT_PUBLIC_API_ORIGIN` (for example `http://localhost:8000`) and `NEXT_PUBLIC_API_BASE_PATH` (for example `/api` or `/`).
+Variable details are documented in `.env_examples`.
 
-## Run With Docker
+## Run Full Stack With Docker
 
 From repo root:
 
@@ -79,14 +55,19 @@ Endpoints:
 - API docs: `http://localhost:8000/docs`
 
 Notes:
-- Containers run Alembic migrations during backend startup (`backend/prestart.sh`).
-- Frontend API target is configured via `NEXT_PUBLIC_API_ORIGIN` + `NEXT_PUBLIC_API_BASE_PATH`.
+- Backend container runs Alembic migrations during startup (`backend/prestart.sh`).
+- Frontend API target is controlled by `NEXT_PUBLIC_API_ORIGIN` and `NEXT_PUBLIC_API_BASE_PATH`.
 
-## Backend: Local Development and Tests
+## Integration Caveat (`/api` Path)
 
-This repository uses a local Python environment in the repo root:
+- Backend routes are declared as `/books/`, `/authors/`, and `/health`.
+- Frontend defaults to calling `/api/...`.
+- `API_PATH` configures FastAPI `root_path` metadata, but does not mount routes under `/api` by itself.
+- If clients call `/api/...`, use a reverse-proxy rewrite or configure frontend base path to `/`.
 
-- `.venv`: repository tooling + backend test dependencies
+## Repository Tooling (Root)
+
+This repository uses a root virtual environment for repo hooks and backend-related tooling:
 
 ```bash
 # from repo root
@@ -103,7 +84,7 @@ Activate the virtualenv:
 source .venv/bin/activate
 ```
 
-Install dependencies:
+Install dependencies and hooks:
 
 ```bash
 python -m pip install --upgrade pip
@@ -111,55 +92,10 @@ python -m pip install -r requirements.txt
 pre-commit install --install-hooks
 ```
 
-Note:
-- If a package version used by the `mypy` hook `additional_dependencies` is updated in `backend/requirements.txt` (or `backend/tests/requirements.txt` for test imports), update the same version in `.pre-commit-config.yaml` to keep pre-commit type-checking aligned with the project environment.
-
-## Local Commands
-
-Backend tests:
+Run repository hooks:
 
 ```bash
-# Windows PowerShell
-.venv/Scripts/Activate.ps1
-
-# macOS/Linux
-source .venv/bin/activate
-
-pytest
-```
-
-Repository hooks:
-
-```bash
-# Windows PowerShell
-.venv/Scripts/Activate.ps1
-
-# macOS/Linux
-source .venv/bin/activate
 pre-commit run --all-files
 ```
 
-## Frontend: Local Development and Tests
-
-```bash
-cd books-app
-npm install
-# Optional (recommended for local frontend + local backend):
-# set NEXT_PUBLIC_API_ORIGIN=http://localhost:8000   # Windows PowerShell
-# set NEXT_PUBLIC_API_BASE_PATH=/api                 # Windows PowerShell
-# export NEXT_PUBLIC_API_ORIGIN=http://localhost:8000 # macOS/Linux
-# export NEXT_PUBLIC_API_BASE_PATH=/api               # macOS/Linux
-npm run dev
-```
-
-Frontend tests:
-
-```bash
-npm test
-```
-
-## Known Caveats
-
-- Backend routes are declared as `/books/` and `/authors/`, while frontend requests use `/api/...`.
-- `API_PATH` is currently used as FastAPI `root_path`, which does not mount routes at `/api` by itself.
-- Depending on deployment/proxy setup, requests to `/api/...` may require an explicit reverse proxy rewrite.
+If a dependency version used by the `mypy` hook changes in `backend/requirements.txt` or `backend/tests/requirements.txt`, update the matching version in `.pre-commit-config.yaml`.
