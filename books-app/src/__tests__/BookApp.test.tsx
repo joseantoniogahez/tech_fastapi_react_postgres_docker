@@ -142,7 +142,7 @@ describe("BookApp Component", () => {
 
     const mockAuthors = [{ id: 1, name: "Isaac Asimov" }];
 
-    const new_title = "Foundation (Traducido)";
+    const new_title = "Foundation (Translated)";
 
     mockedFetchBooks.mockResolvedValue(mockBooks);
     mockedFetchAuthors.mockResolvedValue(mockAuthors);
