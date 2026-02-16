@@ -1,5 +1,7 @@
+import { buildApiUrl } from "./api";
+
 export const fetchAuthors = async () => {
-  const response = await fetch("http://localhost:8000/api/authors/");
+  const response = await fetch(buildApiUrl("/authors/"));
   if (!response.ok) {
     throw new Error(`Error: ${response.statusText}`);
   }

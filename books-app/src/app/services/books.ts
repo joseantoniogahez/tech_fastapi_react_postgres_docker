@@ -1,11 +1,15 @@
 import { BookPayload } from "../types/interfaces";
+import { buildApiUrl } from "./api";
 
 export const fetchBooks = async (authorFilter: number | null) => {
-  const url = new URL("http://localhost:8000/api/books/");
+  const searchParams = new URLSearchParams();
   if (authorFilter !== null) {
-    url.searchParams.append("author_id", authorFilter.toString());
+    searchParams.append("author_id", authorFilter.toString());
   }
-  const response = await fetch(url);
+  const queryString = searchParams.toString();
+  const response = await fetch(
+    `${buildApiUrl("/books/")}${queryString ? `?${queryString}` : ""}`
+  );
   if (!response.ok) {
     throw new Error(`Error: ${response.statusText}`);
   }
@@ -15,7 +19,7 @@ export const fetchBooks = async (authorFilter: number | null) => {
 export const saveBook = async (book: BookPayload) => {
   let response = undefined;
   if (book?.id)
-    response = await fetch(`http://localhost:8000/api/books/${book.id}`, {
+    response = await fetch(buildApiUrl(`/books/${book.id}`), {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -23,7 +27,7 @@ export const saveBook = async (book: BookPayload) => {
       body: JSON.stringify(book),
     });
   else
-    response = await fetch("http://localhost:8000/api/books/", {
+    response = await fetch(buildApiUrl("/books/"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -39,7 +43,7 @@ export const saveBook = async (book: BookPayload) => {
 
 export const removeBook = async (id: number) => {
   if (id) {
-    const response = await fetch(`http://localhost:8000/api/books/${id}`, {
+    const response = await fetch(buildApiUrl(`/books/${id}`), {
       method: "DELETE",
     });
     if (!response.ok) {

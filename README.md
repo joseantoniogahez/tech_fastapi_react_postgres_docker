@@ -64,6 +64,7 @@ Copy-Item .env_examples .env
 ```
 
 Variable groups and detailed descriptions live in `.env_examples`.
+For frontend API calls, configure `NEXT_PUBLIC_API_ORIGIN` (for example `http://localhost:8000`) and `NEXT_PUBLIC_API_BASE_PATH` (for example `/api` or `/`).
 
 ## Run With Docker
 
@@ -79,7 +80,7 @@ Endpoints:
 
 Notes:
 - Containers run Alembic migrations during backend startup (`backend/prestart.sh`).
-- Frontend is configured to call `http://localhost:8000/api/...` from the browser.
+- Frontend API target is configured via `NEXT_PUBLIC_API_ORIGIN` + `NEXT_PUBLIC_API_BASE_PATH`.
 
 ## Backend: Local Development and Tests
 
@@ -143,6 +144,11 @@ pre-commit run --all-files
 ```bash
 cd books-app
 npm install
+# Optional (recommended for local frontend + local backend):
+# set NEXT_PUBLIC_API_ORIGIN=http://localhost:8000   # Windows PowerShell
+# set NEXT_PUBLIC_API_BASE_PATH=/api                 # Windows PowerShell
+# export NEXT_PUBLIC_API_ORIGIN=http://localhost:8000 # macOS/Linux
+# export NEXT_PUBLIC_API_BASE_PATH=/api               # macOS/Linux
 npm run dev
 ```
 

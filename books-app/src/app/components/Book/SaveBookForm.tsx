@@ -21,11 +21,6 @@ const SaveBookForm: React.FC<SaveBookFormProps> = ({
   const [authors, setAuthors] = useState<Array<Author>>([]);
   const [isNewAuthor, setIsNewAuthor] = useState(false);
 
-  const getAuthors = async () => {
-    const data = await fetchAuthors();
-    setAuthors(data);
-  };
-
   const handleNewAuthor = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
     if (value === "new") {
@@ -56,7 +51,16 @@ const SaveBookForm: React.FC<SaveBookFormProps> = ({
   };
 
   useEffect(() => {
-    getAuthors();
+    let isMounted = true;
+    void Promise.resolve(fetchAuthors()).then((data) => {
+      if (isMounted) {
+        setAuthors(data);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   return (

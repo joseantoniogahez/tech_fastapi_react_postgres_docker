@@ -10,11 +10,6 @@ const BookFilter: React.FC<BookFilterProps> = ({ changeAuthorFilter }) => {
   const [authorId, setAuthorId] = useState("");
   const [authors, setAuthors] = useState<Array<Author>>([]);
 
-  const getAuthors = async () => {
-    const data = await fetchAuthors();
-    setAuthors(data);
-  };
-
   const handleAuthorFilterChange = (
     e: React.ChangeEvent<HTMLSelectElement>
   ) => {
@@ -23,7 +18,16 @@ const BookFilter: React.FC<BookFilterProps> = ({ changeAuthorFilter }) => {
   };
 
   useEffect(() => {
-    getAuthors();
+    let isMounted = true;
+    void Promise.resolve(fetchAuthors()).then((data) => {
+      if (isMounted) {
+        setAuthors(data);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   return (
