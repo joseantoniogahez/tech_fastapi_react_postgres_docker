@@ -1,10 +1,14 @@
 import asyncio
 from unittest.mock import MagicMock, call, patch
 
-from fastapi import FastAPI
+from fastapi import APIRouter, FastAPI
+from fastapi.routing import APIRoute
 
 from app.const.settings import ApiSettings
 from app.factory import app_lifespan, configure_logging
+from app.main import app
+from app.routers import ROUTER_MODULES
+from app.setup.routers import get_registered_routers
 
 
 def test_configure_logging_warns_on_invalid_level() -> None:
@@ -33,3 +37,22 @@ def test_app_lifespan_logs_startup_and_shutdown() -> None:
             call("Backend shutdown."),
         ]
     )
+
+
+def test_get_registered_routers_loads_catalog_modules() -> None:
+    routers = get_registered_routers()
+    assert len(routers) == len(ROUTER_MODULES)
+    assert all(isinstance(router, APIRouter) for router in routers)
+
+
+def test_app_registers_routes_from_dynamic_catalog() -> None:
+    paths = {route.path for route in app.routes if isinstance(route, APIRoute)}
+    expected_paths = {
+        "/health",
+        "/token",
+        "/users/me",
+        "/users/register",
+        "/books/",
+        "/authors/",
+    }
+    assert expected_paths.issubset(paths)
