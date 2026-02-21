@@ -13,5 +13,10 @@ expand-star-imports = true
 remove-duplicate-keys = true
 remove-unused-variables = true
 
+[tool.flake8]
+max-complexity = 10
+statistics = true
+max-line-length = 120
+
 [tool.mypy]
 plugins = ["pydantic.mypy"]

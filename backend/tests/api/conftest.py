@@ -4,12 +4,14 @@ from typing import Any, Dict, Generator, List
 from unittest.mock import patch
 
 import pytest
+from argon2 import PasswordHasher
 from starlette.testclient import TestClient
 
 from app.main import app
 from app.models import Base
 from app.models.author import Author
 from app.models.book import Book
+from app.models.user import User
 from utils.database import MockDatabase
 from utils.fixtures import get_fixture_data, load_mock_data
 
@@ -30,8 +32,25 @@ def mock_books(path: str) -> List[Dict[str, Any]]:
 
 
 @pytest.fixture(scope="module")
-def mock_data(mock_authors: List[Dict[str, Any]], mock_books: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def mock_users() -> List[Dict[str, Any]]:
+    password_hasher = PasswordHasher()
     return [
+        {
+            "id": 1,
+            "username": "admin",
+            "hashed_password": password_hasher.hash("admin123"),
+        }
+    ]
+
+
+@pytest.fixture(scope="module")
+def mock_data(
+    mock_authors: List[Dict[str, Any]],
+    mock_books: List[Dict[str, Any]],
+    mock_users: List[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
+    return [
+        {"class": User, "json": mock_users},
         {"class": Author, "json": mock_authors},
         {"class": Book, "json": mock_books},
     ]

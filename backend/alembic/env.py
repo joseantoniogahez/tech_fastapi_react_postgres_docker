@@ -6,13 +6,17 @@ from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from app.database import DATABASE_URL, Base
-from app.models.author import Author  # noqa: F401
-from app.models.book import Book  # noqa: F401
+from app.models.author import Author
+from app.models.book import Book
+from app.models.user import User
 
 config = context.config
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
+
+# Keep explicit model references so Alembic sees all tables in metadata.
+_MODEL_REGISTRY = (Author, Book, User)
 
 target_metadata = Base.metadata
 

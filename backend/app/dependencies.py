@@ -6,6 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import AsyncSessionDatabase
 from app.repositories.author import AuthorRepository
 from app.repositories.book import BookRepository
+from app.repositories.user import UserRepository
+from app.services.auth import AuthService
 from app.services.author import AuthorService
 from app.services.book import BookService
 
@@ -32,6 +34,13 @@ async def get_author_repository(session: DbSessionDependency) -> AuthorRepositor
 AuthorRepositoryDependency = Annotated[AuthorRepository, Depends(get_author_repository)]
 
 
+async def get_user_repository(session: DbSessionDependency) -> UserRepository:
+    return UserRepository(session=session)
+
+
+UserRepositoryDependency = Annotated[UserRepository, Depends(get_user_repository)]
+
+
 async def get_books_service(
     book_repository: BookRepositoryDependency,
     author_repository: AuthorRepositoryDependency,
@@ -47,3 +56,10 @@ async def get_authors_service(author_repository: AuthorRepositoryDependency) -> 
 
 
 AuthorServiceDependency = Annotated[AuthorService, Depends(get_authors_service)]
+
+
+async def get_auth_service(user_repository: UserRepositoryDependency) -> AuthService:
+    return AuthService(user_repository=user_repository)
+
+
+AuthServiceDependency = Annotated[AuthService, Depends(get_auth_service)]

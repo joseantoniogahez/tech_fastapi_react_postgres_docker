@@ -23,6 +23,9 @@ For frontend-only setup, see `../books-app/README.md`.
 ## API Endpoints
 
 - `GET /health`
+- `POST /token`
+  - Authenticates with `username`/`password` (OAuth2 form)
+  - Returns `{ "access_token": "...", "token_type": "bearer" }`
 - `GET /books/`
   - Supports `author_id` query param for filtering
 - `POST /books/`
@@ -35,6 +38,37 @@ For frontend-only setup, see `../books-app/README.md`.
 Book `status` values:
 - `published`
 - `draft`
+
+### `POST /token` examples
+
+Success:
+
+```bash
+curl -X POST http://localhost:8000/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "username=admin&password=admin123"
+```
+
+```json
+{
+  "access_token": "s3cr3t-token-value",
+  "token_type": "bearer"
+}
+```
+
+Failure (`401 Unauthorized`):
+
+```bash
+curl -X POST http://localhost:8000/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "username=admin&password=wrong-password"
+```
+
+```json
+{
+  "detail": "Invalid username or password"
+}
+```
 
 ## Runtime Configuration
 
