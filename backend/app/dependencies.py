@@ -4,6 +4,7 @@ from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.const.permission import PermissionId
 from app.const.settings import AuthSettings
 from app.database import AsyncSessionDatabase
 from app.exceptions import ForbiddenException
@@ -17,6 +18,7 @@ from app.services.author import AuthorService
 from app.services.book import BookService
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+BearerTokenDependency = Annotated[str, Depends(oauth2_scheme)]
 
 
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
@@ -90,7 +92,7 @@ AuthServiceDependency = Annotated[AuthService, Depends(get_auth_service)]
 
 
 async def get_current_user(
-    token: Annotated[str, Depends(oauth2_scheme)],
+    token: BearerTokenDependency,
     auth_service: AuthServiceDependency,
 ) -> User:
     return await auth_service.get_user_from_token(token)
@@ -135,3 +137,38 @@ def get_authorized_user(permission_id: str) -> AuthorizedUserDependency:
         return current_user
 
     return dependency
+
+
+BookCreateAuthorizedUserDependency = Annotated[User, Depends(get_authorized_user(PermissionId.BOOK_CREATE))]
+BookUpdateAuthorizedUserDependency = Annotated[User, Depends(get_authorized_user(PermissionId.BOOK_UPDATE))]
+BookDeleteAuthorizedUserDependency = Annotated[User, Depends(get_authorized_user(PermissionId.BOOK_DELETE))]
+
+
+__all__ = [
+    "DbSessionDependency",
+    "BookRepositoryDependency",
+    "AuthorRepositoryDependency",
+    "AuthRepositoryDependency",
+    "BookServiceDependency",
+    "AuthorServiceDependency",
+    "AuthServiceDependency",
+    "AuthCredentialsDependency",
+    "CurrentUserDependency",
+    "CurrentActiveUserDependency",
+    "BookCreateAuthorizedUserDependency",
+    "BookUpdateAuthorizedUserDependency",
+    "BookDeleteAuthorizedUserDependency",
+    "get_db_session",
+    "get_book_repository",
+    "get_author_repository",
+    "get_auth_repository",
+    "get_books_service",
+    "get_authors_service",
+    "get_auth_service",
+    "get_auth_settings",
+    "get_auth_credentials",
+    "get_current_user",
+    "get_current_active_user",
+    "user_has_permission",
+    "get_authorized_user",
+]

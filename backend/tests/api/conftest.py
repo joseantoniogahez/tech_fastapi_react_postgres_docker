@@ -1,12 +1,12 @@
 import asyncio
 import pathlib
-from typing import Any, Dict, Generator, List
-from unittest.mock import patch
+from typing import Any, AsyncGenerator, Dict, Generator, List
 
 import pytest
 from argon2 import PasswordHasher
 from starlette.testclient import TestClient
 
+from app.dependencies import get_db_session
 from app.main import app
 from app.models import Base
 from app.models.author import Author
@@ -131,5 +131,13 @@ def mock_database(path: str, mock_data: List[Dict[str, Any]]) -> Generator[MockD
 def mock_client(
     mock_database: MockDatabase,
 ) -> Generator[TestClient, None, None]:
-    with patch("app.dependencies.AsyncSessionDatabase", mock_database.Session):
-        yield TestClient(app)
+    async def override_db_session() -> AsyncGenerator[Any, None]:
+        async with mock_database.Session() as session:
+            yield session
+
+    app.dependency_overrides[get_db_session] = override_db_session
+    try:
+        with TestClient(app) as client:
+            yield client
+    finally:
+        app.dependency_overrides.clear()
