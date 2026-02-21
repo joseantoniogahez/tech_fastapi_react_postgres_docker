@@ -1,23 +1,21 @@
-from typing import List
+from typing import List, Optional
 
-from sqlalchemy.future import select
-
-from app.models.book import Author
+from app.models.author import Author
+from app.repositories.author import AuthorRepository
 from app.services import Service
 
 
 class AuthorService(Service):
-    async def get_all(self) -> List[Author]:
-        query = select(Author)
-        result = await self.session.execute(query)
-        return list(result.scalars().all())
+    def __init__(self, author_repository: AuthorRepository):
+        self.author_repository = author_repository
 
-    async def get_or_add(self, id, name):
-        author = None
-        if id:
-            author = await self.session.get(Author, id)
-        if not author:
-            author = Author(name=name)
-            self.session.add(author)
-            await self.session.flush()
-        return author
+    async def get_all(self) -> List[Author]:
+        return await self.author_repository.list_ordered()
+
+    async def get_or_add(self, author_id: Optional[int], name: str) -> Author:
+        if author_id is not None:
+            author = await self.author_repository.get(author_id)
+            if author is not None:
+                return author
+
+        return await self.author_repository.get_or_create_by_name(name=name)
