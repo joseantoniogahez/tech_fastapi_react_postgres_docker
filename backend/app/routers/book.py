@@ -2,10 +2,10 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Query
 
-from app.dependencies import (
+from app.dependencies import BookServiceDependency
+from app.dependencies.authorization import (
     BookCreateAuthorizedUserDependency,
     BookDeleteAuthorizedUserDependency,
-    BookServiceDependency,
     BookUpdateAuthorizedUserDependency,
 )
 from app.schemas.book import AddBook, Book, UpdateBook

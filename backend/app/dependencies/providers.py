@@ -1,10 +1,9 @@
-from typing import Annotated, AsyncGenerator, Awaitable, Callable
+from typing import Annotated, AsyncGenerator
 
 from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.const.permission import PermissionId
 from app.const.settings import AuthSettings
 from app.database import AsyncSessionDatabase
 from app.exceptions import ForbiddenException
@@ -109,42 +108,9 @@ async def get_current_active_user(current_user: CurrentUserDependency) -> User:
 
 CurrentActiveUserDependency = Annotated[User, Depends(get_current_active_user)]
 
-PermissionDependency = Callable[..., Awaitable[bool]]
-AuthorizedUserDependency = Callable[..., Awaitable[User]]
-
-
-def user_has_permission(permission_id: str) -> PermissionDependency:
-    async def dependency(
-        current_user: CurrentActiveUserDependency,
-        auth_service: AuthServiceDependency,
-    ) -> bool:
-        has_permission = await auth_service.user_has_permission(user_id=current_user.id, permission_id=permission_id)
-        if not has_permission:
-            raise ForbiddenException(
-                message=f"Missing required permission: {permission_id}",
-                details={"permission_id": permission_id},
-            )
-        return True
-
-    return dependency
-
-
-def get_authorized_user(permission_id: str) -> AuthorizedUserDependency:
-    async def dependency(
-        current_user: CurrentActiveUserDependency,
-        _: Annotated[bool, Depends(user_has_permission(permission_id))],
-    ) -> User:
-        return current_user
-
-    return dependency
-
-
-BookCreateAuthorizedUserDependency = Annotated[User, Depends(get_authorized_user(PermissionId.BOOK_CREATE))]
-BookUpdateAuthorizedUserDependency = Annotated[User, Depends(get_authorized_user(PermissionId.BOOK_UPDATE))]
-BookDeleteAuthorizedUserDependency = Annotated[User, Depends(get_authorized_user(PermissionId.BOOK_DELETE))]
-
 
 __all__ = [
+    "BearerTokenDependency",
     "DbSessionDependency",
     "BookRepositoryDependency",
     "AuthorRepositoryDependency",
@@ -155,9 +121,6 @@ __all__ = [
     "AuthCredentialsDependency",
     "CurrentUserDependency",
     "CurrentActiveUserDependency",
-    "BookCreateAuthorizedUserDependency",
-    "BookUpdateAuthorizedUserDependency",
-    "BookDeleteAuthorizedUserDependency",
     "get_db_session",
     "get_book_repository",
     "get_author_repository",
@@ -169,6 +132,4 @@ __all__ = [
     "get_auth_credentials",
     "get_current_user",
     "get_current_active_user",
-    "user_has_permission",
-    "get_authorized_user",
 ]

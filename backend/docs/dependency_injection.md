@@ -2,7 +2,7 @@
 
 ## 1) Dependencies module
 
-All providers are centralized in `app/dependencies.py`:
+Providers are centralized in `app/dependencies/`:
 
 - `get_db_session`: creates and yields `AsyncSession`.
 - Repository providers:
