@@ -3,6 +3,13 @@ from http import HTTPStatus
 from starlette.testclient import TestClient
 
 
+def _auth_headers(mock_client: TestClient, username: str = "admin", password: str = "admin123") -> dict[str, str]:
+    response = mock_client.post("/token", data={"username": username, "password": password})
+    assert response.status_code == HTTPStatus.OK
+    token = response.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
+
+
 def test_get_books(mock_client: TestClient):
     response = mock_client.get("/books")
     assert response.status_code == HTTPStatus.OK
@@ -44,7 +51,7 @@ def test_add_book(mock_client: TestClient):
         "author_name": "Isaac Asimov",
     }
 
-    response = mock_client.post("/books", json=book_data)
+    response = mock_client.post("/books", json=book_data, headers=_auth_headers(mock_client))
     assert response.status_code == HTTPStatus.OK
 
     json_response = response.json()
@@ -68,7 +75,7 @@ def test_update_book(mock_client: TestClient):
         "author_name": "Isaak Yúdovich Ozímov",
     }
 
-    response = mock_client.put("/books/1", json=book_data)
+    response = mock_client.put("/books/1", json=book_data, headers=_auth_headers(mock_client))
     assert response.status_code == HTTPStatus.OK
 
     json_response = response.json()
@@ -83,6 +90,6 @@ def test_update_book(mock_client: TestClient):
 
 
 def test_delete_book(mock_client: TestClient):
-    response = mock_client.delete("/books/1")
+    response = mock_client.delete("/books/1", headers=_auth_headers(mock_client))
     assert response.status_code == HTTPStatus.OK
     assert response.text == "null"

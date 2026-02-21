@@ -42,6 +42,16 @@ Book `status` values:
 - `published`
 - `draft`
 
+### RBAC permission -> endpoint matrix
+
+The login endpoint (`POST /token`) only authenticates identity; it does not evaluate roles/permissions.
+
+| Permission ID | Protected endpoint |
+| --- | --- |
+| `books:create` | `POST /books/` |
+| `books:update` | `PUT /books/{id}` |
+| `books:delete` | `DELETE /books/{id}` |
+
 ### `POST /token` examples
 
 Success:
@@ -110,6 +120,7 @@ curl -X GET http://localhost:8000/users/me \
 
 - `403 Forbidden`
   - Authenticated user exists but `disabled=true`
+  - Authenticated user does not have required permission (`permission_id`)
   - Response body:
 
 ```json

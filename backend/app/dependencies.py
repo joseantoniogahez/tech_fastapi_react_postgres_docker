@@ -1,4 +1,4 @@
-from typing import Annotated, AsyncGenerator
+from typing import Annotated, AsyncGenerator, Awaitable, Callable
 
 from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -109,3 +109,32 @@ async def get_current_active_user(current_user: CurrentUserDependency) -> User:
 
 
 CurrentActiveUserDependency = Annotated[User, Depends(get_current_active_user)]
+
+PermissionDependency = Callable[..., Awaitable[bool]]
+AuthorizedUserDependency = Callable[..., Awaitable[User]]
+
+
+def user_has_permission(permission_id: str) -> PermissionDependency:
+    async def dependency(
+        current_user: CurrentActiveUserDependency,
+        auth_service: AuthServiceDependency,
+    ) -> bool:
+        has_permission = await auth_service.user_has_permission(user_id=current_user.id, permission_id=permission_id)
+        if not has_permission:
+            raise ForbiddenException(
+                message=f"Missing required permission: {permission_id}",
+                details={"permission_id": permission_id},
+            )
+        return True
+
+    return dependency
+
+
+def get_authorized_user(permission_id: str) -> AuthorizedUserDependency:
+    async def dependency(
+        current_user: CurrentActiveUserDependency,
+        _: Annotated[bool, Depends(user_has_permission(permission_id))],
+    ) -> User:
+        return current_user
+
+    return dependency

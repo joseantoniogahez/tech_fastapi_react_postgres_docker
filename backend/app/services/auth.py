@@ -64,3 +64,6 @@ class AuthService(Service):
         if payload is None:
             return None
         return await self.auth_repository.get_by_username(payload.sub)
+
+    async def user_has_permission(self, user_id: int, permission_id: str) -> bool:
+        return await self.auth_repository.user_has_permission(user_id=user_id, permission_id=permission_id)
