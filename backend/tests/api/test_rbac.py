@@ -39,11 +39,10 @@ def test_reader_cannot_create_book(mock_client: TestClient) -> None:
 
     assert response.status_code == HTTPStatus.FORBIDDEN
     assert response.json() == {
-        "error": {
-            "type": "forbidden",
-            "message": "Missing required permission: books:create",
-            "details": {"permission_id": "books:create"},
-        }
+        "detail": "Missing required permission: books:create",
+        "status": HTTPStatus.FORBIDDEN,
+        "code": "forbidden",
+        "meta": {"permission_id": "books:create"},
     }
 
 
@@ -55,9 +54,8 @@ def test_reader_cannot_delete_book(mock_client: TestClient) -> None:
 
     assert response.status_code == HTTPStatus.FORBIDDEN
     assert response.json() == {
-        "error": {
-            "type": "forbidden",
-            "message": "Missing required permission: books:delete",
-            "details": {"permission_id": "books:delete"},
-        }
+        "detail": "Missing required permission: books:delete",
+        "status": HTTPStatus.FORBIDDEN,
+        "code": "forbidden",
+        "meta": {"permission_id": "books:delete"},
     }

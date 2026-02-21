@@ -5,8 +5,8 @@ from typing import AsyncIterator, Optional
 from fastapi import FastAPI
 
 from app.const.settings import ApiSettings
+from app.exceptions.setup import configure_exception_handlers
 from app.setup.cors import configure_cors
-from app.setup.exceptions import configure_exception_handlers
 from app.setup.routers import configure_routers
 
 

@@ -17,9 +17,13 @@ def _build_access_token(username: str) -> str:
 
 
 def _assert_error_payload(response: Any, error_type: str, message: str, details: Any | None = None) -> None:
-    payload: dict[str, Any] = {"error": {"type": error_type, "message": message}}
+    payload: dict[str, Any] = {
+        "detail": message,
+        "status": response.status_code,
+        "code": error_type,
+    }
     if details is not None:
-        payload["error"]["details"] = details
+        payload["meta"] = details
     assert response.json() == payload
 
 

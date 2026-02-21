@@ -4,13 +4,8 @@ from sqlalchemy import Select, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 
-from app import ExceptionBase
 from app.database import Base
-
-
-class RepositoryException(ExceptionBase):
-    pass
-
+from app.exceptions import RepositoryException
 
 ModelType = TypeVar("ModelType", bound=Base)
 IdType = int
