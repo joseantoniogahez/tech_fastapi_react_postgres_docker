@@ -8,15 +8,15 @@ from pydantic import ValidationError
 
 from app.const.settings import AuthSettings
 from app.models.user import User
-from app.repositories.user import UserRepository
+from app.repositories.auth import AuthRepository
 from app.schemas.auth import Credentials, Token, TokenPayload
 from app.services import Service
 
 
 class AuthService(Service):
-    def __init__(self, user_repository: UserRepository, auth_settings: AuthSettings | None = None):
+    def __init__(self, auth_repository: AuthRepository, auth_settings: AuthSettings | None = None):
         settings = auth_settings or AuthSettings()
-        self.user_repository = user_repository
+        self.auth_repository = auth_repository
         self.password_hasher = PasswordHasher()
         self.secret_key = settings.JWT_SECRET_KEY
         self.algorithm = settings.JWT_ALGORITHM
@@ -42,7 +42,7 @@ class AuthService(Service):
             return None
 
     async def authenticate(self, credentials: Credentials) -> User | None:
-        user = await self.user_repository.get_by_username(credentials.username)
+        user = await self.auth_repository.get_by_username(credentials.username)
         if user is None:
             return None
 
@@ -51,8 +51,7 @@ class AuthService(Service):
 
         return user
 
-    async def login(self, username: str, password: str) -> Token | None:
-        credentials = Credentials(username=username, password=password)
+    async def login(self, credentials: Credentials) -> Token | None:
         user = await self.authenticate(credentials)
         if user is None:
             return None
@@ -64,4 +63,4 @@ class AuthService(Service):
         payload = self.decode_access_token(token)
         if payload is None:
             return None
-        return await self.user_repository.get_by_username(payload.sub)
+        return await self.auth_repository.get_by_username(payload.sub)

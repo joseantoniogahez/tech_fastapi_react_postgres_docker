@@ -1,15 +1,16 @@
 from typing import Annotated, AsyncGenerator
 
 from fastapi import Depends, HTTPException
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.const.settings import AuthSettings
 from app.database import AsyncSessionDatabase
 from app.models.user import User
+from app.repositories.auth import AuthRepository
 from app.repositories.author import AuthorRepository
 from app.repositories.book import BookRepository
-from app.repositories.user import UserRepository
+from app.schemas.auth import Credentials
 from app.services.auth import AuthService
 from app.services.author import AuthorService
 from app.services.book import BookService
@@ -49,11 +50,11 @@ async def get_author_repository(session: DbSessionDependency) -> AuthorRepositor
 AuthorRepositoryDependency = Annotated[AuthorRepository, Depends(get_author_repository)]
 
 
-async def get_user_repository(session: DbSessionDependency) -> UserRepository:
-    return UserRepository(session=session)
+async def get_auth_repository(session: DbSessionDependency) -> AuthRepository:
+    return AuthRepository(session=session)
 
 
-UserRepositoryDependency = Annotated[UserRepository, Depends(get_user_repository)]
+AuthRepositoryDependency = Annotated[AuthRepository, Depends(get_auth_repository)]
 
 
 async def get_books_service(
@@ -73,8 +74,25 @@ async def get_authors_service(author_repository: AuthorRepositoryDependency) -> 
 AuthorServiceDependency = Annotated[AuthorService, Depends(get_authors_service)]
 
 
-async def get_auth_service(user_repository: UserRepositoryDependency) -> AuthService:
-    return AuthService(user_repository=user_repository, auth_settings=AuthSettings())
+async def get_auth_settings() -> AuthSettings:
+    return AuthSettings()
+
+
+AuthSettingsDependency = Annotated[AuthSettings, Depends(get_auth_settings)]
+
+
+async def get_auth_credentials(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> Credentials:
+    return Credentials(username=form_data.username, password=form_data.password)
+
+
+AuthCredentialsDependency = Annotated[Credentials, Depends(get_auth_credentials)]
+
+
+async def get_auth_service(
+    auth_repository: AuthRepositoryDependency,
+    auth_settings: AuthSettingsDependency,
+) -> AuthService:
+    return AuthService(auth_repository=auth_repository, auth_settings=auth_settings)
 
 
 AuthServiceDependency = Annotated[AuthService, Depends(get_auth_service)]

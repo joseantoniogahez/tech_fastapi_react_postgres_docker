@@ -4,7 +4,7 @@ from app.models.user import User
 from app.repositories import BaseRepository
 
 
-class UserRepository(BaseRepository[User]):
+class AuthRepository(BaseRepository[User]):
     def __init__(self, session: AsyncSession):
         super().__init__(session, User)
 
