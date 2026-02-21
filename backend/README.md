@@ -26,6 +26,9 @@ For frontend-only setup, see `../books-app/README.md`.
 - `POST /token`
   - Authenticates with `username`/`password` (OAuth2 form)
   - Returns `{ "access_token": "...", "token_type": "bearer" }`
+- `GET /users/me`
+  - Requires `Authorization: Bearer <access_token>`
+  - Returns authenticated user (`id`, `username`, `disabled`)
 - `GET /books/`
   - Supports `author_id` query param for filtering
 - `POST /books/`
@@ -70,6 +73,44 @@ curl -X POST http://localhost:8000/token \
 }
 ```
 
+### Protected endpoint example: `GET /users/me`
+
+```bash
+curl -X GET http://localhost:8000/users/me \
+  -H "Authorization: Bearer <access_token>"
+```
+
+```json
+{
+  "id": 1,
+  "username": "admin",
+  "disabled": false
+}
+```
+
+### Auth error cases
+
+- `401 Unauthorized`
+  - Invalid JWT (malformed, expired, wrong signature/algorithm)
+  - JWT is valid but `sub` user no longer exists
+  - Response body:
+
+```json
+{
+  "detail": "Could not validate credentials"
+}
+```
+
+- `403 Forbidden`
+  - Authenticated user exists but `disabled=true`
+  - Response body:
+
+```json
+{
+  "detail": "Inactive user"
+}
+```
+
 ## Runtime Configuration
 
 Primary environment variables:
@@ -77,6 +118,9 @@ Primary environment variables:
 - `API_PATH` (FastAPI `root_path`)
 - `API_CORS_ORIGINS` (comma-separated origins)
 - `LOG_LEVEL`
+- `JWT_SECRET_KEY`
+- `JWT_ALGORITHM` (default `HS256`)
+- `JWT_ACCESS_TOKEN_EXPIRE_MINUTES` (default `30`)
 - `DB_TYPE`
 - `DB_USER`
 - `DB_PASSWORD`

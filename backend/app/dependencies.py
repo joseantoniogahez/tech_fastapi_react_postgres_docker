@@ -1,15 +1,30 @@
 from typing import Annotated, AsyncGenerator
 
-from fastapi import Depends
+from fastapi import Depends, HTTPException
+from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.const.settings import AuthSettings
 from app.database import AsyncSessionDatabase
+from app.models.user import User
 from app.repositories.author import AuthorRepository
 from app.repositories.book import BookRepository
 from app.repositories.user import UserRepository
 from app.services.auth import AuthService
 from app.services.author import AuthorService
 from app.services.book import BookService
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+INVALID_TOKEN_EXCEPTION = HTTPException(
+    status_code=401,
+    detail="Could not validate credentials",
+    headers={"WWW-Authenticate": "Bearer"},
+)
+INACTIVE_USER_EXCEPTION = HTTPException(
+    status_code=403,
+    detail="Inactive user",
+)
 
 
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
@@ -59,7 +74,29 @@ AuthorServiceDependency = Annotated[AuthorService, Depends(get_authors_service)]
 
 
 async def get_auth_service(user_repository: UserRepositoryDependency) -> AuthService:
-    return AuthService(user_repository=user_repository)
+    return AuthService(user_repository=user_repository, auth_settings=AuthSettings())
 
 
 AuthServiceDependency = Annotated[AuthService, Depends(get_auth_service)]
+
+
+async def get_current_user(
+    token: Annotated[str, Depends(oauth2_scheme)],
+    auth_service: AuthServiceDependency,
+) -> User:
+    user = await auth_service.get_user_from_token(token)
+    if user is None:
+        raise INVALID_TOKEN_EXCEPTION
+    return user
+
+
+CurrentUserDependency = Annotated[User, Depends(get_current_user)]
+
+
+async def get_current_active_user(current_user: CurrentUserDependency) -> User:
+    if current_user.disabled:
+        raise INACTIVE_USER_EXCEPTION
+    return current_user
+
+
+CurrentActiveUserDependency = Annotated[User, Depends(get_current_active_user)]

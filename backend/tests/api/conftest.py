@@ -39,7 +39,14 @@ def mock_users() -> List[Dict[str, Any]]:
             "id": 1,
             "username": "admin",
             "hashed_password": password_hasher.hash("admin123"),
-        }
+            "disabled": False,
+        },
+        {
+            "id": 2,
+            "username": "disabled_user",
+            "hashed_password": password_hasher.hash("admin123"),
+            "disabled": True,
+        },
     ]
 
 

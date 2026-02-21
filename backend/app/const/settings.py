@@ -12,6 +12,12 @@ class ApiSettings(BaseSettings):
     LOG_LEVEL: str = "INFO"
 
 
+class AuthSettings(BaseSettings):
+    JWT_SECRET_KEY: str = "change-me-in-production"
+    JWT_ALGORITHM: str = "HS256"
+    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(30, gt=0)
+
+
 class DatabaseSettings(BaseSettings):
     DB_TYPE: str = Field(..., min_length=1)
     DB_USER: str = Field(..., min_length=1)

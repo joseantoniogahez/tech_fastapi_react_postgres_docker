@@ -3,8 +3,8 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 
-from app.dependencies import AuthServiceDependency
-from app.schemas.auth import Credentials, Token
+from app.dependencies import AuthServiceDependency, CurrentActiveUserDependency
+from app.schemas.auth import AuthenticatedUser, Token
 
 router = APIRouter(tags=["auth"])
 
@@ -20,9 +20,13 @@ async def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     auth_service: AuthServiceDependency,
 ) -> Token:
-    credentials = Credentials(username=form_data.username, password=form_data.password)
-    access_token = await auth_service.authenticate(credentials)
-    if access_token is None:
+    token = await auth_service.login(form_data.username, form_data.password)
+    if token is None:
         raise INVALID_CREDENTIALS_EXCEPTION
 
-    return Token(access_token=access_token)
+    return token
+
+
+@router.get("/users/me")
+async def read_current_user(current_user: CurrentActiveUserDependency) -> AuthenticatedUser:
+    return AuthenticatedUser.model_validate(current_user)
