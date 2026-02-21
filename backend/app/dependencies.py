@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.const.settings import AuthSettings
 from app.database import AsyncSessionDatabase
-from app.exceptions import ForbiddenException, UnauthorizedException
+from app.exceptions import ForbiddenException
 from app.models.user import User
 from app.repositories.auth import AuthRepository
 from app.repositories.author import AuthorRepository
@@ -93,10 +93,7 @@ async def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)],
     auth_service: AuthServiceDependency,
 ) -> User:
-    user = await auth_service.get_user_from_token(token)
-    if user is None:
-        raise UnauthorizedException(message="Could not validate credentials")
-    return user
+    return await auth_service.get_user_from_token(token)
 
 
 CurrentUserDependency = Annotated[User, Depends(get_current_user)]
