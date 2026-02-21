@@ -1,15 +1,10 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 
 from app.dependencies import AuthCredentialsDependency, AuthServiceDependency, CurrentActiveUserDependency
+from app.exceptions import UnauthorizedException
 from app.schemas.auth import AuthenticatedUser, Token
 
 router = APIRouter(tags=["auth"])
-
-INVALID_CREDENTIALS_EXCEPTION = HTTPException(
-    status_code=401,
-    detail="Invalid username or password",
-    headers={"WWW-Authenticate": "Bearer"},
-)
 
 
 @router.post("/token")
@@ -19,7 +14,7 @@ async def login_for_access_token(
 ) -> Token:
     token = await auth_service.login(credentials)
     if token is None:
-        raise INVALID_CREDENTIALS_EXCEPTION
+        raise UnauthorizedException(message="Invalid username or password")
 
     return token
 

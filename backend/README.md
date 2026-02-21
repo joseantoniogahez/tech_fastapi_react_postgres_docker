@@ -69,7 +69,10 @@ curl -X POST http://localhost:8000/token \
 
 ```json
 {
-  "detail": "Invalid username or password"
+  "error": {
+    "type": "unauthorized",
+    "message": "Invalid username or password"
+  }
 }
 ```
 
@@ -93,11 +96,15 @@ curl -X GET http://localhost:8000/users/me \
 - `401 Unauthorized`
   - Invalid JWT (malformed, expired, wrong signature/algorithm)
   - JWT is valid but `sub` user no longer exists
+  - Invalid login username/password
   - Response body:
 
 ```json
 {
-  "detail": "Could not validate credentials"
+  "error": {
+    "type": "unauthorized",
+    "message": "Could not validate credentials"
+  }
 }
 ```
 
@@ -107,9 +114,23 @@ curl -X GET http://localhost:8000/users/me \
 
 ```json
 {
-  "detail": "Inactive user"
+  "error": {
+    "type": "forbidden",
+    "message": "Inactive user"
+  }
 }
 ```
+
+### Domain error type -> HTTP status
+
+| Domain error type | HTTP status |
+| --- | --- |
+| `invalid_input` | `400 Bad Request` |
+| `unauthorized` | `401 Unauthorized` |
+| `forbidden` | `403 Forbidden` |
+| `not_found` | `404 Not Found` |
+| `conflict` | `409 Conflict` |
+| `internal_error` | `500 Internal Server Error` |
 
 ## Runtime Configuration
 

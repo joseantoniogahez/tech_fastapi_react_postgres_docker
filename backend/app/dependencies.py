@@ -1,11 +1,12 @@
 from typing import Annotated, AsyncGenerator
 
-from fastapi import Depends, HTTPException
+from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.const.settings import AuthSettings
 from app.database import AsyncSessionDatabase
+from app.exceptions import ForbiddenException, UnauthorizedException
 from app.models.user import User
 from app.repositories.auth import AuthRepository
 from app.repositories.author import AuthorRepository
@@ -16,16 +17,6 @@ from app.services.author import AuthorService
 from app.services.book import BookService
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
-INVALID_TOKEN_EXCEPTION = HTTPException(
-    status_code=401,
-    detail="Could not validate credentials",
-    headers={"WWW-Authenticate": "Bearer"},
-)
-INACTIVE_USER_EXCEPTION = HTTPException(
-    status_code=403,
-    detail="Inactive user",
-)
 
 
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
@@ -104,7 +95,7 @@ async def get_current_user(
 ) -> User:
     user = await auth_service.get_user_from_token(token)
     if user is None:
-        raise INVALID_TOKEN_EXCEPTION
+        raise UnauthorizedException(message="Could not validate credentials")
     return user
 
 
@@ -113,7 +104,7 @@ CurrentUserDependency = Annotated[User, Depends(get_current_user)]
 
 async def get_current_active_user(current_user: CurrentUserDependency) -> User:
     if current_user.disabled:
-        raise INACTIVE_USER_EXCEPTION
+        raise ForbiddenException(message="Inactive user")
     return current_user
 
 
