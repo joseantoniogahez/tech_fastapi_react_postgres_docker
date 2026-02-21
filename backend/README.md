@@ -114,3 +114,33 @@ From repo root:
 ```bash
 pytest backend/tests
 ```
+
+### Coverage with `pytest-cov`
+
+`pytest-cov` is included in `backend/tests/requirements.txt`.
+
+Install backend test dependencies from repo root:
+
+```bash
+python -m pip install -r backend/tests/requirements.txt
+```
+
+Run coverage from `backend/`:
+
+```bash
+cd backend
+pytest --cov-report term-missing:skip-covered --cov app
+```
+
+What this command does:
+
+- `--cov app`: measures coverage for the `app` package.
+- `--cov-report term-missing`: prints a terminal table and shows uncovered line numbers.
+- `:skip-covered`: hides files already at 100% so you can focus on missing lines.
+
+How to read the report columns:
+
+- `Stmts`: total executable statements in a file.
+- `Miss`: statements not executed by tests.
+- `Cover`: coverage percentage for that file.
+- `Missing`: exact line numbers that still need tests.
