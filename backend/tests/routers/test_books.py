@@ -42,6 +42,39 @@ def test_get_books_by_author(mock_client: TestClient):
         assert book["author"]["id"] == 1
 
 
+def test_get_published_books(mock_client: TestClient):
+    response = mock_client.get("/books/published")
+    assert response.status_code == HTTPStatus.OK
+
+    json_response = response.json()
+    assert isinstance(json_response, list)
+    assert len(json_response) == 3
+    assert all(book["status"] == "published" for book in json_response)
+
+
+def test_get_book_by_id(mock_client: TestClient):
+    response = mock_client.get("/books/1")
+    assert response.status_code == HTTPStatus.OK
+
+    json_response = response.json()
+    assert isinstance(json_response, dict)
+    assert set(json_response.keys()) == {"id", "title", "year", "status", "author"}
+    assert json_response["id"] == 1
+    assert json_response["title"] == "Foundation"
+    assert json_response["status"] == "published"
+
+
+def test_get_book_by_id_not_found(mock_client: TestClient):
+    response = mock_client.get("/books/999")
+    assert response.status_code == HTTPStatus.NOT_FOUND
+    assert response.json() == {
+        "detail": "Book 999 not found",
+        "status": HTTPStatus.NOT_FOUND,
+        "code": "not_found",
+        "meta": {"id": 999},
+    }
+
+
 def test_add_book(mock_client: TestClient):
     book_data = {
         "title": "I, Robot",

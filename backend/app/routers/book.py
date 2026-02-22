@@ -8,6 +8,7 @@ from app.dependencies.authorization import (
     BookDeleteAuthorizedUserDependency,
     BookUpdateAuthorizedUserDependency,
 )
+from app.exceptions import NotFoundException
 from app.schemas.book import AddBook, Book, UpdateBook
 
 router = APIRouter(
@@ -23,6 +24,20 @@ async def get_books(
 ) -> List[Book]:
     books = await book_service.get_all(author_id)
     return [Book.model_validate(book) for book in books]
+
+
+@router.get("/published")
+async def get_published_books(book_service: BookServiceDependency) -> List[Book]:
+    books = await book_service.get_published()
+    return [Book.model_validate(book) for book in books]
+
+
+@router.get("/{id}")
+async def get_book(id: int, book_service: BookServiceDependency) -> Book:
+    book = await book_service.get(id)
+    if book is None:
+        raise NotFoundException(message=f"Book {id} not found", details={"id": id})
+    return Book.model_validate(book)
 
 
 @router.post("/")
