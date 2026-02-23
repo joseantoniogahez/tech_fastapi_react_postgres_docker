@@ -113,6 +113,7 @@ alembic revision --autogenerate -m "describe change"
 - Authentication and account management: `docs/authentication.md`
 - RBAC permission matrix: `docs/authorization_matrix.md`
 - Error mapping and payload format: `docs/error_mapping.md`
+- Unit of Work transaction boundary and atomic write policy: `docs/unit_of_work.md`
 - OpenAPI documentation pattern: `docs/openapi_documentation.md`
 - Dependency injection guide: `docs/dependency_injection.md`
 - Router auto-registration: `docs/router_registration.md`

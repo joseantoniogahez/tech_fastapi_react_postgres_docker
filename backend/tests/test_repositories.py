@@ -5,13 +5,15 @@ import pytest
 
 import app.repositories as repositories
 from app.models.author import Author
-from app.repositories import BaseRepository, IdType, RepositoryException
+from app.repositories import BaseRepository, IdType, RepositoryException, UnitOfWork
 
 
 def _build_session_mock() -> MagicMock:
     session = MagicMock()
     session.add = MagicMock()
+    session.flush = AsyncMock()
     session.commit = AsyncMock()
+    session.rollback = AsyncMock()
     session.refresh = AsyncMock()
     session.get = AsyncMock()
     session.execute = AsyncMock()
@@ -21,8 +23,9 @@ def _build_session_mock() -> MagicMock:
 
 
 def test_repositories_module_exports_expected_symbols() -> None:
-    assert repositories.__all__ == ["BaseRepository", "RepositoryException", "IdType"]
+    assert repositories.__all__ == ["BaseRepository", "UnitOfWork", "RepositoryException", "IdType"]
     assert repositories.BaseRepository is BaseRepository
+    assert repositories.UnitOfWork is UnitOfWork
     assert repositories.RepositoryException is RepositoryException
     assert repositories.IdType is IdType
     assert IdType is int
@@ -63,7 +66,7 @@ def test_build_creates_entity_instance() -> None:
     assert entity.name == "Alice"
 
 
-def test_create_adds_entity_commits_and_refreshes() -> None:
+def test_create_adds_entity_flushes_and_refreshes() -> None:
     session = _build_session_mock()
     repository = BaseRepository(session=session, model=Author)
 
@@ -73,7 +76,8 @@ def test_create_adds_entity_commits_and_refreshes() -> None:
         assert isinstance(entity, Author)
         assert entity.name == "Alice"
         session.add.assert_called_once_with(entity)
-        session.commit.assert_awaited_once()
+        session.flush.assert_awaited_once()
+        session.commit.assert_not_awaited()
         session.refresh.assert_awaited_once_with(entity)
 
     asyncio.run(run_test())
@@ -151,7 +155,8 @@ def test_update_merges_and_refreshes_entity() -> None:
         assert result is merged
         assert entity.name == "Bob"
         session.merge.assert_awaited_once_with(entity)
-        session.commit.assert_awaited_once()
+        session.flush.assert_awaited_once()
+        session.commit.assert_not_awaited()
         session.refresh.assert_awaited_once_with(merged)
 
     asyncio.run(run_test())
@@ -182,6 +187,7 @@ def test_delete_returns_false_when_entity_does_not_exist() -> None:
         assert deleted is False
         session.get.assert_awaited_once_with(Author, 10)
         session.delete.assert_not_called()
+        session.flush.assert_not_awaited()
         session.commit.assert_not_awaited()
 
     asyncio.run(run_test())
@@ -199,6 +205,69 @@ def test_delete_removes_entity_when_it_exists() -> None:
         assert deleted is True
         session.get.assert_awaited_once_with(Author, 20)
         session.delete.assert_awaited_once_with(entity)
+        session.flush.assert_awaited_once()
+        session.commit.assert_not_awaited()
+
+    asyncio.run(run_test())
+
+
+def test_unit_of_work_commits_when_scope_succeeds() -> None:
+    session = _build_session_mock()
+    unit_of_work = UnitOfWork(session=session)
+
+    async def run_test() -> None:
+        async with unit_of_work:
+            pass
+
         session.commit.assert_awaited_once()
+        session.rollback.assert_not_awaited()
+
+    asyncio.run(run_test())
+
+
+def test_unit_of_work_rolls_back_when_scope_fails() -> None:
+    session = _build_session_mock()
+    unit_of_work = UnitOfWork(session=session)
+
+    async def run_test() -> None:
+        with pytest.raises(RuntimeError):
+            async with unit_of_work:
+                raise RuntimeError("boom")
+
+        session.rollback.assert_awaited_once()
+        session.commit.assert_not_awaited()
+
+    asyncio.run(run_test())
+
+
+def test_unit_of_work_commits_once_for_nested_successful_scopes() -> None:
+    session = _build_session_mock()
+    unit_of_work = UnitOfWork(session=session)
+
+    async def run_test() -> None:
+        async with unit_of_work:
+            async with unit_of_work:
+                pass
+
+        session.commit.assert_awaited_once()
+        session.rollback.assert_not_awaited()
+
+    asyncio.run(run_test())
+
+
+def test_unit_of_work_skips_commit_after_inner_scope_failure_even_if_handled() -> None:
+    session = _build_session_mock()
+    unit_of_work = UnitOfWork(session=session)
+
+    async def run_test() -> None:
+        async with unit_of_work:
+            try:
+                async with unit_of_work:
+                    raise ValueError("inner failure")
+            except ValueError:
+                pass
+
+        session.rollback.assert_awaited_once()
+        session.commit.assert_not_awaited()
 
     asyncio.run(run_test())

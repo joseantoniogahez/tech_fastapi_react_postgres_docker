@@ -20,6 +20,7 @@ from .providers import (
     CurrentActiveUserDependency,
     CurrentUserDependency,
     DbSessionDependency,
+    UnitOfWorkDependency,
     get_auth_credentials,
     get_auth_repository,
     get_auth_service,
@@ -31,6 +32,7 @@ from .providers import (
     get_current_active_user,
     get_current_user,
     get_db_session,
+    get_unit_of_work,
 )
 
 __all__ = [
@@ -53,6 +55,7 @@ __all__ = [
     "CurrentActiveUserDependency",
     "CurrentUserDependency",
     "DbSessionDependency",
+    "UnitOfWorkDependency",
     "get_auth_credentials",
     "get_auth_repository",
     "get_auth_service",
@@ -64,4 +67,5 @@ __all__ = [
     "get_current_active_user",
     "get_current_user",
     "get_db_session",
+    "get_unit_of_work",
 ]

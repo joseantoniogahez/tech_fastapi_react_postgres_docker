@@ -5,6 +5,7 @@
 Dependency providers are centralized in `app/dependencies/providers.py`:
 
 - `get_db_session`: creates and yields `AsyncSession`.
+- `get_unit_of_work`: creates request-scoped `UnitOfWork` using the same `AsyncSession`.
 - Repository providers:
   - `get_book_repository`
   - `get_author_repository`
@@ -26,6 +27,8 @@ Authorization-specific providers are in `app/dependencies/authorization.py`.
   - `BookServiceDependency`
   - `AuthorServiceDependency`
   - `AuthServiceDependency`
+- Transaction alias:
+  - `UnitOfWorkDependency`
 - User aliases:
   - `CurrentUserDependency`
   - `CurrentActiveUserDependency`
@@ -63,7 +66,24 @@ async def update_book(
     return Book.model_validate(book) if book else None
 ```
 
-## 4) Test overrides with `app.dependency_overrides`
+## 4) How DI enables one transaction per use case
+
+`get_db_session` creates one `AsyncSession` per request. That same session is reused by:
+
+- repository providers
+- `get_unit_of_work`
+- service providers
+
+This guarantees repositories and Unit of Work share the same transaction context.
+
+Practical effect:
+
+- success path: one final commit at Unit of Work exit
+- failure path: rollback for all pending writes in scope
+
+See `unit_of_work.md` for detailed behavior.
+
+## 5) Test overrides with `app.dependency_overrides`
 
 ### Override DB session
 

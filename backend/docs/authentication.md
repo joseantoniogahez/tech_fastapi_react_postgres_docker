@@ -10,8 +10,8 @@
 ## Authentication Flow
 
 1. Create a user with `POST /users/register` (or use a seeded account).
-2. Exchange credentials for a bearer token with `POST /token`.
-3. Call protected endpoints with `Authorization: Bearer <access_token>`.
+1. Exchange credentials for a bearer token with `POST /token`.
+1. Call protected endpoints with `Authorization: Bearer <access_token>`.
 
 ## `POST /token` Example
 
@@ -82,6 +82,12 @@ Password rules (registration and password update):
 - `new_password` requires `current_password`.
 - `current_password` requires `new_password`.
 - New password must differ from the current password.
+
+Transactional behavior:
+
+- `POST /users/register` and `PATCH /users/me` run inside Unit of Work transaction scopes.
+- On failure, pending account writes are rolled back.
+- See `unit_of_work.md` for transaction details.
 
 ## Common Auth Errors
 

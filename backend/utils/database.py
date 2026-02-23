@@ -17,7 +17,7 @@ class MockDatabase:
         test_database_url = URL.create(drivername=default_database_url.drivername, database=test_database)
         self.delete_sqlite()
         self.engine = create_async_engine(url=test_database_url, echo=echo)
-        self.Session = async_sessionmaker(bind=self.engine)
+        self.Session = async_sessionmaker(bind=self.engine, expire_on_commit=False)
 
     async def setup(self, Base: DeclarativeMeta) -> None:
         async with self.engine.begin() as conn:

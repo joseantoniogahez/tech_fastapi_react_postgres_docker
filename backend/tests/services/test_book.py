@@ -8,7 +8,14 @@ from app.schemas.book import AddBook, UpdateBook
 from app.services.book import BookService
 
 
-def _build_service() -> tuple[BookService, MagicMock, MagicMock]:
+def _build_unit_of_work_mock() -> MagicMock:
+    unit_of_work = MagicMock()
+    unit_of_work.__aenter__ = AsyncMock(return_value=unit_of_work)
+    unit_of_work.__aexit__ = AsyncMock(return_value=None)
+    return unit_of_work
+
+
+def _build_service() -> tuple[BookService, MagicMock, MagicMock, MagicMock]:
     book_repository = MagicMock()
     book_repository.list_catalog = AsyncMock()
     book_repository.list_published = AsyncMock()
@@ -18,12 +25,17 @@ def _build_service() -> tuple[BookService, MagicMock, MagicMock]:
     book_repository.delete = AsyncMock()
 
     author_repository = MagicMock()
-    service = BookService(book_repository=book_repository, author_repository=author_repository)
-    return service, book_repository, author_repository
+    unit_of_work = _build_unit_of_work_mock()
+    service = BookService(
+        book_repository=book_repository,
+        author_repository=author_repository,
+        unit_of_work=unit_of_work,
+    )
+    return service, book_repository, author_repository, unit_of_work
 
 
 def test_get_all_delegates_to_list_catalog_with_author_filter() -> None:
-    service, book_repository, _ = _build_service()
+    service, book_repository, _, unit_of_work = _build_service()
     expected_books = [
         Book(id=1, title="Dune", year=1965, status=BookStatus.PUBLISHED, author_id=2),
     ]
@@ -34,12 +46,14 @@ def test_get_all_delegates_to_list_catalog_with_author_filter() -> None:
 
         assert books == expected_books
         book_repository.list_catalog.assert_awaited_once_with(author_id=2)
+        unit_of_work.__aenter__.assert_not_awaited()
+        unit_of_work.__aexit__.assert_not_awaited()
 
     asyncio.run(run_test())
 
 
 def test_get_published_delegates_to_repository() -> None:
-    service, book_repository, _ = _build_service()
+    service, book_repository, _, unit_of_work = _build_service()
     expected_books = [
         Book(id=2, title="Foundation", year=1951, status=BookStatus.PUBLISHED, author_id=3),
     ]
@@ -50,12 +64,14 @@ def test_get_published_delegates_to_repository() -> None:
 
         assert books == expected_books
         book_repository.list_published.assert_awaited_once_with()
+        unit_of_work.__aenter__.assert_not_awaited()
+        unit_of_work.__aexit__.assert_not_awaited()
 
     asyncio.run(run_test())
 
 
 def test_get_delegates_to_repository() -> None:
-    service, book_repository, _ = _build_service()
+    service, book_repository, _, unit_of_work = _build_service()
     expected_book = Book(id=3, title="Neuromancer", year=1984, status=BookStatus.DRAFT, author_id=4)
     book_repository.get.return_value = expected_book
 
@@ -64,12 +80,14 @@ def test_get_delegates_to_repository() -> None:
 
         assert book is expected_book
         book_repository.get.assert_awaited_once_with(3)
+        unit_of_work.__aenter__.assert_not_awaited()
+        unit_of_work.__aexit__.assert_not_awaited()
 
     asyncio.run(run_test())
 
 
 def test_get_author_id_uses_author_service_get_or_add() -> None:
-    service, _, _ = _build_service()
+    service, _, _, _ = _build_service()
     get_or_add_mock = AsyncMock(return_value=Author(id=7, name="Frank Herbert"))
     book_data = AddBook(
         title="Dune",
@@ -91,7 +109,7 @@ def test_get_author_id_uses_author_service_get_or_add() -> None:
 
 
 def test_add_creates_book_with_resolved_author_id() -> None:
-    service, book_repository, _ = _build_service()
+    service, book_repository, _, unit_of_work = _build_service()
     get_or_add_mock = AsyncMock(return_value=Author(id=5, name="Isaac Asimov"))
     created_book = Book(id=10, title="I, Robot", year=1950, status=BookStatus.PUBLISHED, author_id=5)
     book_repository.create.return_value = created_book
@@ -113,6 +131,8 @@ def test_add_creates_book_with_resolved_author_id() -> None:
             status=BookStatus.PUBLISHED,
             author_id=5,
         )
+        unit_of_work.__aenter__.assert_awaited_once_with()
+        unit_of_work.__aexit__.assert_awaited_once_with(None, None, None)
 
     with patch.object(service.author_service, "get_or_add", get_or_add_mock):
         asyncio.run(run_test())
@@ -121,7 +141,7 @@ def test_add_creates_book_with_resolved_author_id() -> None:
 
 
 def test_update_returns_none_when_book_does_not_exist() -> None:
-    service, book_repository, _ = _build_service()
+    service, book_repository, _, unit_of_work = _build_service()
     book_repository.get.return_value = None
     book_data = UpdateBook(
         id=12,
@@ -138,12 +158,14 @@ def test_update_returns_none_when_book_does_not_exist() -> None:
         assert result is None
         book_repository.get.assert_awaited_once_with(12)
         book_repository.update.assert_not_awaited()
+        unit_of_work.__aenter__.assert_awaited_once_with()
+        unit_of_work.__aexit__.assert_awaited_once_with(None, None, None)
 
     asyncio.run(run_test())
 
 
 def test_update_updates_existing_book_with_resolved_author_id() -> None:
-    service, book_repository, _ = _build_service()
+    service, book_repository, _, unit_of_work = _build_service()
     existing_book = Book(id=20, title="Old Title", year=2001, status=BookStatus.DRAFT, author_id=3)
     updated_book = Book(id=20, title="New Title", year=2002, status=BookStatus.PUBLISHED, author_id=8)
     book_repository.get.return_value = existing_book
@@ -170,6 +192,8 @@ def test_update_updates_existing_book_with_resolved_author_id() -> None:
             status=BookStatus.PUBLISHED,
             author_id=8,
         )
+        unit_of_work.__aenter__.assert_awaited_once_with()
+        unit_of_work.__aexit__.assert_awaited_once_with(None, None, None)
 
     with patch.object(service.author_service, "get_or_add", get_or_add_mock):
         asyncio.run(run_test())
@@ -178,10 +202,12 @@ def test_update_updates_existing_book_with_resolved_author_id() -> None:
 
 
 def test_delete_delegates_to_repository() -> None:
-    service, book_repository, _ = _build_service()
+    service, book_repository, _, unit_of_work = _build_service()
 
     async def run_test() -> None:
         await service.delete(99)
         book_repository.delete.assert_awaited_once_with(99)
+        unit_of_work.__aenter__.assert_awaited_once_with()
+        unit_of_work.__aexit__.assert_awaited_once_with(None, None, None)
 
     asyncio.run(run_test())

@@ -11,6 +11,7 @@ from sqlalchemy.exc import IntegrityError
 from app.const.settings import AuthSettings
 from app.exceptions import ConflictException, ForbiddenException, InvalidInputException, UnauthorizedException
 from app.models.user import User
+from app.repositories import UnitOfWork
 from app.repositories.auth import AuthRepository
 from app.schemas.auth import AuthenticatedUser, Credentials, RegisterUser, Token, TokenPayload, UpdateCurrentUser
 from app.services import Service
@@ -19,9 +20,15 @@ from app.services import Service
 class AuthService(Service):
     _username_pattern = re.compile(r"^[a-z0-9_.-]+$")
 
-    def __init__(self, auth_repository: AuthRepository, auth_settings: AuthSettings | None = None):
+    def __init__(
+        self,
+        auth_repository: AuthRepository,
+        unit_of_work: UnitOfWork,
+        auth_settings: AuthSettings | None = None,
+    ):
         settings = auth_settings or AuthSettings()
         self.auth_repository = auth_repository
+        self.unit_of_work = unit_of_work
         self.password_hasher = PasswordHasher()
         self.secret_key = settings.JWT_SECRET_KEY
         self.algorithm = settings.JWT_ALGORITHM
@@ -103,18 +110,19 @@ class AuthService(Service):
         username = self._normalize_username(registration.username)
         self._validate_password_policy(registration.password, username)
 
-        if await self.auth_repository.username_exists(username):
-            raise ConflictException(
-                message="Username already exists",
-                details={"username": username},
-            )
-
         try:
-            user = await self.auth_repository.create(
-                username=username,
-                hashed_password=self._hash_password(registration.password),
-                disabled=False,
-            )
+            async with self.unit_of_work:
+                if await self.auth_repository.username_exists(username):
+                    raise ConflictException(
+                        message="Username already exists",
+                        details={"username": username},
+                    )
+
+                user = await self.auth_repository.create(
+                    username=username,
+                    hashed_password=self._hash_password(registration.password),
+                    disabled=False,
+                )
         except IntegrityError as exc:
             raise ConflictException(
                 message="Username already exists",
@@ -184,14 +192,15 @@ class AuthService(Service):
 
     async def update_current_user(self, current_user: User, update_data: UpdateCurrentUser) -> AuthenticatedUser:
         self._validate_update_request(update_data)
-        normalized_username, username_change = await self._build_username_change(current_user, update_data.username)
-        password_change = self._build_password_change(current_user, update_data, normalized_username)
+        async with self.unit_of_work:
+            normalized_username, username_change = await self._build_username_change(current_user, update_data.username)
+            password_change = self._build_password_change(current_user, update_data, normalized_username)
 
-        changes = {**username_change, **password_change}
-        if not changes:
-            raise InvalidInputException(message="No changes detected")
+            changes = {**username_change, **password_change}
+            if not changes:
+                raise InvalidInputException(message="No changes detected")
 
-        updated_user = await self._persist_user_changes(current_user, changes)
+            updated_user = await self._persist_user_changes(current_user, changes)
         return AuthenticatedUser.model_validate(updated_user)
 
     async def get_user_from_token(self, token: str) -> User:

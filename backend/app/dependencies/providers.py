@@ -8,6 +8,7 @@ from app.const.settings import AuthSettings
 from app.database import AsyncSessionDatabase
 from app.exceptions import ForbiddenException
 from app.models.user import User
+from app.repositories import UnitOfWork
 from app.repositories.auth import AuthRepository
 from app.repositories.author import AuthorRepository
 from app.repositories.book import BookRepository
@@ -22,10 +23,21 @@ BearerTokenDependency = Annotated[str, Depends(oauth2_scheme)]
 
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionDatabase() as session:
-        yield session
+        try:
+            yield session
+        except Exception:
+            await session.rollback()
+            raise
 
 
 DbSessionDependency = Annotated[AsyncSession, Depends(get_db_session)]
+
+
+async def get_unit_of_work(session: DbSessionDependency) -> UnitOfWork:
+    return UnitOfWork(session=session)
+
+
+UnitOfWorkDependency = Annotated[UnitOfWork, Depends(get_unit_of_work)]
 
 
 async def get_book_repository(session: DbSessionDependency) -> BookRepository:
@@ -52,15 +64,23 @@ AuthRepositoryDependency = Annotated[AuthRepository, Depends(get_auth_repository
 async def get_books_service(
     book_repository: BookRepositoryDependency,
     author_repository: AuthorRepositoryDependency,
+    unit_of_work: UnitOfWorkDependency,
 ) -> BookService:
-    return BookService(book_repository=book_repository, author_repository=author_repository)
+    return BookService(
+        book_repository=book_repository,
+        author_repository=author_repository,
+        unit_of_work=unit_of_work,
+    )
 
 
 BookServiceDependency = Annotated[BookService, Depends(get_books_service)]
 
 
-async def get_authors_service(author_repository: AuthorRepositoryDependency) -> AuthorService:
-    return AuthorService(author_repository=author_repository)
+async def get_authors_service(
+    author_repository: AuthorRepositoryDependency,
+    unit_of_work: UnitOfWorkDependency,
+) -> AuthorService:
+    return AuthorService(author_repository=author_repository, unit_of_work=unit_of_work)
 
 
 AuthorServiceDependency = Annotated[AuthorService, Depends(get_authors_service)]
@@ -83,8 +103,13 @@ AuthCredentialsDependency = Annotated[Credentials, Depends(get_auth_credentials)
 async def get_auth_service(
     auth_repository: AuthRepositoryDependency,
     auth_settings: AuthSettingsDependency,
+    unit_of_work: UnitOfWorkDependency,
 ) -> AuthService:
-    return AuthService(auth_repository=auth_repository, auth_settings=auth_settings)
+    return AuthService(
+        auth_repository=auth_repository,
+        unit_of_work=unit_of_work,
+        auth_settings=auth_settings,
+    )
 
 
 AuthServiceDependency = Annotated[AuthService, Depends(get_auth_service)]
@@ -112,6 +137,7 @@ CurrentActiveUserDependency = Annotated[User, Depends(get_current_active_user)]
 __all__ = [
     "BearerTokenDependency",
     "DbSessionDependency",
+    "UnitOfWorkDependency",
     "BookRepositoryDependency",
     "AuthorRepositoryDependency",
     "AuthRepositoryDependency",
@@ -122,6 +148,7 @@ __all__ = [
     "CurrentUserDependency",
     "CurrentActiveUserDependency",
     "get_db_session",
+    "get_unit_of_work",
     "get_book_repository",
     "get_author_repository",
     "get_auth_repository",

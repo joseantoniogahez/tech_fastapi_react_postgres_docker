@@ -1,13 +1,14 @@
 import asyncio
 from types import SimpleNamespace
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import pytest
 from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.routing import APIRoute
+from pydantic import ValidationError
 
-from app.const.settings import ApiSettings
+from app.const.settings import ApiSettings, AuthSettings
 from app.dependencies.providers import get_db_session
 from app.factory import app_lifespan, configure_logging, validate_auth_settings
 from app.main import app
@@ -61,6 +62,33 @@ def test_validate_auth_settings_raises_when_jwt_secret_is_insecure_in_production
         validate_auth_settings()
 
     assert "Invalid JWT settings." in str(exc_info.value)
+
+
+def test_validate_auth_settings_allows_secure_values_in_production(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("APP_ENV", "prod")
+    monkeypatch.setenv("JWT_SECRET_KEY", "production-secure-secret")
+    monkeypatch.setenv("JWT_ALGORITHM", "HS256")
+    monkeypatch.setenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "30")
+
+    validate_auth_settings()
+
+
+def test_auth_settings_normalizes_blank_app_env_to_local() -> None:
+    settings = AuthSettings(APP_ENV="   ", JWT_SECRET_KEY="unit-test-secret", JWT_ALGORITHM="HS256")
+
+    assert settings.APP_ENV == "local"
+
+
+def test_auth_settings_rejects_blank_jwt_secret_key() -> None:
+    with pytest.raises(ValidationError):
+        AuthSettings(JWT_SECRET_KEY="   ")
+
+
+def test_auth_settings_rejects_blank_jwt_algorithm() -> None:
+    with pytest.raises(ValidationError):
+        AuthSettings(JWT_ALGORITHM="   ")
 
 
 def test_app_lifespan_logs_startup_and_shutdown() -> None:
@@ -139,6 +167,33 @@ def test_get_db_session_yields_session_from_async_session_database() -> None:
             factory.assert_called_once_with()
 
     asyncio.run(run_test())
+    assert events == ["enter", "exit"]
+
+
+def test_get_db_session_rolls_back_when_exception_is_raised_after_yield() -> None:
+    events: list[str] = []
+    session = MagicMock()
+    session.rollback = AsyncMock()
+
+    class _SessionContextManager:
+        async def __aenter__(self) -> object:
+            events.append("enter")
+            return session
+
+        async def __aexit__(self, exc_type: object, exc: object, tb: object) -> None:
+            events.append("exit")
+
+    async def run_test() -> None:
+        with patch("app.dependencies.providers.AsyncSessionDatabase", return_value=_SessionContextManager()):
+            generator = get_db_session()
+            yielded_session = await anext(generator)
+            assert yielded_session is session
+
+            with pytest.raises(RuntimeError, match="boom"):
+                await generator.athrow(RuntimeError("boom"))
+
+    asyncio.run(run_test())
+    session.rollback.assert_awaited_once_with()
     assert events == ["enter", "exit"]
 
 
