@@ -1,15 +1,13 @@
-from pathlib import Path
+from typing import Optional
 
 from pydantic import Field
-from pydantic_settings import BaseSettings, SettingsConfigDict
-
-LOCAL_DB_ENV_FILE = Path(__file__).resolve().parents[2] / "local_db.env"
+from pydantic_settings import BaseSettings
 
 
 class ApiSettings(BaseSettings):
     API_PATH: str = ""
     API_CORS_ORIGINS: str = ""
-    LOG_LEVEL: str = "INFO"
+    LOG_LEVEL: str = "WARNING"
 
 
 class AuthSettings(BaseSettings):
@@ -19,16 +17,9 @@ class AuthSettings(BaseSettings):
 
 
 class DatabaseSettings(BaseSettings):
-    DB_TYPE: str = Field(..., min_length=1)
-    DB_USER: str = Field(..., min_length=1)
-    DB_PASSWORD: str = Field(..., min_length=1)
-    DB_HOST: str = Field(..., min_length=1)
-    DB_PORT: int = Field(..., gt=0)
-    DB_NAME: str = Field(..., min_length=1)
-
-
-class LocalDatabaseSettings(BaseSettings):
-    DB_TYPE: str = Field(..., min_length=1)
-    DB_NAME: str = Field(..., min_length=1)
-
-    model_config = SettingsConfigDict(env_file=str(LOCAL_DB_ENV_FILE), env_file_encoding="utf-8")
+    DB_TYPE: str = "sqlite+aiosqlite"
+    DB_USER: Optional[str] = None
+    DB_PASSWORD: Optional[str] = None
+    DB_HOST: Optional[str] = None
+    DB_PORT: Optional[int] = None
+    DB_NAME: str = "library.db"

@@ -162,8 +162,7 @@ Primary environment variables:
 
 Behavior:
 
-- If required `DB_*` variables are present, backend connects to PostgreSQL.
-- If not, backend falls back to `backend/local_db.env` (`sqlite+aiosqlite`).
+- Backend requires `DB_*` variables and connects to PostgreSQL from those values.
 
 ## Local Setup
 

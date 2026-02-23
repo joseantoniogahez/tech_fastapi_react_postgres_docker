@@ -117,7 +117,7 @@ def mock_data(
 
 @pytest.fixture(scope="module")
 def mock_database(path: str, mock_data: List[Dict[str, Any]]) -> Generator[MockDatabase, None, None]:
-    mock_db = MockDatabase(db_name="test_db.sql", path=path)
+    mock_db = MockDatabase(path=path, echo=False)
     asyncio.run(mock_db.setup(Base))
     asyncio.run(load_mock_data(mock_data, mock_db))
 

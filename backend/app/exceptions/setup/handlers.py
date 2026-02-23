@@ -46,7 +46,7 @@ def map_status_to_error_type(status_code: int) -> DomainErrorType:
         return DomainErrorType.NOT_FOUND
     if status_code == status.HTTP_409_CONFLICT:
         return DomainErrorType.CONFLICT
-    if status_code in {status.HTTP_400_BAD_REQUEST, status.HTTP_422_UNPROCESSABLE_ENTITY}:
+    if status_code in {status.HTTP_400_BAD_REQUEST, status.HTTP_422_UNPROCESSABLE_CONTENT}:
         return DomainErrorType.INVALID_INPUT
     return DomainErrorType.INTERNAL_ERROR
 

@@ -2,18 +2,21 @@ import os
 import pathlib
 from typing import Any, AsyncGenerator, Dict, List
 
+from sqlalchemy.engine import URL
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeMeta
 
-SQLITE_DATABASE_URL = "sqlite+aiosqlite:///{db_path}"
+from app.database import database_manager
 
 
 class MockDatabase:
-    def __init__(self, db_name: str, path: str):
-        self.sql_file = str(pathlib.Path(path) / db_name)
+    def __init__(self, path: str, echo: bool = False):
+        default_database_url = database_manager.build_database_url()
+        self.sql_file = str(pathlib.Path(path) / str(default_database_url.database))
+        test_database = self.sql_file.replace("\\", "/")
+        test_database_url = URL.create(drivername=default_database_url.drivername, database=test_database)
         self.delete_sqlite()
-        database_url = SQLITE_DATABASE_URL.format(db_path=self.sql_file.replace("\\", "/"))
-        self.engine = create_async_engine(database_url, echo=True)
+        self.engine = create_async_engine(url=test_database_url, echo=echo)
         self.Session = async_sessionmaker(bind=self.engine)
 
     async def setup(self, Base: DeclarativeMeta) -> None:
