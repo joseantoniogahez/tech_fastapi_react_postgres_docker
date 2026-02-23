@@ -54,16 +54,22 @@ pytest --cov-report term-missing:skip-covered --cov app
 
 ## Basic Backend Configuration
 
-The backend can run with defaults (SQLite) without exporting environment variables:
+The backend can run with defaults (SQLite) for API/DB settings:
 
+- `APP_ENV=local`
 - `DB_TYPE=sqlite+aiosqlite`
 - `DB_NAME=library.db`
 - `API_PATH=`
 - `API_CORS_ORIGINS=`
 - `LOG_LEVEL=WARNING`
-- `JWT_SECRET_KEY=change-me-in-production`
-- `JWT_ALGORITHM=HS256`
-- `JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30`
+
+JWT settings default for `local/test`:
+
+- `JWT_SECRET_KEY=local-dev-jwt-secret`
+- `JWT_ALGORITHM` (for example `HS256`)
+- `JWT_ACCESS_TOKEN_EXPIRE_MINUTES` (integer > 0)
+
+When `APP_ENV=prod` (or `production` / `staging`), JWT settings are required from environment variables and validated at startup.
 
 If `DB_TYPE` starts with `sqlite`, only `DB_TYPE` and `DB_NAME` are required.
 

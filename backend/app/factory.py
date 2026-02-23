@@ -3,8 +3,9 @@ from contextlib import asynccontextmanager
 from typing import AsyncIterator, Optional
 
 from fastapi import FastAPI
+from pydantic import ValidationError
 
-from app.const.settings import ApiSettings
+from app.const.settings import ApiSettings, AuthSettings
 from app.exceptions.setup import configure_exception_handlers
 from app.setup.cors import configure_cors
 from app.setup.routers import configure_routers
@@ -22,9 +23,21 @@ def configure_logging(settings: ApiSettings) -> None:
         logging.getLogger(__name__).warning("Invalid LOG_LEVEL '%s'. Falling back to INFO.", settings.LOG_LEVEL)
 
 
+def validate_auth_settings() -> None:
+    try:
+        AuthSettings()
+    except ValidationError as exc:
+        raise RuntimeError(
+            "Invalid JWT settings. "
+            "Set APP_ENV=prod with explicit JWT_SECRET_KEY, JWT_ALGORITHM and JWT_ACCESS_TOKEN_EXPIRE_MINUTES. "
+            "Non-production environments can use local defaults."
+        ) from exc
+
+
 @asynccontextmanager
 async def app_lifespan(app: FastAPI) -> AsyncIterator[None]:
     logger = logging.getLogger("app.lifecycle")
+    validate_auth_settings()
     logger.info("Backend startup.")
     yield
     logger.info("Backend shutdown.")

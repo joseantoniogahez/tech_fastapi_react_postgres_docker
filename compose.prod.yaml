@@ -8,7 +8,11 @@ services:
 
   backend:
     environment:
+      APP_ENV: "prod"
       DB_HOST: database
+      JWT_ALGORITHM: "${JWT_ALGORITHM:?JWT_ALGORITHM is required in prod}"
+      JWT_ACCESS_TOKEN_EXPIRE_MINUTES: "${JWT_ACCESS_TOKEN_EXPIRE_MINUTES:?JWT_ACCESS_TOKEN_EXPIRE_MINUTES is required in prod}"
+      JWT_SECRET_KEY: "${JWT_SECRET_KEY:?JWT_SECRET_KEY is required in prod}"
     restart: unless-stopped
     ports:
       - "${API_PORT}:${API_PORT}"

@@ -91,6 +91,11 @@ From repository root:
 docker compose -f compose.yaml -f compose.prod.yaml up --build -d
 ```
 
+Production JWT note:
+
+- `compose.prod.yaml` sets `APP_ENV=prod`.
+- Define `JWT_SECRET_KEY`, `JWT_ALGORITHM`, and `JWT_ACCESS_TOKEN_EXPIRE_MINUTES` in `.env` before starting.
+
 Stop production stack:
 
 ```bash

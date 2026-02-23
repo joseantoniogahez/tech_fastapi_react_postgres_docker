@@ -35,6 +35,7 @@ services:
       retries: 10
       start_period: 15s
     environment:
+      APP_ENV: "${APP_ENV:-local}"
       API_CORS_ORIGINS: "${API_CORS_ORIGINS}"
       API_PATH: "${API_PATH}"
       DB_HOST: "${DB_HOST}"
@@ -43,6 +44,9 @@ services:
       DB_PORT: "${DB_PORT}"
       DB_TYPE: "${DB_TYPE}"
       DB_USER: "${DB_USER}"
+      JWT_ALGORITHM: "${JWT_ALGORITHM:-HS256}"
+      JWT_ACCESS_TOKEN_EXPIRE_MINUTES: "${JWT_ACCESS_TOKEN_EXPIRE_MINUTES:-30}"
+      JWT_SECRET_KEY: "${JWT_SECRET_KEY:-local-dev-jwt-secret}"
       LOG_LEVEL: "${LOG_LEVEL:-INFO}"
       PORT: "${API_PORT}"
     logging:

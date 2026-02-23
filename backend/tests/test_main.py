@@ -9,7 +9,7 @@ from fastapi.routing import APIRoute
 
 from app.const.settings import ApiSettings
 from app.dependencies.providers import get_db_session
-from app.factory import app_lifespan, configure_logging
+from app.factory import app_lifespan, configure_logging, validate_auth_settings
 from app.main import app
 from app.routers import ROUTER_MODULES
 from app.setup.cors import configure_cors
@@ -24,6 +24,43 @@ def test_configure_logging_warns_on_invalid_level() -> None:
         "Invalid LOG_LEVEL '%s'. Falling back to INFO.",
         "invalid",
     )
+
+
+def test_validate_auth_settings_allows_defaults_outside_production(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("APP_ENV", "test")
+    monkeypatch.delenv("JWT_SECRET_KEY", raising=False)
+    monkeypatch.delenv("JWT_ALGORITHM", raising=False)
+    monkeypatch.delenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", raising=False)
+
+    validate_auth_settings()
+
+
+def test_validate_auth_settings_raises_when_jwt_secret_is_missing_in_production(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("APP_ENV", "prod")
+    monkeypatch.delenv("JWT_SECRET_KEY", raising=False)
+    monkeypatch.setenv("JWT_ALGORITHM", "HS256")
+    monkeypatch.setenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "30")
+
+    with pytest.raises(RuntimeError) as exc_info:
+        validate_auth_settings()
+
+    assert "Invalid JWT settings." in str(exc_info.value)
+
+
+def test_validate_auth_settings_raises_when_jwt_secret_is_insecure_in_production(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("APP_ENV", "prod")
+    monkeypatch.setenv("JWT_SECRET_KEY", "local-dev-jwt-secret")
+    monkeypatch.setenv("JWT_ALGORITHM", "HS256")
+    monkeypatch.setenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "30")
+
+    with pytest.raises(RuntimeError) as exc_info:
+        validate_auth_settings()
+
+    assert "Invalid JWT settings." in str(exc_info.value)
 
 
 def test_app_lifespan_logs_startup_and_shutdown() -> None:
