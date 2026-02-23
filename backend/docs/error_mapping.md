@@ -2,7 +2,7 @@
 
 ## Standard Error Payload
 
-Backend error handlers return a normalized payload:
+Backend exception handlers return a normalized payload:
 
 ```json
 {
@@ -17,6 +17,23 @@ Notes:
 
 - `meta` is optional and only appears when extra context is available.
 - `401` responses include `WWW-Authenticate: Bearer`.
+- FastAPI request validation errors are converted to `400 invalid_input`.
+
+Example of normalized validation error:
+
+```json
+{
+  "detail": "Request validation error",
+  "status": 400,
+  "code": "invalid_input",
+  "meta": [
+    {
+      "loc": ["body", "username"],
+      "msg": "Field required"
+    }
+  ]
+}
+```
 
 ## Domain Error Code Mapping
 

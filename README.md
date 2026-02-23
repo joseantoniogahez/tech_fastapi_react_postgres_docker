@@ -7,23 +7,23 @@ Full-stack sample application for managing books and authors.
 - Database: PostgreSQL 18
 - Orchestration: Docker Compose
 
-## README files in this project
+## README Map
 
-- `README.md` (this file): repository-level architecture and multi-service run flow.
+- `README.md` (this file): repository architecture and multi-service run flow.
 - `backend/README.md`: backend-only setup, API behavior, migrations, and backend tests.
 - `books-app/README.md`: frontend-only setup, scripts, tests, and API client configuration.
 
 ## Project Structure
 
 - `backend/`: FastAPI API, models, services, migrations, backend tests
-- `backend/docs/`: backend internal design notes (RBAC matrix, DI, error mapping, router auto-registration)
+- `backend/docs/`: backend documentation (API endpoints, auth, RBAC, DI, OpenAPI pattern)
 - `books-app/`: Next.js UI and frontend tests
-- `compose.yaml`: shared multi-container stack (base)
+- `compose.yaml`: base multi-container stack
 - `compose.override.yaml`: local development overrides loaded automatically by `docker compose`
 - `compose.test.yaml`: isolated services for backend/frontend test runs
 - `compose.prod.yaml`: production overrides (restart policy, persistent DB volume, prod project name)
-- `.env_examples`: environment template used to generate `.env`
-- `.env`: container configuration used by compose
+- `.env_examples`: environment template used to create `.env`
+- `.env`: environment file used by compose
 
 ## Prerequisites
 
@@ -32,9 +32,9 @@ Full-stack sample application for managing books and authors.
   - Python 3.14.3
   - Node.js 22+
 
-## Environment Configuration
+## Environment Setup
 
-Use `.env_examples` as the template for the root `.env` file consumed by `docker compose`.
+Create `.env` from `.env_examples` at repository root:
 
 ```bash
 # macOS/Linux
@@ -44,29 +44,31 @@ cp .env_examples .env
 Copy-Item .env_examples .env
 ```
 
-Variable details are documented in `.env_examples`.
+See `.env_examples` for variable descriptions.
 
-## Run Full Stack With Docker
+## Run Full Stack (Docker)
 
-From repo root:
+From repository root:
 
 ```bash
 docker compose up --build
 ```
 
 Endpoints:
+
 - Frontend: `http://localhost:3000`
 - API docs: `http://localhost:8000/docs`
 
 Notes:
-- Backend container runs Alembic migrations during startup (`backend/prestart.sh`).
-- `compose.override.yaml` is loaded automatically in local runs (`docker compose up`) and enables backend hot reload via bind mount.
+
+- Backend runs Alembic migrations during startup (`backend/prestart.sh`).
+- `compose.override.yaml` is loaded automatically for local runs and enables backend hot reload via bind mount.
 - Frontend API target is controlled by `NEXT_PUBLIC_API_ORIGIN` and `NEXT_PUBLIC_API_BASE_PATH`.
-- `NEXT_PUBLIC_*` values are embedded in the frontend build output; after changing them, rebuild the frontend image.
+- `NEXT_PUBLIC_*` values are baked into frontend build output; rebuild frontend image after changing them.
 
-## Run Tests With Docker Compose
+## Run Tests (Docker Compose)
 
-From repo root:
+From repository root:
 
 ```bash
 # Backend tests
@@ -79,11 +81,11 @@ docker compose -f compose.test.yaml run --rm frontend-test
 docker compose -f compose.test.yaml run --rm backend-test && docker compose -f compose.test.yaml run --rm frontend-test
 ```
 
-`compose.test.yaml` sets `name: books-tests`, so test runs use a separate Compose project from local dev.
+`compose.test.yaml` sets `name: books-tests`, so test resources stay isolated from local development.
 
-## Run Production Profile With Docker Compose
+## Run Production Profile (Docker Compose)
 
-From repo root:
+From repository root:
 
 ```bash
 docker compose -f compose.yaml -f compose.prod.yaml up --build -d
@@ -97,32 +99,30 @@ docker compose -f compose.yaml -f compose.prod.yaml down
 
 `compose.prod.yaml` sets `name: books-prod`, so production resources stay isolated from dev/test projects.
 
-If you previously created the production volume with an old mount path and `database` keeps restarting, recreate the prod volume:
+If production `database` keeps restarting due to an old volume mount path, recreate the production volume:
 
 ```bash
 docker compose -f compose.yaml -f compose.prod.yaml down -v
 docker compose -f compose.yaml -f compose.prod.yaml up --build -d
 ```
 
-## Integration Caveat (`/api` Path)
+## API Base Path Integration (`/api`)
 
 - Backend routes are declared as `/books/`, `/authors/`, and `/health`.
 - Frontend defaults to calling `/api/...`.
-- `API_PATH` configures FastAPI `root_path` metadata, but does not mount routes under `/api` by itself.
-- If clients call `/api/...`, use a reverse-proxy rewrite or configure frontend base path to `/`.
+- `API_PATH` sets FastAPI `root_path` metadata only; it does not mount routes under `/api`.
+- If clients call `/api/...`, use a reverse-proxy rewrite or set frontend base path to `/`.
 
 ## Repository Tooling (Root)
 
-This repository uses a root virtual environment for repo hooks and backend-related tooling:
+The repository uses a root virtual environment for shared tooling and hooks.
+
+Create and activate:
 
 ```bash
 # from repo root
 python -m venv .venv
-```
 
-Activate the virtualenv:
-
-```bash
 # Windows PowerShell
 .venv/Scripts/Activate.ps1
 
@@ -130,7 +130,7 @@ Activate the virtualenv:
 source .venv/bin/activate
 ```
 
-Install dependencies and hooks:
+Install tooling:
 
 ```bash
 python -m pip install --upgrade pip
@@ -144,4 +144,5 @@ Run repository hooks:
 pre-commit run --all-files
 ```
 
-If a dependency version used by the `mypy` hook changes in `backend/requirements.txt` or `backend/tests/requirements.txt`, update the matching version in `.pre-commit-config.yaml`.
+If a dependency version used by the `mypy` hook changes in `backend/requirements.txt` or `backend/tests/requirements.txt`,
+update the matching version in `.pre-commit-config.yaml`.

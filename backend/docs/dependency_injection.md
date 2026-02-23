@@ -1,8 +1,8 @@
 # Dependency Injection Guide (FastAPI Native)
 
-## 1) Dependencies module
+## 1) Dependency module layout
 
-Providers are centralized in `app/dependencies/`:
+Dependency providers are centralized in `app/dependencies/providers.py`:
 
 - `get_db_session`: creates and yields `AsyncSession`.
 - Repository providers:
@@ -17,21 +17,33 @@ Providers are centralized in `app/dependencies/`:
   - `get_auth_credentials`
   - `get_current_user`
   - `get_current_active_user`
-- Typed aliases for endpoint injection:
-  - `BookServiceDependency`, `AuthorServiceDependency`, `AuthServiceDependency`
-  - `CurrentUserDependency`, `CurrentActiveUserDependency`
-  - `BookCreateAuthorizedUserDependency`, `BookUpdateAuthorizedUserDependency`, `BookDeleteAuthorizedUserDependency`
 
-## 2) Endpoint examples
+Authorization-specific providers are in `app/dependencies/authorization.py`.
 
-### `POST /books`
+## 2) Typed aliases used in routers
+
+- Service aliases:
+  - `BookServiceDependency`
+  - `AuthorServiceDependency`
+  - `AuthServiceDependency`
+- User aliases:
+  - `CurrentUserDependency`
+  - `CurrentActiveUserDependency`
+- Permission aliases:
+  - `BookCreateAuthorizedUserDependency`
+  - `BookUpdateAuthorizedUserDependency`
+  - `BookDeleteAuthorizedUserDependency`
+
+## 3) Endpoint examples
+
+### `POST /books/`
 
 ```python
-@router.post("/")
+@router.post("/", response_model=Book, **ADD_BOOK_DOC)
 async def add_book(
-    book_data: AddBook,
     book_service: BookServiceDependency,
     _authorized_user: BookCreateAuthorizedUserDependency,
+    book_data: AddBook = Body(...),
 ) -> Book:
     book = await book_service.add(book_data)
     return Book.model_validate(book)
@@ -40,20 +52,18 @@ async def add_book(
 ### `PUT /books/{id}`
 
 ```python
-@router.put("/{id}")
+@router.put("/{id}", response_model=Optional[Book], **UPDATE_BOOK_DOC)
 async def update_book(
-    id: int,
-    book_data: UpdateBook,
     book_service: BookServiceDependency,
     _authorized_user: BookUpdateAuthorizedUserDependency,
+    id: int = Path(..., ge=1),
+    book_data: UpdateBook = Body(...),
 ) -> Optional[Book]:
     book = await book_service.update(id, book_data)
     return Book.model_validate(book) if book else None
 ```
 
-## 3) Quick tests guide with overrides/mocks
-
-Use FastAPI native overrides through `app.dependency_overrides`.
+## 4) Test overrides with `app.dependency_overrides`
 
 ### Override DB session
 
@@ -68,7 +78,7 @@ async def override_db_session():
 app.dependency_overrides[get_db_session] = override_db_session
 ```
 
-### Override service with a fake
+### Override a service provider
 
 ```python
 from app.dependencies import get_auth_service
@@ -82,7 +92,7 @@ app.dependency_overrides[get_auth_service] = lambda: FakeAuthService()
 
 ### Cleanup
 
-Always clear overrides at test teardown:
+Always clear overrides during teardown:
 
 ```python
 app.dependency_overrides.clear()

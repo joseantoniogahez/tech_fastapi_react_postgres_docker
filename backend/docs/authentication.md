@@ -7,7 +7,13 @@
 - `GET /users/me`
 - `PATCH /users/me`
 
-## `POST /token` example
+## Authentication Flow
+
+1. Create a user with `POST /users/register` (or use a seeded account).
+2. Exchange credentials for a bearer token with `POST /token`.
+3. Call protected endpoints with `Authorization: Bearer <access_token>`.
+
+## `POST /token` Example
 
 Success:
 
@@ -19,12 +25,12 @@ curl -X POST http://localhost:8000/token \
 
 ```json
 {
-  "access_token": "s3cr3t-token-value",
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
   "token_type": "bearer"
 }
 ```
 
-Failure (`401 Unauthorized`):
+Invalid credentials (`401 Unauthorized`):
 
 ```bash
 curl -X POST http://localhost:8000/token \
@@ -40,7 +46,7 @@ curl -X POST http://localhost:8000/token \
 }
 ```
 
-## Protected endpoint example (`GET /users/me`)
+## Protected Endpoint Example (`GET /users/me`)
 
 ```bash
 curl -X GET http://localhost:8000/users/me \
@@ -55,23 +61,36 @@ curl -X GET http://localhost:8000/users/me \
 }
 ```
 
-## Username and Password Rules
+## Registration and Update Rules
 
-- Username normalization: trim + lowercase.
-- Username regex: `^[a-z0-9_.-]+$`.
-- Password policy (registration and password updates):
-  - at least 8 chars
-  - at least one lowercase letter
-  - at least one uppercase letter
-  - at least one number
-  - cannot contain the username
+Username rules:
 
-## Auth Error Cases
+- Normalized with trim + lowercase.
+- Regex: `^[a-z0-9_.-]+$`.
 
-- `401 Unauthorized`
-  - Invalid JWT (malformed, expired, wrong signature/algorithm)
-  - JWT subject (`sub`) does not exist
-  - Invalid login username/password
+Password rules (registration and password update):
+
+- At least 8 characters.
+- At least one lowercase letter.
+- At least one uppercase letter.
+- At least one number.
+- Cannot contain the username.
+
+`PATCH /users/me` rules:
+
+- At least one updatable field must be provided.
+- `new_password` requires `current_password`.
+- `current_password` requires `new_password`.
+- New password must differ from the current password.
+
+## Common Auth Errors
+
+`401 Unauthorized`:
+
+- Invalid login credentials.
+- Missing, invalid, or expired JWT.
+- JWT subject user does not exist.
+- Invalid `current_password` during profile update.
 
 ```json
 {
@@ -81,7 +100,7 @@ curl -X GET http://localhost:8000/users/me \
 }
 ```
 
-- `403 Forbidden` (`disabled=true`)
+`403 Forbidden` (inactive user):
 
 ```json
 {
@@ -91,7 +110,7 @@ curl -X GET http://localhost:8000/users/me \
 }
 ```
 
-- `403 Forbidden` (missing permission)
+`403 Forbidden` (missing permission):
 
 ```json
 {
@@ -103,7 +122,5 @@ curl -X GET http://localhost:8000/users/me \
   }
 }
 ```
-
-## RBAC Matrix
 
 See `authorization_matrix.md` for permission-to-endpoint mapping.

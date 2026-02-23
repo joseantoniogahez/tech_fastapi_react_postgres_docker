@@ -2,21 +2,21 @@
 
 ## Central Router Catalog
 
-The central module list is defined in `app/routers/__init__.py`:
+Router module registration is centralized in `app/routers/__init__.py`:
 
-- `ROUTER_MODULES`: ordered list of router modules to auto-load.
-- `ROUTER_ATTRIBUTE`: required attribute name (default: `router`).
+- `ROUTER_MODULES`: ordered tuple of router module names to load.
+- `ROUTER_ATTRIBUTE`: required attribute name exposed by each module (`router`).
 
-`create_app` already calls `configure_routers`, and `configure_routers` now loads modules dynamically from that catalog.
+`create_app` calls `configure_routers`, and `configure_routers` loads routers dynamically from that catalog.
 
-## Minimal Convention for Auto-Registrable Router Modules
+## Auto-registrable Router Convention
 
-A module is auto-registrable when:
+A router module is auto-registrable when:
 
 1. It is listed in `ROUTER_MODULES`.
-2. It exposes an `APIRouter` instance named `router`.
+2. It exposes a FastAPI `APIRouter` instance named `router`.
 
-Example:
+Minimal example:
 
 ```python
 from fastapi import APIRouter
@@ -24,9 +24,14 @@ from fastapi import APIRouter
 router = APIRouter(prefix="/publishers", tags=["publishers"])
 ```
 
-## Add a New Domain Router with Zero Friction
+## Add a New Router
 
-1. Create a module in `app/routers/` (e.g. `publisher.py`) exposing `router`.
+1. Create a module in `app/routers/` (example: `publisher.py`) exposing `router`.
 2. Add `"publisher"` to `ROUTER_MODULES` in `app/routers/__init__.py`.
 
-No changes are needed in `create_app` or `setup/routers.py`.
+No changes are needed in `create_app` or `app/setup/routers.py`.
+
+## Related: OpenAPI docs split
+
+This project keeps route documentation metadata in `app/openapi/*`, not inside router modules.
+See `openapi_documentation.md` for the full pattern.

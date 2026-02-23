@@ -1,9 +1,9 @@
 # books-app (Next.js Frontend)
 
-Frontend for the Books App.
+Frontend application for the Books App.
 
 For full-stack orchestration and shared environment setup, see `../README.md`.
-For backend-only setup and API details, see `../backend/README.md`.
+For backend setup and API behavior, see `../backend/README.md`.
 
 ## Tech Stack
 
@@ -12,7 +12,7 @@ For backend-only setup and API details, see `../backend/README.md`.
 - Tailwind CSS 4
 - Jest + Testing Library
 
-## Requirements
+## Prerequisites
 
 - Node.js `>=20.9.0`
 - npm `>=11`
@@ -33,16 +33,16 @@ From `books-app/`:
 npm run dev
 ```
 
-Open `http://localhost:3000`.
+Frontend URL: `http://localhost:3000`
 
 ## API Client Configuration
 
-Environment variables consumed by frontend code:
+Frontend runtime variables:
 
 - `NEXT_PUBLIC_API_ORIGIN` (example: `http://localhost:8000`)
 - `NEXT_PUBLIC_API_BASE_PATH` (example: `/api` or `/`)
 
-Defaults when variables are not set:
+Defaults when unset:
 
 - `NEXT_PUBLIC_API_ORIGIN`: empty string
 - `NEXT_PUBLIC_API_BASE_PATH`: `/api`
@@ -51,7 +51,7 @@ Behavior notes:
 
 - `NEXT_PUBLIC_*` values are exposed to browser-side code.
 - `NEXT_PUBLIC_API_BASE_PATH` is normalized (`/api`, `api`, and `/api/` resolve to `/api`).
-- In Docker builds, these values are baked into the build output; rebuild the frontend image after changing them.
+- In Docker builds, these values are embedded in the build output; rebuild frontend image after changing them.
 
 Examples:
 
@@ -68,17 +68,34 @@ export NEXT_PUBLIC_API_BASE_PATH="/api"
 ## Scripts
 
 ```bash
-npm run dev        # development server
-npm run test       # unit tests
-npm run test:watch # unit tests in watch mode
-npm run lint       # eslint
-npm run typecheck  # TypeScript check
+npm run dev        # start development server
+npm run test       # run unit tests
+npm run test:watch # run unit tests in watch mode
+npm run lint       # run ESLint
+npm run typecheck  # run TypeScript checks
 npm run check      # lint + typecheck + test
-npm run build      # production build
+npm run build      # build production bundle
 npm run start      # run built app
 ```
 
-## Notes
+## Testing
+
+From `books-app/`:
+
+```bash
+npm test
+```
+
+## Build and Run Production Bundle
+
+From `books-app/`:
+
+```bash
+npm run build
+npm run start
+```
+
+## API Path Notes
 
 - If backend routes are exposed at root (`/books`, `/authors`), set `NEXT_PUBLIC_API_BASE_PATH=/`.
-- If backend routes are exposed under a proxy prefix (`/api/...`), keep `NEXT_PUBLIC_API_BASE_PATH=/api`.
+- If backend routes are exposed behind a proxy prefix (`/api/...`), keep `NEXT_PUBLIC_API_BASE_PATH=/api`.
