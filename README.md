@@ -16,6 +16,7 @@ Full-stack sample application for managing books and authors.
 ## Project Structure
 
 - `backend/`: FastAPI API, models, services, migrations, backend tests
+- `backend/docs/`: backend internal design notes (RBAC matrix, DI, error mapping, router auto-registration)
 - `books-app/`: Next.js UI and frontend tests
 - `compose.yaml`: shared multi-container stack (base)
 - `compose.override.yaml`: local development overrides loaded automatically by `docker compose`
@@ -59,7 +60,9 @@ Endpoints:
 
 Notes:
 - Backend container runs Alembic migrations during startup (`backend/prestart.sh`).
+- `compose.override.yaml` is loaded automatically in local runs (`docker compose up`) and enables backend hot reload via bind mount.
 - Frontend API target is controlled by `NEXT_PUBLIC_API_ORIGIN` and `NEXT_PUBLIC_API_BASE_PATH`.
+- `NEXT_PUBLIC_*` values are embedded in the frontend build output; after changing them, rebuild the frontend image.
 
 ## Run Tests With Docker Compose
 

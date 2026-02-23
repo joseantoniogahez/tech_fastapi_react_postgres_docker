@@ -25,6 +25,16 @@ From `books-app/`:
 npm install
 ```
 
+## Run Locally
+
+From `books-app/`:
+
+```bash
+npm run dev
+```
+
+Open `http://localhost:3000`.
+
 ## API Client Configuration
 
 Environment variables consumed by frontend code:
@@ -36,6 +46,12 @@ Defaults when variables are not set:
 
 - `NEXT_PUBLIC_API_ORIGIN`: empty string
 - `NEXT_PUBLIC_API_BASE_PATH`: `/api`
+
+Behavior notes:
+
+- `NEXT_PUBLIC_*` values are exposed to browser-side code.
+- `NEXT_PUBLIC_API_BASE_PATH` is normalized (`/api`, `api`, and `/api/` resolve to `/api`).
+- In Docker builds, these values are baked into the build output; rebuild the frontend image after changing them.
 
 Examples:
 
@@ -54,6 +70,7 @@ export NEXT_PUBLIC_API_BASE_PATH="/api"
 ```bash
 npm run dev        # development server
 npm run test       # unit tests
+npm run test:watch # unit tests in watch mode
 npm run lint       # eslint
 npm run typecheck  # TypeScript check
 npm run check      # lint + typecheck + test
