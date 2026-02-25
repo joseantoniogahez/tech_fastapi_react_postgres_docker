@@ -144,7 +144,6 @@ def test_update_returns_none_when_book_does_not_exist() -> None:
     service, book_repository, _, unit_of_work = _build_service()
     book_repository.get.return_value = None
     book_data = UpdateBook(
-        id=12,
         title="Nonexistent",
         year=2000,
         status=BookStatus.DRAFT,
@@ -172,7 +171,6 @@ def test_update_updates_existing_book_with_resolved_author_id() -> None:
     book_repository.update.return_value = updated_book
     get_or_add_mock = AsyncMock(return_value=Author(id=8, name="New Author"))
     book_data = UpdateBook(
-        id=20,
         title="New Title",
         year=2002,
         status=BookStatus.PUBLISHED,

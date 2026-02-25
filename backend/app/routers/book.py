@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List
 
 from fastapi import APIRouter
 
@@ -65,15 +65,17 @@ async def add_book(
     return Book.model_validate(book)
 
 
-@router.put("/{id}", response_model=Optional[Book], **UPDATE_BOOK_DOC)
+@router.put("/{id}", response_model=Book, **UPDATE_BOOK_DOC)
 async def update_book(
     book_service: BookServiceDependency,
     _authorized_user: BookUpdateAuthorizedUserDependency,
     id: BookIdPath,
     book_data: UpdateBookPayload,
-) -> Optional[Book]:
+) -> Book:
     book = await book_service.update(id, book_data)
-    return Book.model_validate(book) if book else None
+    if book is None:
+        raise NotFoundException(message=f"Book {id} not found", details={"id": id})
+    return Book.model_validate(book)
 
 
 @router.delete("/{id}", **DELETE_BOOK_DOC)

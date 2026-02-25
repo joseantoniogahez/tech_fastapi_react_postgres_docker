@@ -42,7 +42,6 @@ UPDATE_BOOK_BODY_EXAMPLES: dict[str, Any] = {
     "full_update": {
         "summary": "Update all mutable fields",
         "value": {
-            "id": 1,
             "title": "Foundation",
             "year": 1951,
             "status": "published",
@@ -207,27 +206,13 @@ ADD_BOOK_DOC: dict[str, Any] = {
 UPDATE_BOOK_DOC: dict[str, Any] = {
     "summary": "Update book",
     "description": (
-        "Update a book by ID. Requires `books:update` permission. "
-        "Returns `null` with status `200` when the book does not exist."
+        "Update a book by ID. Requires `books:update` permission. Returns `404` when the book does not exist."
     ),
-    "response_description": "Updated book, or `null` when the book ID does not exist.",
+    "response_description": "Updated book.",
     "responses": {
         status.HTTP_200_OK: {
-            "description": "Book updated, or null if not found.",
-            "content": {
-                "application/json": {
-                    "examples": {
-                        "updated": {
-                            "summary": "Book updated",
-                            "value": BOOK_EXAMPLE,
-                        },
-                        "missing": {
-                            "summary": "Book not found",
-                            "value": None,
-                        },
-                    }
-                }
-            },
+            "description": "Book updated.",
+            "content": {"application/json": {"example": BOOK_EXAMPLE}},
         },
         status.HTTP_400_BAD_REQUEST: build_error_response(
             description="Invalid ID or payload.",
@@ -235,7 +220,16 @@ UPDATE_BOOK_DOC: dict[str, Any] = {
                 "detail": "Request validation error",
                 "status": 400,
                 "code": "invalid_input",
-                "meta": [{"loc": ["body", "id"], "msg": "Field required"}],
+                "meta": [{"loc": ["path", "id"], "msg": "Input should be greater than or equal to 1"}],
+            },
+        ),
+        status.HTTP_404_NOT_FOUND: build_error_response(
+            description="Book with the requested ID does not exist.",
+            example={
+                "detail": "Book 999 not found",
+                "status": 404,
+                "code": "not_found",
+                "meta": {"id": 999},
             },
         ),
         status.HTTP_401_UNAUTHORIZED: build_error_response(

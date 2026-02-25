@@ -193,7 +193,7 @@ READ_CURRENT_USER_DOC: dict[str, Any] = {
 UPDATE_CURRENT_USER_DOC: dict[str, Any] = {
     "summary": "Update current user",
     "description": (
-        "Update `username`, password, or both. Password change requires both " "`current_password` and `new_password`."
+        "Update `username`, password, or both. Password change requires both `current_password` and `new_password`."
     ),
     "response_description": "User updated successfully.",
     "responses": {

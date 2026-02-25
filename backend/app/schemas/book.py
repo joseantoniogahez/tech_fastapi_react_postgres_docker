@@ -20,7 +20,7 @@ class AddBook(BookBase):
 
 
 class UpdateBook(AddBook):
-    id: int
+    pass
 
 
 class Book(BookBase):

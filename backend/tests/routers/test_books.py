@@ -101,7 +101,6 @@ def test_add_book(mock_client: TestClient):
 
 def test_update_book(mock_client: TestClient):
     book_data = {
-        "id": 1,
         "title": "Foundation",
         "year": 1951,
         "status": "published",
@@ -120,6 +119,24 @@ def test_update_book(mock_client: TestClient):
     assert json_response["year"] == book_data["year"]
     assert json_response["status"] == book_data["status"]
     assert json_response["author"]["name"] == book_data["author_name"]
+
+
+def test_update_book_not_found(mock_client: TestClient):
+    book_data = {
+        "title": "Unknown",
+        "year": 2000,
+        "status": "draft",
+        "author_name": "Unknown Author",
+    }
+
+    response = mock_client.put("/books/999", json=book_data, headers=_auth_headers(mock_client))
+    assert response.status_code == HTTPStatus.NOT_FOUND
+    assert response.json() == {
+        "detail": "Book 999 not found",
+        "status": HTTPStatus.NOT_FOUND,
+        "code": "not_found",
+        "meta": {"id": 999},
+    }
 
 
 def test_delete_book(mock_client: TestClient):
