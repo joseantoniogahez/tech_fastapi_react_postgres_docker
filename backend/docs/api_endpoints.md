@@ -25,7 +25,7 @@ The API exposes routes at root (`/`).
 | `GET`    | `/books/published` | No   | No             | No body                                                      | `200` `Book[]`             | `500`                             |
 | `GET`    | `/books/{id}`      | No   | No             | Path `id` (`>=1`)                                            | `200` `Book`               | `400`, `404`, `500`               |
 | `POST`   | `/books/`          | Yes  | `books:create` | JSON `AddBook`                                               | `200` `Book`               | `400`, `401`, `403`, `500`        |
-| `PUT`    | `/books/{id}`      | Yes  | `books:update` | Path `id` + JSON `UpdateBook`                                | `200` `Book \| null`       | `400`, `401`, `403`, `500`        |
+| `PUT`    | `/books/{id}`      | Yes  | `books:update` | Path `id` + JSON `UpdateBook`                                | `200` `Book`               | `400`, `401`, `403`, `404`, `500` |
 | `DELETE` | `/books/{id}`      | Yes  | `books:delete` | Path `id`                                                    | `200` `null`               | `400`, `401`, `403`, `500`        |
 
 ## Domain Notes
@@ -41,7 +41,7 @@ See `authentication.md` for examples and error scenarios.
 ### Books behavior
 
 - `GET /books/` supports optional `author_id` filtering.
-- `PUT /books/{id}` returns `null` with status `200` when the book does not exist.
+- `PUT /books/{id}` returns `404` when the book does not exist.
 - `DELETE /books/{id}` returns `null` when deletion completes.
 
 Valid `Book.status` values:

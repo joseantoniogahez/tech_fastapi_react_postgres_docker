@@ -59,15 +59,17 @@ async def add_book(
 ### `PUT /books/{id}`
 
 ```python
-@router.put("/{id}", response_model=Optional[Book], **UPDATE_BOOK_DOC)
+@router.put("/{id}", response_model=Book, **UPDATE_BOOK_DOC)
 async def update_book(
     book_service: BookServiceDependency,
     _authorized_user: BookUpdateAuthorizedUserDependency,
     id: int = Path(..., ge=1),
     book_data: UpdateBook = Body(...),
-) -> Optional[Book]:
+) -> Book:
     book = await book_service.update(id, book_data)
-    return Book.model_validate(book) if book else None
+    if book is None:
+        raise NotFoundException(message=f"Book {id} not found", details={"id": id})
+    return Book.model_validate(book)
 ```
 
 ## 4) How DI enables one transaction per use case
@@ -92,7 +94,7 @@ See `unit_of_work.md` for detailed behavior.
 ### Override DB session
 
 ```python
-from app.dependencies import get_db_session
+from app.dependencies.db import get_db_session
 from app.main import app
 
 async def override_db_session():
@@ -105,7 +107,7 @@ app.dependency_overrides[get_db_session] = override_db_session
 ### Override a service provider
 
 ```python
-from app.dependencies import get_auth_service
+from app.dependencies.services import get_auth_service
 
 class FakeAuthService:
     async def login(self, credentials):
