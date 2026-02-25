@@ -6,7 +6,6 @@ from app.repositories.author import AuthorRepository
 from app.repositories.book import BookRepository
 from app.schemas.book import AddBook, UpdateBook
 from app.services import Service
-from app.services.author import AuthorService
 
 
 class BookService(Service):
@@ -17,8 +16,8 @@ class BookService(Service):
         unit_of_work: UnitOfWork,
     ):
         self.book_repository = book_repository
+        self.author_repository = author_repository
         self.unit_of_work = unit_of_work
-        self.author_service = AuthorService(author_repository=author_repository, unit_of_work=unit_of_work)
 
     async def get_all(self, author_id: Optional[int] = None) -> List[Book]:
         return await self.book_repository.list_catalog(author_id=author_id)
@@ -29,13 +28,18 @@ class BookService(Service):
     async def get(self, id: int) -> Optional[Book]:
         return await self.book_repository.get(id)
 
-    async def _get_author_id(self, book_data: AddBook) -> int:
-        author = await self.author_service.get_or_add(author_id=book_data.author_id, name=book_data.author_name)
+    async def _get_author_id(self, author_id: Optional[int], author_name: str) -> int:
+        if author_id is not None:
+            author = await self.author_repository.get(author_id)
+            if author is not None:
+                return author.id
+
+        author = await self.author_repository.get_or_create_by_name(name=author_name)
         return author.id
 
     async def add(self, book_data: AddBook) -> Book:
         async with self.unit_of_work:
-            author_id = await self._get_author_id(book_data)
+            author_id = await self._get_author_id(book_data.author_id, book_data.author_name)
             return await self.book_repository.create(
                 title=book_data.title,
                 year=book_data.year,
@@ -49,7 +53,7 @@ class BookService(Service):
             if book is None:
                 return None
 
-            author_id = await self._get_author_id(book_data)
+            author_id = await self._get_author_id(book_data.author_id, book_data.author_name)
             return await self.book_repository.update(
                 book,
                 title=book_data.title,

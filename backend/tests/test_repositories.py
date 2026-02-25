@@ -1,11 +1,13 @@
 import asyncio
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import pytest
+from sqlalchemy.exc import IntegrityError
 
 import app.repositories as repositories
 from app.models.author import Author
 from app.repositories import BaseRepository, IdType, RepositoryException, UnitOfWork
+from app.repositories.author import AuthorRepository
 
 
 def _build_session_mock() -> MagicMock:
@@ -20,6 +22,14 @@ def _build_session_mock() -> MagicMock:
     session.merge = AsyncMock()
     session.delete = AsyncMock()
     return session
+
+
+class _AsyncNullTransaction:
+    async def __aenter__(self) -> None:
+        return None
+
+    async def __aexit__(self, exc_type, exc, tb) -> None:
+        return None
 
 
 def test_repositories_module_exports_expected_symbols() -> None:
@@ -138,6 +148,57 @@ def test_list_executes_query_with_pagination_and_returns_entities() -> None:
         assert "ORDER BY authors.id" in query_text
         assert " LIMIT " in query_text
         assert " OFFSET " in query_text
+
+    asyncio.run(run_test())
+
+
+def test_author_get_or_create_by_name_returns_existing_after_integrity_error() -> None:
+    session = _build_session_mock()
+    session.begin_nested = MagicMock(return_value=_AsyncNullTransaction())
+    repository = AuthorRepository(session=session)
+    existing_author = Author(id=8, name="Octavia Butler")
+    get_by_name_mock = AsyncMock(side_effect=[None, existing_author])
+    create_mock = AsyncMock(side_effect=IntegrityError("insert", {}, Exception("duplicate")))
+
+    async def run_test() -> None:
+        with (
+            patch.object(repository, "get_by_name", get_by_name_mock),
+            patch.object(repository, "create", create_mock),
+        ):
+            entity = await repository.get_or_create_by_name(name="Octavia Butler")
+
+        assert entity is existing_author
+        session.begin_nested.assert_called_once_with()
+        create_mock.assert_awaited_once_with(name="Octavia Butler")
+        assert get_by_name_mock.await_args_list == [
+            call(name="Octavia Butler"),
+            call(name="Octavia Butler"),
+        ]
+
+    asyncio.run(run_test())
+
+
+def test_author_get_or_create_by_name_reraises_integrity_error_when_author_stays_missing() -> None:
+    session = _build_session_mock()
+    session.begin_nested = MagicMock(return_value=_AsyncNullTransaction())
+    repository = AuthorRepository(session=session)
+    get_by_name_mock = AsyncMock(side_effect=[None, None])
+    create_mock = AsyncMock(side_effect=IntegrityError("insert", {}, Exception("duplicate")))
+
+    async def run_test() -> None:
+        with (
+            patch.object(repository, "get_by_name", get_by_name_mock),
+            patch.object(repository, "create", create_mock),
+        ):
+            with pytest.raises(IntegrityError):
+                await repository.get_or_create_by_name(name="Octavia Butler")
+
+        session.begin_nested.assert_called_once_with()
+        create_mock.assert_awaited_once_with(name="Octavia Butler")
+        assert get_by_name_mock.await_args_list == [
+            call(name="Octavia Butler"),
+            call(name="Octavia Butler"),
+        ]
 
     asyncio.run(run_test())
 

@@ -1,3 +1,4 @@
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.author import Author
@@ -18,4 +19,12 @@ class AuthorRepository(BaseRepository[Author]):
         author = await self.get_by_name(name=name)
         if author is not None:
             return author
-        return await self.create(name=name)
+
+        try:
+            async with self.session.begin_nested():
+                return await self.create(name=name)
+        except IntegrityError:
+            author = await self.get_by_name(name=name)
+            if author is not None:
+                return author
+            raise
