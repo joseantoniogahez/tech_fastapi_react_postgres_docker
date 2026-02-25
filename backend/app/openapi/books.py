@@ -299,18 +299,3 @@ DELETE_BOOK_DOC: dict[str, Any] = {
         ),
     },
 }
-
-__all__ = [
-    "GET_BOOKS_DOC",
-    "GET_PUBLISHED_BOOKS_DOC",
-    "GET_BOOK_DOC",
-    "ADD_BOOK_DOC",
-    "UPDATE_BOOK_DOC",
-    "DELETE_BOOK_DOC",
-    "AuthorIdQuery",
-    "BookIdPath",
-    "AddBookPayload",
-    "UpdateBookPayload",
-    "ADD_BOOK_BODY_EXAMPLES",
-    "UPDATE_BOOK_BODY_EXAMPLES",
-]

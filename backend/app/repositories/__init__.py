@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 
 from app.database import Base
-from app.exceptions import RepositoryException
+from app.exceptions.repositories import RepositoryException
 
 ModelType = TypeVar("ModelType", bound=Base)
 IdType = int
@@ -126,11 +126,3 @@ class BaseRepository(Generic[ModelType]):
         await self.session.delete(entity)
         await self.session.flush()
         return True
-
-
-__all__ = [
-    "BaseRepository",
-    "UnitOfWork",
-    "RepositoryException",
-    "IdType",
-]

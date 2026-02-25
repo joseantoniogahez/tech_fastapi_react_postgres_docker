@@ -56,15 +56,3 @@ async def get_auth_service(
 
 
 AuthServiceDependency = Annotated[AuthServicePort, Depends(get_auth_service)]
-
-
-__all__ = [
-    "BookServiceDependency",
-    "AuthorServiceDependency",
-    "AuthServiceDependency",
-    "AuthSettingsDependency",
-    "get_books_service",
-    "get_authors_service",
-    "get_auth_service",
-    "get_auth_settings",
-]

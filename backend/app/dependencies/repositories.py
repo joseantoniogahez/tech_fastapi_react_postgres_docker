@@ -31,13 +31,3 @@ async def get_auth_repository(session: DbSessionDependency) -> AuthRepositoryPor
 
 
 AuthRepositoryDependency = Annotated[AuthRepositoryPort, Depends(get_auth_repository)]
-
-
-__all__ = [
-    "BookRepositoryDependency",
-    "AuthorRepositoryDependency",
-    "AuthRepositoryDependency",
-    "get_book_repository",
-    "get_author_repository",
-    "get_auth_repository",
-]

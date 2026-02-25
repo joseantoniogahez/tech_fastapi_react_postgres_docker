@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
-from app.exceptions import ForbiddenException
+from app.exceptions.services import ForbiddenException
 from app.models.user import User
 from app.schemas.auth import Credentials
 
@@ -37,14 +37,3 @@ async def get_current_active_user(current_user: CurrentUserDependency) -> User:
 
 
 CurrentActiveUserDependency = Annotated[User, Depends(get_current_active_user)]
-
-
-__all__ = [
-    "BearerTokenDependency",
-    "AuthCredentialsDependency",
-    "CurrentUserDependency",
-    "CurrentActiveUserDependency",
-    "get_auth_credentials",
-    "get_current_user",
-    "get_current_active_user",
-]

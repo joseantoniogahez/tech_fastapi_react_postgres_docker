@@ -19,6 +19,3 @@ class RouterException(DomainException):
             headers=headers,
             layer=ErrorLayer.ROUTER,
         )
-
-
-__all__ = ["RouterException"]

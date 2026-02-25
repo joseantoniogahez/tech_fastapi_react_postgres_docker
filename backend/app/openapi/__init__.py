@@ -1,1 +1,1 @@
-__all__ = []
+"""OpenAPI documentation package."""

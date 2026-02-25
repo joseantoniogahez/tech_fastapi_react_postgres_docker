@@ -19,6 +19,3 @@ class RepositoryException(DomainException):
             headers=headers,
             layer=ErrorLayer.REPOSITORY,
         )
-
-
-__all__ = ["RepositoryException"]

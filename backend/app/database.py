@@ -116,13 +116,3 @@ database_manager = DatabaseManager()
 DATABASE_URL = database_manager.build_database_url()
 AsyncSessionDatabase = database_manager.build_session_factory(DATABASE_URL)
 Base = declarative_base()
-
-
-__all__ = [
-    "CustomDatabaseException",
-    "DatabaseConnectionType",
-    "DatabaseManager",
-    "DATABASE_URL",
-    "AsyncSessionDatabase",
-    "Base",
-]

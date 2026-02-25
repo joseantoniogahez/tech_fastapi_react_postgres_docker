@@ -13,5 +13,3 @@ HEALTH_DOC: dict[str, Any] = {
         }
     },
 }
-
-__all__ = ["HEALTH_DOC"]

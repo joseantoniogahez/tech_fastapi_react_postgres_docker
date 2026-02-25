@@ -39,10 +39,3 @@ class DomainException(ExceptionBase):
         self.code = error_type.value
         self.layer = layer
         self.headers = dict(headers) if headers is not None else None
-
-
-__all__ = [
-    "ErrorLayer",
-    "DomainErrorType",
-    "DomainException",
-]

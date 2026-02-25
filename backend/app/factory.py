@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from pydantic import ValidationError
 
 from app.const.settings import ApiSettings, AuthSettings
-from app.exceptions.setup import configure_exception_handlers
+from app.exceptions.setup.handlers import configure_exception_handlers
 from app.setup.cors import configure_cors
 from app.setup.routers import configure_routers
 

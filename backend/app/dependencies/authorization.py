@@ -2,7 +2,7 @@ from typing import Annotated, Awaitable, Callable
 
 from fastapi import Depends
 
-from app.exceptions import ForbiddenException
+from app.exceptions.services import ForbiddenException
 from app.models.user import User
 
 from .authentication import CurrentActiveUserDependency
@@ -35,11 +35,3 @@ def require_authorized_user(permission_id: str) -> AuthorizedUserPolicyDependenc
         return current_user
 
     return dependency
-
-
-__all__ = [
-    "PermissionPolicyDependency",
-    "AuthorizedUserPolicyDependency",
-    "require_permission",
-    "require_authorized_user",
-]

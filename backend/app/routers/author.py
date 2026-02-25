@@ -2,7 +2,7 @@ from typing import List
 
 from fastapi import APIRouter
 
-from app.dependencies import AuthorServiceDependency
+from app.dependencies.services import AuthorServiceDependency
 from app.openapi.authors import GET_AUTHORS_DOC
 from app.schemas.author import Author
 

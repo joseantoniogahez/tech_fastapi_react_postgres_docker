@@ -10,7 +10,7 @@ from pydantic import ValidationError
 from sqlalchemy.exc import IntegrityError
 
 from app.const.settings import AuthSettings
-from app.exceptions import ConflictException, ForbiddenException, InvalidInputException, UnauthorizedException
+from app.exceptions.services import ConflictException, ForbiddenException, InvalidInputException, UnauthorizedException
 from app.models.user import User
 from app.schemas.auth import AuthenticatedUser, Credentials, RegisterUser, Token, TokenPayload, UpdateCurrentUser
 from app.services import UnitOfWorkPort

@@ -5,8 +5,9 @@ import pytest
 from sqlalchemy.exc import IntegrityError
 
 import app.repositories as repositories
+from app.exceptions.repositories import RepositoryException
 from app.models.author import Author
-from app.repositories import BaseRepository, IdType, RepositoryException, UnitOfWork
+from app.repositories import BaseRepository, IdType, UnitOfWork
 from app.repositories.author import AuthorRepository
 
 
@@ -33,10 +34,8 @@ class _AsyncNullTransaction:
 
 
 def test_repositories_module_exports_expected_symbols() -> None:
-    assert repositories.__all__ == ["BaseRepository", "UnitOfWork", "RepositoryException", "IdType"]
     assert repositories.BaseRepository is BaseRepository
     assert repositories.UnitOfWork is UnitOfWork
-    assert repositories.RepositoryException is RepositoryException
     assert repositories.IdType is IdType
     assert IdType is int
 

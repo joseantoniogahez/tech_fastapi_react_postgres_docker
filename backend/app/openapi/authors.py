@@ -26,5 +26,3 @@ GET_AUTHORS_DOC: dict[str, Any] = {
         ),
     },
 }
-
-__all__ = ["GET_AUTHORS_DOC"]

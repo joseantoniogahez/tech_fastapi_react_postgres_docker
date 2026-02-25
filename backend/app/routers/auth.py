@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
-from app.dependencies import AuthCredentialsDependency, AuthServiceDependency, CurrentActiveUserDependency
+from app.dependencies.authentication import AuthCredentialsDependency, CurrentActiveUserDependency
+from app.dependencies.services import AuthServiceDependency
 from app.openapi.auth import (
     LOGIN_FOR_ACCESS_TOKEN_DOC,
     READ_CURRENT_USER_DOC,

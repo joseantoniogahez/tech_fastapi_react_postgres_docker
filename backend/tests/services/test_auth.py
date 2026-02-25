@@ -8,7 +8,7 @@ import pytest
 from sqlalchemy.exc import IntegrityError
 
 from app.const.settings import AuthSettings
-from app.exceptions import ConflictException, ForbiddenException, InvalidInputException, UnauthorizedException
+from app.exceptions.services import ConflictException, ForbiddenException, InvalidInputException, UnauthorizedException
 from app.models.user import User
 from app.schemas.auth import Credentials, RegisterUser, TokenPayload, UpdateCurrentUser
 from app.services.auth import AuthService

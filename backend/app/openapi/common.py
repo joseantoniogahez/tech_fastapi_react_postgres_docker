@@ -43,11 +43,3 @@ def build_error_response(
     if include_www_authenticate:
         response["headers"] = WWW_AUTHENTICATE_HEADER
     return response
-
-
-__all__ = [
-    "ERROR_RESPONSE_SCHEMA",
-    "WWW_AUTHENTICATE_HEADER",
-    "INTERNAL_ERROR_EXAMPLE",
-    "build_error_response",
-]

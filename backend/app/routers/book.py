@@ -2,13 +2,13 @@ from typing import List
 
 from fastapi import APIRouter
 
-from app.dependencies import (
+from app.dependencies.authorization_books import (
     BookCreateAuthorizedUserDependency,
     BookDeleteAuthorizedUserDependency,
-    BookServiceDependency,
     BookUpdateAuthorizedUserDependency,
 )
-from app.exceptions import NotFoundException
+from app.dependencies.services import BookServiceDependency
+from app.exceptions.services import NotFoundException
 from app.openapi.books import (
     ADD_BOOK_DOC,
     DELETE_BOOK_DOC,

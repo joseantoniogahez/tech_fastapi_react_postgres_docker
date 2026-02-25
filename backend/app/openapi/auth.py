@@ -249,14 +249,3 @@ UPDATE_CURRENT_USER_DOC: dict[str, Any] = {
         ),
     },
 }
-
-__all__ = [
-    "LOGIN_FOR_ACCESS_TOKEN_DOC",
-    "REGISTER_USER_DOC",
-    "READ_CURRENT_USER_DOC",
-    "UPDATE_CURRENT_USER_DOC",
-    "RegisterUserPayload",
-    "UpdateCurrentUserPayload",
-    "REGISTER_USER_BODY_EXAMPLES",
-    "UPDATE_CURRENT_USER_BODY_EXAMPLES",
-]
