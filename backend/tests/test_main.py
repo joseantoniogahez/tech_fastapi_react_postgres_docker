@@ -9,7 +9,7 @@ from fastapi.routing import APIRoute
 from pydantic import ValidationError
 
 from app.const.settings import ApiSettings, AuthSettings
-from app.dependencies.providers import get_db_session
+from app.dependencies.db import get_db_session
 from app.factory import app_lifespan, configure_logging, validate_auth_settings
 from app.main import app
 from app.routers import ROUTER_MODULES
@@ -156,7 +156,7 @@ def test_get_db_session_yields_session_from_async_session_database() -> None:
             events.append("exit")
 
     async def run_test() -> None:
-        with patch("app.dependencies.providers.AsyncSessionDatabase", return_value=_SessionContextManager()) as factory:
+        with patch("app.dependencies.db.AsyncSessionDatabase", return_value=_SessionContextManager()) as factory:
             generator = get_db_session()
             session = await anext(generator)
             assert session is expected_session
@@ -184,7 +184,7 @@ def test_get_db_session_rolls_back_when_exception_is_raised_after_yield() -> Non
             events.append("exit")
 
     async def run_test() -> None:
-        with patch("app.dependencies.providers.AsyncSessionDatabase", return_value=_SessionContextManager()):
+        with patch("app.dependencies.db.AsyncSessionDatabase", return_value=_SessionContextManager()):
             generator = get_db_session()
             yielded_session = await anext(generator)
             assert yielded_session is session

@@ -1,40 +1,73 @@
-from typing import List, Optional
+from typing import Any, Protocol
 
+from app.const.book import BookStatus
 from app.models.book import Book
-from app.repositories import UnitOfWork
-from app.repositories.author import AuthorRepository
-from app.repositories.book import BookRepository
 from app.schemas.book import AddBook, UpdateBook
-from app.services import Service
+from app.services import Service, UnitOfWorkPort
+from app.services.author import AuthorServicePort
+
+
+class BookRepositoryPort(Protocol):
+    async def list_catalog(self, author_id: int | None = None) -> list[Book]: ...
+
+    async def list_published(self) -> list[Book]: ...
+
+    async def get(self, entity_id: int) -> Book | None: ...
+
+    async def create(
+        self,
+        *,
+        title: str,
+        year: int,
+        status: BookStatus,
+        author_id: int,
+    ) -> Book: ...
+
+    async def update(
+        self,
+        entity: Book,
+        **changes: Any,
+    ) -> Book: ...
+
+    async def delete(self, entity_id: int) -> bool: ...
+
+
+class BookServicePort(Protocol):
+    async def get_all(self, author_id: int | None = None) -> list[Book]: ...
+
+    async def get_published(self) -> list[Book]: ...
+
+    async def get(self, id: int) -> Book | None: ...
+
+    async def add(self, book_data: AddBook) -> Book: ...
+
+    async def update(self, id: int, book_data: UpdateBook) -> Book | None: ...
+
+    async def delete(self, id: int) -> None: ...
 
 
 class BookService(Service):
     def __init__(
         self,
-        book_repository: BookRepository,
-        author_repository: AuthorRepository,
-        unit_of_work: UnitOfWork,
+        book_repository: BookRepositoryPort,
+        author_service: AuthorServicePort,
+        unit_of_work: UnitOfWorkPort,
     ):
         self.book_repository = book_repository
-        self.author_repository = author_repository
+        self.author_service = author_service
         self.unit_of_work = unit_of_work
 
-    async def get_all(self, author_id: Optional[int] = None) -> List[Book]:
+    async def get_all(self, author_id: int | None = None) -> list[Book]:
         return await self.book_repository.list_catalog(author_id=author_id)
 
-    async def get_published(self) -> List[Book]:
+    async def get_published(self) -> list[Book]:
         return await self.book_repository.list_published()
 
-    async def get(self, id: int) -> Optional[Book]:
+    async def get(self, id: int) -> Book | None:
         return await self.book_repository.get(id)
 
-    async def _get_author_id(self, author_id: Optional[int], author_name: str) -> int:
-        if author_id is not None:
-            author = await self.author_repository.get(author_id)
-            if author is not None:
-                return author.id
-
-        author = await self.author_repository.get_or_create_by_name(name=author_name)
+    async def _get_author_id(self, author_id: int | None, author_name: str) -> int:
+        author = await self.author_service.get_or_add(author_id=author_id, name=author_name)
         return author.id
 
     async def add(self, book_data: AddBook) -> Book:
@@ -47,7 +80,7 @@ class BookService(Service):
                 author_id=author_id,
             )
 
-    async def update(self, id: int, book_data: UpdateBook) -> Optional[Book]:
+    async def update(self, id: int, book_data: UpdateBook) -> Book | None:
         async with self.unit_of_work:
             book = await self.book_repository.get(id)
             if book is None:

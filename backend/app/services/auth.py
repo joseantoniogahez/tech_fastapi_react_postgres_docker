@@ -1,5 +1,6 @@
 import re
 from datetime import datetime, timedelta, timezone
+from typing import Any, Protocol
 
 import jwt
 from argon2 import PasswordHasher
@@ -11,10 +12,32 @@ from sqlalchemy.exc import IntegrityError
 from app.const.settings import AuthSettings
 from app.exceptions import ConflictException, ForbiddenException, InvalidInputException, UnauthorizedException
 from app.models.user import User
-from app.repositories import UnitOfWork
-from app.repositories.auth import AuthRepository
 from app.schemas.auth import AuthenticatedUser, Credentials, RegisterUser, Token, TokenPayload, UpdateCurrentUser
-from app.services import Service
+from app.services import Service, UnitOfWorkPort
+
+
+class AuthRepositoryPort(Protocol):
+    async def get_by_username(self, username: str) -> User | None: ...
+
+    async def username_exists(self, username: str, *, exclude_user_id: int | None = None) -> bool: ...
+
+    async def create(self, **kwargs: Any) -> User: ...
+
+    async def update(self, entity: User, **changes: Any) -> User: ...
+
+    async def user_has_permission(self, user_id: int, permission_id: str) -> bool: ...
+
+
+class AuthServicePort(Protocol):
+    async def login(self, credentials: Credentials) -> Token: ...
+
+    async def register(self, registration: RegisterUser) -> AuthenticatedUser: ...
+
+    async def update_current_user(self, current_user: User, update_data: UpdateCurrentUser) -> AuthenticatedUser: ...
+
+    async def get_user_from_token(self, token: str) -> User: ...
+
+    async def user_has_permission(self, user_id: int, permission_id: str) -> bool: ...
 
 
 class AuthService(Service):
@@ -22,8 +45,8 @@ class AuthService(Service):
 
     def __init__(
         self,
-        auth_repository: AuthRepository,
-        unit_of_work: UnitOfWork,
+        auth_repository: AuthRepositoryPort,
+        unit_of_work: UnitOfWorkPort,
         auth_settings: AuthSettings | None = None,
     ):
         settings = auth_settings or AuthSettings()

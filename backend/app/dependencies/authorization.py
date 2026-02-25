@@ -2,11 +2,11 @@ from typing import Annotated, Awaitable, Callable
 
 from fastapi import Depends
 
-from app.const.permission import PermissionId
 from app.exceptions import ForbiddenException
 from app.models.user import User
 
-from .providers import AuthServiceDependency, CurrentActiveUserDependency
+from .authentication import CurrentActiveUserDependency
+from .services import AuthServiceDependency
 
 PermissionPolicyDependency = Callable[..., Awaitable[None]]
 AuthorizedUserPolicyDependency = Callable[..., Awaitable[User]]
@@ -37,17 +37,9 @@ def require_authorized_user(permission_id: str) -> AuthorizedUserPolicyDependenc
     return dependency
 
 
-BookCreateAuthorizedUserDependency = Annotated[User, Depends(require_authorized_user(PermissionId.BOOK_CREATE))]
-BookUpdateAuthorizedUserDependency = Annotated[User, Depends(require_authorized_user(PermissionId.BOOK_UPDATE))]
-BookDeleteAuthorizedUserDependency = Annotated[User, Depends(require_authorized_user(PermissionId.BOOK_DELETE))]
-
-
 __all__ = [
     "PermissionPolicyDependency",
     "AuthorizedUserPolicyDependency",
     "require_permission",
     "require_authorized_user",
-    "BookCreateAuthorizedUserDependency",
-    "BookUpdateAuthorizedUserDependency",
-    "BookDeleteAuthorizedUserDependency",
 ]

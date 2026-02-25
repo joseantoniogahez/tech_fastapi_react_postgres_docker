@@ -14,7 +14,7 @@ With UoW, a use case either:
 ## Where UoW is implemented
 
 - Core class: `app/repositories/__init__.py` (`UnitOfWork`)
-- DI provider: `app/dependencies/providers.py` (`get_unit_of_work`)
+- DI provider: `app/dependencies/db.py` (`get_unit_of_work`)
 - Service usage:
   - `app/services/book.py`
   - `app/services/author.py`
@@ -78,7 +78,7 @@ Result:
 
 ## Dependency Injection wiring
 
-`providers.py` creates one request-scoped `AsyncSession` and uses it to build:
+`db.py` creates one request-scoped `AsyncSession` and `UnitOfWork`; repository and service modules reuse them:
 
 - repositories
 - `UnitOfWork`

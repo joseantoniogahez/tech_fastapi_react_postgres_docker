@@ -2,24 +2,28 @@
 
 ## 1) Dependency module layout
 
-Dependency providers are centralized in `app/dependencies/providers.py`:
+Dependency providers are split by concern under `app/dependencies/`:
 
-- `get_db_session`: creates and yields `AsyncSession`.
-- `get_unit_of_work`: creates request-scoped `UnitOfWork` using the same `AsyncSession`.
-- Repository providers:
+- `db.py`
+  - `get_db_session`
+  - `get_unit_of_work`
+- `repositories.py`
   - `get_book_repository`
   - `get_author_repository`
   - `get_auth_repository`
-- Service providers:
+- `services.py`
   - `get_books_service`
   - `get_authors_service`
   - `get_auth_service`
-- Auth providers:
+  - `get_auth_settings`
+- `authentication.py`
   - `get_auth_credentials`
   - `get_current_user`
   - `get_current_active_user`
-
-Authorization-specific providers are in `app/dependencies/authorization.py`.
+- `authorization.py`
+  - generic policy builders (`require_permission`, `require_authorized_user`)
+- `authorization_books.py`
+  - book-specific authorization aliases
 
 ## 2) Typed aliases used in routers
 
