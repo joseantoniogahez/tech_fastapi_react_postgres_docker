@@ -6,15 +6,15 @@ from sqlalchemy.engine import URL
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeMeta
 
-from app.database import database_manager
-
 
 class MockDatabase:
-    def __init__(self, path: str, echo: bool = False):
-        default_database_url = database_manager.build_database_url()
-        self.sql_file = str(pathlib.Path(path) / str(default_database_url.database))
+    SQLITE_ASYNC_DRIVER = "sqlite+aiosqlite"
+    SQLITE_TMP_SUFFIXES = ("", "-shm", "-wal")
+
+    def __init__(self, path: str, database_name: str = "test.db", echo: bool = False):
+        self.sql_file = str(pathlib.Path(path) / database_name)
         test_database = self.sql_file.replace("\\", "/")
-        test_database_url = URL.create(drivername=default_database_url.drivername, database=test_database)
+        test_database_url = URL.create(drivername=self.SQLITE_ASYNC_DRIVER, database=test_database)
         self.delete_sqlite()
         self.engine = create_async_engine(url=test_database_url, echo=echo)
         self.Session = async_sessionmaker(bind=self.engine, expire_on_commit=False)
@@ -33,11 +33,17 @@ class MockDatabase:
             yield session
 
     def delete_sqlite(self) -> None:
-        if pathlib.Path(self.sql_file).exists():
-            os.remove(self.sql_file)
+        for suffix in self.SQLITE_TMP_SUFFIXES:
+            tmp_file = pathlib.Path(f"{self.sql_file}{suffix}")
+            if tmp_file.exists():
+                os.remove(tmp_file)
 
     async def close(self) -> None:
         await self.engine.dispose()
+        self.delete_sqlite()
 
     def __del__(self) -> None:
-        self.delete_sqlite()
+        try:
+            self.delete_sqlite()
+        except OSError:
+            pass

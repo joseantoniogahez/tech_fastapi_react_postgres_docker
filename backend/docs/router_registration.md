@@ -14,7 +14,7 @@ Router module registration is centralized in `app/routers/__init__.py`:
 A router module is auto-registrable when:
 
 1. It is listed in `ROUTER_MODULES`.
-2. It exposes a FastAPI `APIRouter` instance named `router`.
+1. It exposes a FastAPI `APIRouter` instance named `router`.
 
 Minimal example:
 
@@ -27,7 +27,7 @@ router = APIRouter(prefix="/publishers", tags=["publishers"])
 ## Add a New Router
 
 1. Create a module in `app/routers/` (example: `publisher.py`) exposing `router`.
-2. Add `"publisher"` to `ROUTER_MODULES` in `app/routers/__init__.py`.
+1. Add `"publisher"` to `ROUTER_MODULES` in `app/routers/__init__.py`.
 
 No changes are needed in `create_app` or `app/setup/routers.py`.
 

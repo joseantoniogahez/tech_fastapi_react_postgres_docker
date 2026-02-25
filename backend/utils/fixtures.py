@@ -5,7 +5,7 @@ from utils.database import MockDatabase
 
 
 def get_fixture_data(path: str, fixture_name: str) -> List[Dict[str, Any]]:
-    with open(f"{path}/fixtures/{fixture_name}.json") as fixtures:
+    with open(f"{path}/fixtures/{fixture_name}.json", encoding="utf-8") as fixtures:
         return json.load(fixtures)
 
 

@@ -62,12 +62,12 @@ async def add_book(
 ## Recommended endpoint documentation checklist
 
 1. `summary`
-2. `description`
-3. `response_description`
-4. `responses` with realistic status codes
-5. At least one success example
-6. At least one representative error example for each expected status code
-7. `WWW-Authenticate` header docs for `401` responses
+1. `description`
+1. `response_description`
+1. `responses` with realistic status codes
+1. At least one success example
+1. At least one representative error example for each expected status code
+1. `WWW-Authenticate` header docs for `401` responses
 
 ## Error response consistency
 
@@ -80,17 +80,17 @@ Use `build_error_response(...)` from `app/openapi/common.py` to enforce:
 ## Adding docs for a new endpoint
 
 1. Add documentation constants in the domain file under `app/openapi/`.
-2. Export the constant(s) via `__all__`.
-3. Import and apply them in the router decorator with `**CONSTANT`.
-4. Add or update body/query/path examples as needed.
-5. Run router tests to ensure behavior remains unchanged.
+1. Export the constant(s) via `__all__`.
+1. Import and apply them in the router decorator with `**CONSTANT`.
+1. Add or update body/query/path examples as needed.
+1. Run router tests to ensure behavior remains unchanged.
 
 ## Verification
 
 After changes:
 
 1. Open `http://localhost:8000/docs` and inspect rendered endpoint docs.
-2. Run:
+1. Run:
 
 ```bash
 .\.venv\Scripts\python -m pytest backend/tests/routers -q -p no:cacheprovider

@@ -1,5 +1,6 @@
 import asyncio
 import pathlib
+import tempfile
 from typing import Any, AsyncGenerator, Dict, Generator, List
 
 import pytest
@@ -117,14 +118,14 @@ def mock_data(
 
 @pytest.fixture(scope="module")
 def mock_database(path: str, mock_data: List[Dict[str, Any]]) -> Generator[MockDatabase, None, None]:
-    mock_db = MockDatabase(path=path, echo=False)
-    asyncio.run(mock_db.setup(Base))
-    asyncio.run(load_mock_data(mock_data, mock_db))
+    with tempfile.TemporaryDirectory(prefix="backend-tests-db-") as db_tmp_dir:
+        mock_db = MockDatabase(path=db_tmp_dir, echo=False)
+        asyncio.run(mock_db.setup(Base))
+        asyncio.run(load_mock_data(mock_data, mock_db))
 
-    yield mock_db
+        yield mock_db
 
-    asyncio.run(mock_db.close())
-    del mock_db
+        asyncio.run(mock_db.close())
 
 
 @pytest.fixture
