@@ -3,7 +3,7 @@ from typing import Any, Protocol
 from app.const.book import BookStatus
 from app.models.book import Book
 from app.schemas.book import AddBook, UpdateBook
-from app.services import Service, UnitOfWorkPort
+from app.services import UnitOfWorkPort
 from app.services.author import AuthorServicePort
 
 
@@ -46,7 +46,7 @@ class BookServicePort(Protocol):
     async def delete(self, id: int) -> None: ...
 
 
-class BookService(Service):
+class BookService:
     def __init__(
         self,
         book_repository: BookRepositoryPort,

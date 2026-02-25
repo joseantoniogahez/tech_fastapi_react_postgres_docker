@@ -13,7 +13,7 @@ from app.const.settings import AuthSettings
 from app.exceptions import ConflictException, ForbiddenException, InvalidInputException, UnauthorizedException
 from app.models.user import User
 from app.schemas.auth import AuthenticatedUser, Credentials, RegisterUser, Token, TokenPayload, UpdateCurrentUser
-from app.services import Service, UnitOfWorkPort
+from app.services import UnitOfWorkPort
 
 
 class AuthRepositoryPort(Protocol):
@@ -40,7 +40,7 @@ class AuthServicePort(Protocol):
     async def user_has_permission(self, user_id: int, permission_id: str) -> bool: ...
 
 
-class AuthService(Service):
+class AuthService:
     _username_pattern = re.compile(r"^[a-z0-9_.-]+$")
 
     def __init__(

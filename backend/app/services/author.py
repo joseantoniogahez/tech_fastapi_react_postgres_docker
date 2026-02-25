@@ -1,7 +1,7 @@
 from typing import Protocol
 
 from app.models.author import Author
-from app.services import Service, UnitOfWorkPort
+from app.services import UnitOfWorkPort
 
 
 class AuthorRepositoryPort(Protocol):
@@ -18,7 +18,7 @@ class AuthorServicePort(Protocol):
     async def get_or_add(self, author_id: int | None, name: str) -> Author: ...
 
 
-class AuthorService(Service):
+class AuthorService:
     def __init__(self, author_repository: AuthorRepositoryPort, unit_of_work: UnitOfWorkPort):
         self.author_repository = author_repository
         self.unit_of_work = unit_of_work

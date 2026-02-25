@@ -15,7 +15,3 @@ class UnitOfWorkPort(Protocol):
     async def commit(self) -> None: ...
 
     async def rollback(self) -> None: ...
-
-
-class Service:
-    pass
