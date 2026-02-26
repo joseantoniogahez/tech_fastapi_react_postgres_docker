@@ -7,9 +7,23 @@
 - `GET /users/me`
 - `PATCH /users/me`
 
+## Bootstrap Admin User (Fresh Environments)
+
+Run the idempotent RBAC bootstrap command from `backend/`:
+
+```bash
+python -m utils.rbac_bootstrap --admin-username admin --admin-password "StrongSeed9"
+```
+
+This command:
+
+- syncs base permissions and roles,
+- creates the admin user only if missing, and
+- ensures admin role assignment.
+
 ## Authentication Flow
 
-1. Create a user with `POST /users/register` (or use a seeded account).
+1. Run RBAC bootstrap to create/sync base auth data (including admin user when missing).
 1. Exchange credentials for a bearer token with `POST /token`.
 1. Call protected endpoints with `Authorization: Bearer <access_token>`.
 
@@ -20,7 +34,7 @@ Success:
 ```bash
 curl -X POST http://localhost:8000/token \
   -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "username=admin&password=admin123"
+  -d "username=admin&password=<admin_password>"
 ```
 
 ```json

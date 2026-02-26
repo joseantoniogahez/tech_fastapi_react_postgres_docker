@@ -106,6 +106,30 @@ Create a new migration:
 alembic revision --autogenerate -m "describe change"
 ```
 
+## RBAC Bootstrap (Idempotent)
+
+After running migrations, bootstrap RBAC base data:
+
+```bash
+cd backend
+python -m utils.rbac_bootstrap --admin-username admin --admin-password "StrongSeed9"
+```
+
+What this command does:
+
+- Upserts base permissions (`books:create`, `books:update`, `books:delete`).
+- Creates missing base roles (`admin_role`, `reader_role`).
+- Ensures base role-permission assignments (admin gets all base permissions).
+- Creates the bootstrap admin user only if missing.
+- Ensures bootstrap admin user has `admin_role`.
+
+Environment variable defaults:
+
+- `RBAC_BOOTSTRAP_ADMIN_USERNAME` (default: `admin`)
+- `RBAC_BOOTSTRAP_ADMIN_PASSWORD` (required only when creating the admin user)
+
+The command is safe to run repeatedly and does not create duplicates.
+
 ## Documentation By Topic
 
 - Docs index: `docs/README.md`
