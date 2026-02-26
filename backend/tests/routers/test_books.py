@@ -85,7 +85,7 @@ def test_add_book(mock_client: TestClient):
     }
 
     response = mock_client.post("/books", json=book_data, headers=_auth_headers(mock_client))
-    assert response.status_code == HTTPStatus.OK
+    assert response.status_code == HTTPStatus.CREATED
 
     json_response = response.json()
     assert isinstance(json_response, dict)
@@ -141,5 +141,11 @@ def test_update_book_not_found(mock_client: TestClient):
 
 def test_delete_book(mock_client: TestClient):
     response = mock_client.delete("/books/1", headers=_auth_headers(mock_client))
-    assert response.status_code == HTTPStatus.OK
-    assert response.text == "null"
+    assert response.status_code == HTTPStatus.NO_CONTENT
+    assert response.content == b""
+
+
+def test_delete_book_not_found_is_noop(mock_client: TestClient):
+    response = mock_client.delete("/books/999", headers=_auth_headers(mock_client))
+    assert response.status_code == HTTPStatus.NO_CONTENT
+    assert response.content == b""

@@ -161,11 +161,12 @@ GET_BOOK_DOC: dict[str, Any] = {
 }
 
 ADD_BOOK_DOC: dict[str, Any] = {
+    "status_code": status.HTTP_201_CREATED,
     "summary": "Create book",
     "description": "Create a new book. Requires authenticated user with `books:create` permission.",
     "response_description": "Book created successfully.",
     "responses": {
-        status.HTTP_200_OK: {
+        status.HTTP_201_CREATED: {
             "description": "Book created.",
             "content": {"application/json": {"example": BOOK_EXAMPLE}},
         },
@@ -258,13 +259,16 @@ UPDATE_BOOK_DOC: dict[str, Any] = {
 }
 
 DELETE_BOOK_DOC: dict[str, Any] = {
+    "status_code": status.HTTP_204_NO_CONTENT,
     "summary": "Delete book",
-    "description": "Delete a book by ID. Requires `books:delete` permission.",
-    "response_description": "`null` when deletion completes.",
+    "description": (
+        "Delete a book by ID. Requires `books:delete` permission. "
+        "Deletion is idempotent: missing IDs are treated as no-op."
+    ),
+    "response_description": "Book deletion completed with no response body.",
     "responses": {
-        status.HTTP_200_OK: {
-            "description": "Book deleted (or no-op if it does not exist, depending on repository strategy).",
-            "content": {"application/json": {"example": None}},
+        status.HTTP_204_NO_CONTENT: {
+            "description": "Book deleted (or no-op if it does not exist).",
         },
         status.HTTP_400_BAD_REQUEST: build_error_response(
             description="Invalid book ID.",

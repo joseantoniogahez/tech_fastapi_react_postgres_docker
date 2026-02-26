@@ -22,7 +22,7 @@ def test_admin_can_create_book(mock_client: TestClient) -> None:
         headers=_auth_headers(mock_client, "admin", "admin123"),
     )
 
-    assert response.status_code == HTTPStatus.OK
+    assert response.status_code == HTTPStatus.CREATED
 
 
 def test_reader_cannot_create_book(mock_client: TestClient) -> None:
