@@ -7,6 +7,7 @@ import pytest
 from argon2 import PasswordHasher
 from starlette.testclient import TestClient
 
+from app.const.permission import PERMISSION_SPECS
 from app.database import Base
 from app.dependencies.db import get_db_session
 from app.main import app
@@ -71,11 +72,7 @@ def mock_roles() -> List[Dict[str, Any]]:
 
 @pytest.fixture(scope="module")
 def mock_permissions() -> List[Dict[str, Any]]:
-    return [
-        {"id": "books:create", "name": "Create books"},
-        {"id": "books:update", "name": "Update books"},
-        {"id": "books:delete", "name": "Delete books"},
-    ]
+    return [{"id": permission_id, "name": permission_name} for permission_id, permission_name in PERMISSION_SPECS]
 
 
 @pytest.fixture(scope="module")
@@ -88,11 +85,7 @@ def mock_user_roles() -> List[Dict[str, Any]]:
 
 @pytest.fixture(scope="module")
 def mock_role_permissions() -> List[Dict[str, Any]]:
-    return [
-        {"role_id": 1, "permission_id": "books:create"},
-        {"role_id": 1, "permission_id": "books:update"},
-        {"role_id": 1, "permission_id": "books:delete"},
-    ]
+    return [{"role_id": 1, "permission_id": permission_id} for permission_id, _ in PERMISSION_SPECS]
 
 
 @pytest.fixture(scope="module")

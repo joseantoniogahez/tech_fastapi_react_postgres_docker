@@ -7,6 +7,7 @@ import jwt
 import pytest
 from sqlalchemy.exc import IntegrityError
 
+from app.const.permission import PermissionId
 from app.const.settings import AuthSettings
 from app.exceptions.services import ConflictException, ForbiddenException, InvalidInputException, UnauthorizedException
 from app.models.user import User
@@ -462,9 +463,9 @@ def test_user_has_permission_delegates_to_repository() -> None:
     repository.user_has_permission.return_value = True
 
     async def run_test() -> None:
-        has_permission = await service.user_has_permission(user_id=1, permission_id="books:create")
+        has_permission = await service.user_has_permission(user_id=1, permission_id=PermissionId.BOOK_CREATE)
 
         assert has_permission is True
-        repository.user_has_permission.assert_awaited_once_with(user_id=1, permission_id="books:create")
+        repository.user_has_permission.assert_awaited_once_with(user_id=1, permission_id=PermissionId.BOOK_CREATE)
 
     asyncio.run(run_test())

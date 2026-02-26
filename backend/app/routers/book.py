@@ -2,11 +2,7 @@ from typing import List
 
 from fastapi import APIRouter
 
-from app.dependencies.authorization_books import (
-    BookCreateAuthorizedUserDependency,
-    BookDeleteAuthorizedUserDependency,
-    BookUpdateAuthorizedUserDependency,
-)
+from app.dependencies.authorization_books import BookCreateAuth, BookDeleteAuth, BookUpdateAuth
 from app.dependencies.services import BookServiceDependency
 from app.exceptions.services import NotFoundException
 from app.openapi.books import (
@@ -58,7 +54,7 @@ async def get_book(
 @router.post("/", response_model=Book, **ADD_BOOK_DOC)
 async def add_book(
     book_service: BookServiceDependency,
-    _authorized_user: BookCreateAuthorizedUserDependency,
+    _authorized_user: BookCreateAuth,
     book_data: AddBookPayload,
 ) -> Book:
     book = await book_service.add(book_data)
@@ -68,7 +64,7 @@ async def add_book(
 @router.put("/{id}", response_model=Book, **UPDATE_BOOK_DOC)
 async def update_book(
     book_service: BookServiceDependency,
-    _authorized_user: BookUpdateAuthorizedUserDependency,
+    _authorized_user: BookUpdateAuth,
     id: BookIdPath,
     book_data: UpdateBookPayload,
 ) -> Book:
@@ -81,7 +77,7 @@ async def update_book(
 @router.delete("/{id}", **DELETE_BOOK_DOC)
 async def delete_book(
     book_service: BookServiceDependency,
-    _authorized_user: BookDeleteAuthorizedUserDependency,
+    _authorized_user: BookDeleteAuth,
     id: BookIdPath,
 ) -> None:
     await book_service.delete(id)

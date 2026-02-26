@@ -7,6 +7,21 @@ from app.models.user import User
 
 from .authorization import require_authorized_user
 
-BookCreateAuthorizedUserDependency = Annotated[User, Depends(require_authorized_user(PermissionId.BOOK_CREATE))]
-BookUpdateAuthorizedUserDependency = Annotated[User, Depends(require_authorized_user(PermissionId.BOOK_UPDATE))]
-BookDeleteAuthorizedUserDependency = Annotated[User, Depends(require_authorized_user(PermissionId.BOOK_DELETE))]
+BOOK_PERMISSION_IDS: dict[str, str] = {
+    "create": PermissionId.BOOK_CREATE,
+    "update": PermissionId.BOOK_UPDATE,
+    "delete": PermissionId.BOOK_DELETE,
+}
+
+BookCreateAuth = Annotated[
+    User,
+    Depends(require_authorized_user(BOOK_PERMISSION_IDS["create"])),
+]
+BookUpdateAuth = Annotated[
+    User,
+    Depends(require_authorized_user(BOOK_PERMISSION_IDS["update"])),
+]
+BookDeleteAuth = Annotated[
+    User,
+    Depends(require_authorized_user(BOOK_PERMISSION_IDS["delete"])),
+]

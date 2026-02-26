@@ -9,7 +9,7 @@ from argon2 import PasswordHasher
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.const.permission import PermissionId
+from app.const.permission import PERMISSION_SPECS
 from app.database import AsyncSessionDatabase
 from app.models.permission import Permission
 from app.models.role import Role
@@ -17,11 +17,7 @@ from app.models.role_permission import RolePermission
 from app.models.user import User
 from app.models.user_role import UserRole
 
-BASE_PERMISSION_SPECS: tuple[tuple[str, str], ...] = (
-    (PermissionId.BOOK_CREATE, "Create books"),
-    (PermissionId.BOOK_UPDATE, "Update books"),
-    (PermissionId.BOOK_DELETE, "Delete books"),
-)
+BASE_PERMISSION_SPECS: tuple[tuple[str, str], ...] = PERMISSION_SPECS
 
 BASE_PERMISSION_IDS: tuple[str, ...] = tuple(permission_id for permission_id, _ in BASE_PERMISSION_SPECS)
 

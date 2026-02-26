@@ -2,6 +2,8 @@ from http import HTTPStatus
 
 from starlette.testclient import TestClient
 
+from app.const.permission import PermissionId
+
 
 def _auth_headers(mock_client: TestClient, username: str, password: str) -> dict[str, str]:
     response = mock_client.post("/token", data={"username": username, "password": password})
@@ -39,10 +41,10 @@ def test_reader_cannot_create_book(mock_client: TestClient) -> None:
 
     assert response.status_code == HTTPStatus.FORBIDDEN
     assert response.json() == {
-        "detail": "Missing required permission: books:create",
+        "detail": f"Missing required permission: {PermissionId.BOOK_CREATE}",
         "status": HTTPStatus.FORBIDDEN,
         "code": "forbidden",
-        "meta": {"permission_id": "books:create"},
+        "meta": {"permission_id": PermissionId.BOOK_CREATE},
     }
 
 
@@ -54,8 +56,8 @@ def test_reader_cannot_delete_book(mock_client: TestClient) -> None:
 
     assert response.status_code == HTTPStatus.FORBIDDEN
     assert response.json() == {
-        "detail": "Missing required permission: books:delete",
+        "detail": f"Missing required permission: {PermissionId.BOOK_DELETE}",
         "status": HTTPStatus.FORBIDDEN,
         "code": "forbidden",
-        "meta": {"permission_id": "books:delete"},
+        "meta": {"permission_id": PermissionId.BOOK_DELETE},
     }

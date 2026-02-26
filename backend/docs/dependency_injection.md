@@ -37,9 +37,9 @@ Dependency providers are split by concern under `app/dependencies/`:
   - `CurrentUserDependency`
   - `CurrentActiveUserDependency`
 - Permission aliases:
-  - `BookCreateAuthorizedUserDependency`
-  - `BookUpdateAuthorizedUserDependency`
-  - `BookDeleteAuthorizedUserDependency`
+  - `BookCreateAuth`
+  - `BookUpdateAuth`
+  - `BookDeleteAuth`
 
 ## 3) Endpoint examples
 
@@ -49,7 +49,7 @@ Dependency providers are split by concern under `app/dependencies/`:
 @router.post("/", response_model=Book, **ADD_BOOK_DOC)
 async def add_book(
     book_service: BookServiceDependency,
-    _authorized_user: BookCreateAuthorizedUserDependency,
+    _authorized_user: BookCreateAuth,
     book_data: AddBook = Body(...),
 ) -> Book:
     book = await book_service.add(book_data)
@@ -62,7 +62,7 @@ async def add_book(
 @router.put("/{id}", response_model=Book, **UPDATE_BOOK_DOC)
 async def update_book(
     book_service: BookServiceDependency,
-    _authorized_user: BookUpdateAuthorizedUserDependency,
+    _authorized_user: BookUpdateAuth,
     id: int = Path(..., ge=1),
     book_data: UpdateBook = Body(...),
 ) -> Book:

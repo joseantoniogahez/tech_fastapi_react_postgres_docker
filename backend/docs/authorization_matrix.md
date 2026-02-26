@@ -1,12 +1,26 @@
 # Authorization Matrix
 
-Permission policies are defined in `app/dependencies/authorization.py` and consumed by protected routes.
+Canonical permission definitions live in `app/const/permission.py`.
+Permission IDs must follow `<resource>:<action>` using lowercase letters, numbers, and underscores.
 
-| Permission     | Dependency Alias                     | Endpoint             |
-| -------------- | ------------------------------------ | -------------------- |
-| `books:create` | `BookCreateAuthorizedUserDependency` | `POST /books/`       |
-| `books:update` | `BookUpdateAuthorizedUserDependency` | `PUT /books/{id}`    |
-| `books:delete` | `BookDeleteAuthorizedUserDependency` | `DELETE /books/{id}` |
+## Permission Catalog
+
+| Permission     | Name         | Resource | Action |
+| -------------- | ------------ | -------- | ------ |
+| `books:create` | Create books | `books`  | create |
+| `books:update` | Update books | `books`  | update |
+| `books:delete` | Delete books | `books`  | delete |
+
+## Route Matrix
+
+Permission policies are enforced by `app/dependencies/authorization.py` and mapped in
+`app/dependencies/authorization_books.py`.
+
+| Dependency Alias | Permission     | Endpoint             |
+| ---------------- | -------------- | -------------------- |
+| `BookCreateAuth` | `books:create` | `POST /books/`       |
+| `BookUpdateAuth` | `books:update` | `PUT /books/{id}`    |
+| `BookDeleteAuth` | `books:delete` | `DELETE /books/{id}` |
 
 ## Base Role Catalog (Bootstrap)
 

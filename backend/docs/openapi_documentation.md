@@ -43,7 +43,7 @@ Router usage stays minimal:
 ```python
 async def add_book(
     book_service: BookServiceDependency,
-    _authorized_user: BookCreateAuthorizedUserDependency,
+    _authorized_user: BookCreateAuth,
     book_data: AddBookPayload,
 ) -> Book:
     ...

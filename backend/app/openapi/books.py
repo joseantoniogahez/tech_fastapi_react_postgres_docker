@@ -2,6 +2,7 @@ from typing import Annotated, Any, Optional
 
 from fastapi import Body, Path, Query, status
 
+from app.const.permission import PermissionId
 from app.openapi.common import INTERNAL_ERROR_EXAMPLE, build_error_response
 from app.schemas.book import AddBook, UpdateBook
 
@@ -163,7 +164,7 @@ GET_BOOK_DOC: dict[str, Any] = {
 ADD_BOOK_DOC: dict[str, Any] = {
     "status_code": status.HTTP_201_CREATED,
     "summary": "Create book",
-    "description": "Create a new book. Requires authenticated user with `books:create` permission.",
+    "description": (f"Create a new book. Requires authenticated user with `{PermissionId.BOOK_CREATE}` permission."),
     "response_description": "Book created successfully.",
     "responses": {
         status.HTTP_201_CREATED: {
@@ -191,10 +192,10 @@ ADD_BOOK_DOC: dict[str, Any] = {
         status.HTTP_403_FORBIDDEN: build_error_response(
             description="User lacks permission to create books.",
             example={
-                "detail": "Missing required permission: books:create",
+                "detail": f"Missing required permission: {PermissionId.BOOK_CREATE}",
                 "status": 403,
                 "code": "forbidden",
-                "meta": {"permission_id": "books:create"},
+                "meta": {"permission_id": PermissionId.BOOK_CREATE},
             },
         ),
         status.HTTP_500_INTERNAL_SERVER_ERROR: build_error_response(
@@ -207,7 +208,8 @@ ADD_BOOK_DOC: dict[str, Any] = {
 UPDATE_BOOK_DOC: dict[str, Any] = {
     "summary": "Update book",
     "description": (
-        "Update a book by ID. Requires `books:update` permission. Returns `404` when the book does not exist."
+        f"Update a book by ID. Requires `{PermissionId.BOOK_UPDATE}` permission. "
+        "Returns `404` when the book does not exist."
     ),
     "response_description": "Updated book.",
     "responses": {
@@ -245,10 +247,10 @@ UPDATE_BOOK_DOC: dict[str, Any] = {
         status.HTTP_403_FORBIDDEN: build_error_response(
             description="User lacks permission to update books.",
             example={
-                "detail": "Missing required permission: books:update",
+                "detail": f"Missing required permission: {PermissionId.BOOK_UPDATE}",
                 "status": 403,
                 "code": "forbidden",
-                "meta": {"permission_id": "books:update"},
+                "meta": {"permission_id": PermissionId.BOOK_UPDATE},
             },
         ),
         status.HTTP_500_INTERNAL_SERVER_ERROR: build_error_response(
@@ -262,7 +264,7 @@ DELETE_BOOK_DOC: dict[str, Any] = {
     "status_code": status.HTTP_204_NO_CONTENT,
     "summary": "Delete book",
     "description": (
-        "Delete a book by ID. Requires `books:delete` permission. "
+        f"Delete a book by ID. Requires `{PermissionId.BOOK_DELETE}` permission. "
         "Deletion is idempotent: missing IDs are treated as no-op."
     ),
     "response_description": "Book deletion completed with no response body.",
@@ -291,10 +293,10 @@ DELETE_BOOK_DOC: dict[str, Any] = {
         status.HTTP_403_FORBIDDEN: build_error_response(
             description="User lacks permission to delete books.",
             example={
-                "detail": "Missing required permission: books:delete",
+                "detail": f"Missing required permission: {PermissionId.BOOK_DELETE}",
                 "status": 403,
                 "code": "forbidden",
-                "meta": {"permission_id": "books:delete"},
+                "meta": {"permission_id": PermissionId.BOOK_DELETE},
             },
         ),
         status.HTTP_500_INTERNAL_SERVER_ERROR: build_error_response(
