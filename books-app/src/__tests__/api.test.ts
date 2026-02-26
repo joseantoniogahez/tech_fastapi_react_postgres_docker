@@ -19,11 +19,11 @@ describe("API URL helpers", () => {
     expect(getApiBaseUrl()).toBe("http://localhost:8000/api");
   });
 
-  it("uses /api when env vars are not defined", () => {
+  it("uses root API path when env vars are not defined", () => {
     delete process.env.NEXT_PUBLIC_API_ORIGIN;
     delete process.env.NEXT_PUBLIC_API_BASE_PATH;
 
-    expect(getApiBaseUrl()).toBe("/api");
+    expect(getApiBaseUrl()).toBe("");
   });
 
   it("supports root API path", () => {

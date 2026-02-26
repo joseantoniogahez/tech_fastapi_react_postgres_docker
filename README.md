@@ -111,12 +111,12 @@ docker compose -f compose.yaml -f compose.prod.yaml down -v
 docker compose -f compose.yaml -f compose.prod.yaml up --build -d
 ```
 
-## API Base Path Integration (`/api`)
+## API Base Path Contract (`/`)
 
+- Canonical API route base path is root (`/`).
 - Backend routes are declared as `/books/`, `/authors/`, and `/health`.
-- Frontend defaults to calling `/api/...`.
-- `API_PATH` sets FastAPI `root_path` metadata only; it does not mount routes under `/api`.
-- If clients call `/api/...`, use a reverse-proxy rewrite or set frontend base path to `/`.
+- Frontend default is `NEXT_PUBLIC_API_BASE_PATH=/` (normalized to root path calls).
+- `API_PATH` controls FastAPI `root_path` metadata for proxy deployments only; it does not remount routes.
 
 ## Repository Tooling (Root)
 

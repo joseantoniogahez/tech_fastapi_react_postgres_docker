@@ -40,17 +40,17 @@ Frontend URL: `http://localhost:3000`
 Frontend runtime variables:
 
 - `NEXT_PUBLIC_API_ORIGIN` (example: `http://localhost:8000`)
-- `NEXT_PUBLIC_API_BASE_PATH` (example: `/api` or `/`)
+- `NEXT_PUBLIC_API_BASE_PATH` (example: `/` or `/api`)
 
 Defaults when unset:
 
 - `NEXT_PUBLIC_API_ORIGIN`: empty string
-- `NEXT_PUBLIC_API_BASE_PATH`: `/api`
+- `NEXT_PUBLIC_API_BASE_PATH`: `/`
 
 Behavior notes:
 
 - `NEXT_PUBLIC_*` values are exposed to browser-side code.
-- `NEXT_PUBLIC_API_BASE_PATH` is normalized (`/api`, `api`, and `/api/` resolve to `/api`).
+- `NEXT_PUBLIC_API_BASE_PATH` is normalized (`/`, empty string, and `//` resolve to root calls with no prefix).
 - In Docker builds, these values are embedded in the build output; rebuild frontend image after changing them.
 
 Examples:
@@ -58,11 +58,11 @@ Examples:
 ```bash
 # Windows PowerShell
 $env:NEXT_PUBLIC_API_ORIGIN="http://localhost:8000"
-$env:NEXT_PUBLIC_API_BASE_PATH="/api"
+$env:NEXT_PUBLIC_API_BASE_PATH="/"
 
 # macOS/Linux
 export NEXT_PUBLIC_API_ORIGIN="http://localhost:8000"
-export NEXT_PUBLIC_API_BASE_PATH="/api"
+export NEXT_PUBLIC_API_BASE_PATH="/"
 ```
 
 ## Scripts
@@ -97,5 +97,5 @@ npm run start
 
 ## API Path Notes
 
-- If backend routes are exposed at root (`/books`, `/authors`), set `NEXT_PUBLIC_API_BASE_PATH=/`.
-- If backend routes are exposed behind a proxy prefix (`/api/...`), keep `NEXT_PUBLIC_API_BASE_PATH=/api`.
+- Canonical local contract uses root routes (`/books`, `/authors`), so `NEXT_PUBLIC_API_BASE_PATH=/`.
+- If a proxy exposes backend routes behind `/api/...`, override to `NEXT_PUBLIC_API_BASE_PATH=/api`.

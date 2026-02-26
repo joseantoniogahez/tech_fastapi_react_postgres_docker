@@ -1,5 +1,5 @@
 const DEFAULT_API_ORIGIN = "";
-const DEFAULT_API_BASE_PATH = "/api";
+const DEFAULT_API_BASE_PATH = "/";
 
 const normalizeOrigin = (origin: string): string => origin.trim().replace(/\/+$/, "");
 
