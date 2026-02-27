@@ -9,6 +9,7 @@ from jwt import InvalidTokenError
 from pydantic import ValidationError
 from sqlalchemy.exc import IntegrityError
 
+from app.const.permission import PERMISSION_SCOPE_RANK, PermissionScope, normalize_permission_scope
 from app.const.settings import AuthSettings
 from app.exceptions.services import ConflictException, ForbiddenException, InvalidInputException, UnauthorizedException
 from app.models.user import User
@@ -25,6 +26,8 @@ class AuthRepositoryPort(Protocol):
 
     async def update(self, entity: User, **changes: Any) -> User: ...
 
+    async def get_user_permission_scope(self, user_id: int, permission_id: str) -> str | None: ...
+
     async def user_has_permission(self, user_id: int, permission_id: str) -> bool: ...
 
 
@@ -37,7 +40,16 @@ class AuthServicePort(Protocol):
 
     async def get_user_from_token(self, token: str) -> User: ...
 
-    async def user_has_permission(self, user_id: int, permission_id: str) -> bool: ...
+    async def user_has_permission(
+        self,
+        user_id: int,
+        permission_id: str,
+        *,
+        required_scope: str = PermissionScope.ANY,
+        resource_owner_id: int | None = None,
+        resource_tenant_id: int | None = None,
+        user_tenant_id: int | None = None,
+    ) -> bool: ...
 
 
 class AuthService:
@@ -112,6 +124,50 @@ class AuthService:
             return TokenPayload.model_validate(payload)
         except (InvalidTokenError, ValidationError):
             return None
+
+    @staticmethod
+    def _is_valid_scope(scope: str) -> bool:
+        return scope in PERMISSION_SCOPE_RANK
+
+    @staticmethod
+    def _is_owner_match(*, user_id: int, resource_owner_id: int | None) -> bool:
+        return resource_owner_id is not None and resource_owner_id == user_id
+
+    @staticmethod
+    def _is_tenant_match(*, user_tenant_id: int | None, resource_tenant_id: int | None) -> bool:
+        return user_tenant_id is not None and resource_tenant_id is not None and user_tenant_id == resource_tenant_id
+
+    def _scope_satisfies_requirement(
+        self,
+        *,
+        granted_scope: str,
+        required_scope: str,
+        user_id: int,
+        resource_owner_id: int | None,
+        user_tenant_id: int | None,
+        resource_tenant_id: int | None,
+    ) -> bool:
+        if PERMISSION_SCOPE_RANK[granted_scope] < PERMISSION_SCOPE_RANK[required_scope]:
+            return False
+
+        owner_match = self._is_owner_match(user_id=user_id, resource_owner_id=resource_owner_id)
+        tenant_match = self._is_tenant_match(user_tenant_id=user_tenant_id, resource_tenant_id=resource_tenant_id)
+
+        if required_scope == PermissionScope.ANY:
+            return granted_scope == PermissionScope.ANY
+
+        if required_scope == PermissionScope.TENANT:
+            return granted_scope == PermissionScope.ANY or tenant_match
+
+        if required_scope == PermissionScope.OWN:
+            if granted_scope == PermissionScope.ANY:
+                return True
+            if granted_scope == PermissionScope.TENANT:
+                # Tenant grants can satisfy own-scoped checks when tenant or owner context matches.
+                return tenant_match or owner_match
+            return owner_match
+
+        return False
 
     async def _authenticate_or_raise(self, credentials: Credentials) -> User:
         username = self._normalize_username(credentials.username)
@@ -237,5 +293,31 @@ class AuthService:
 
         return user
 
-    async def user_has_permission(self, user_id: int, permission_id: str) -> bool:
-        return await self.auth_repository.user_has_permission(user_id=user_id, permission_id=permission_id)
+    async def user_has_permission(
+        self,
+        user_id: int,
+        permission_id: str,
+        *,
+        required_scope: str = PermissionScope.ANY,
+        resource_owner_id: int | None = None,
+        resource_tenant_id: int | None = None,
+        user_tenant_id: int | None = None,
+    ) -> bool:
+        normalized_required_scope = normalize_permission_scope(required_scope)
+        granted_scope = await self.auth_repository.get_user_permission_scope(
+            user_id=user_id,
+            permission_id=permission_id,
+        )
+        if granted_scope is None:
+            return False
+        if not self._is_valid_scope(granted_scope):
+            return False
+
+        return self._scope_satisfies_requirement(
+            granted_scope=granted_scope,
+            required_scope=normalized_required_scope,
+            user_id=user_id,
+            resource_owner_id=resource_owner_id,
+            user_tenant_id=user_tenant_id,
+            resource_tenant_id=resource_tenant_id,
+        )

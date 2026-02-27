@@ -1,6 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.const.permission import PERMISSION_SCOPE_RANK
 from app.models.role_permission import RolePermission
 from app.models.user import User
 from app.models.user_role import UserRole
@@ -22,15 +23,21 @@ class AuthRepository(BaseRepository[User]):
         result = await self.session.execute(query.limit(1))
         return result.scalar_one_or_none() is not None
 
-    async def user_has_permission(self, user_id: int, permission_id: str) -> bool:
+    async def get_user_permission_scope(self, user_id: int, permission_id: str) -> str | None:
         query = (
-            select(RolePermission.permission_id)
+            select(RolePermission.scope)
             .join(UserRole, RolePermission.role_id == UserRole.role_id)
             .where(
                 UserRole.user_id == user_id,
                 RolePermission.permission_id == permission_id,
             )
-            .limit(1)
         )
         result = await self.session.execute(query)
-        return result.scalar_one_or_none() is not None
+        scopes = tuple(result.scalars().all())
+        valid_scopes = [scope for scope in scopes if scope in PERMISSION_SCOPE_RANK]
+        if not valid_scopes:
+            return None
+        return max(valid_scopes, key=lambda scope: PERMISSION_SCOPE_RANK[scope])
+
+    async def user_has_permission(self, user_id: int, permission_id: str) -> bool:
+        return await self.get_user_permission_scope(user_id=user_id, permission_id=permission_id) is not None

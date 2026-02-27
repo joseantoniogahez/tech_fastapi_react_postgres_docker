@@ -26,6 +26,31 @@ def build_permission_id(*, resource: str, action: str) -> str:
     return permission_id
 
 
+class PermissionScope:
+    OWN = "own"
+    TENANT = "tenant"
+    ANY = "any"
+
+
+PERMISSION_SCOPES: Final[tuple[str, ...]] = (
+    PermissionScope.OWN,
+    PermissionScope.TENANT,
+    PermissionScope.ANY,
+)
+PERMISSION_SCOPE_RANK: Final[dict[str, int]] = {
+    PermissionScope.OWN: 1,
+    PermissionScope.TENANT: 2,
+    PermissionScope.ANY: 3,
+}
+
+
+def normalize_permission_scope(scope: str) -> str:
+    normalized_scope = scope.strip().lower()
+    if normalized_scope not in PERMISSION_SCOPE_RANK:
+        raise ValueError(f"Invalid permission scope '{scope}'. Expected one of {sorted(PERMISSION_SCOPES)}.")
+    return normalized_scope
+
+
 class ReadAccessLevel:
     PUBLIC = "public"
     AUTHENTICATED = "authenticated"

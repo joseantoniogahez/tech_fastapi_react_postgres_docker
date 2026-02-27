@@ -18,11 +18,26 @@ Permission policies are enforced by `app/dependencies/authorization.py` and mapp
 This table is a contract: `tests/routers/test_authorization_policy_coverage.py` verifies it
 against the live router dependency graph.
 
-| Method   | Path          | Permission     | Dependency Alias |
-| -------- | ------------- | -------------- | ---------------- |
-| `POST`   | `/books/`     | `books:create` | `BookCreateAuth` |
-| `PUT`    | `/books/{id}` | `books:update` | `BookUpdateAuth` |
-| `DELETE` | `/books/{id}` | `books:delete` | `BookDeleteAuth` |
+| Method   | Path          | Permission     | Required Scope | Dependency Alias |
+| -------- | ------------- | -------------- | -------------- | ---------------- |
+| `POST`   | `/books/`     | `books:create` | `any`          | `BookCreateAuth` |
+| `PUT`    | `/books/{id}` | `books:update` | `any`          | `BookUpdateAuth` |
+| `DELETE` | `/books/{id}` | `books:delete` | `any`          | `BookDeleteAuth` |
+
+## Permission Scope Semantics
+
+Scopes are ordered from narrowest to broadest:
+
+- `own`
+- `tenant`
+- `any`
+
+Deterministic evaluation rules:
+
+- Required `any`: only granted `any` passes.
+- Required `tenant`: granted `tenant` with tenant match, or granted `any`.
+- Required `own`: granted `own` with owner match, granted `tenant` with owner or tenant match, or granted `any`.
+- Missing owner/tenant context for scope-dependent checks is treated as deny.
 
 ## Read Endpoint Access Policy
 
@@ -52,6 +67,8 @@ Seed source: `utils/rbac_bootstrap.py`
 ## Notes
 
 - Permission checks are evaluated after bearer token validation.
+- Scope checks are evaluated in `app/services/auth.py` via `user_has_permission`.
+- Router-level scope/context wiring is defined in `app/dependencies/authorization.py`.
 - Read endpoints are classified as exactly one of `public`, `authenticated`, or `permission`.
 - Missing permission returns `403 forbidden` with `meta.permission_id`.
 - OpenAPI endpoint docs for protected routes live in `app/openapi/books.py`.

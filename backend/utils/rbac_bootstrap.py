@@ -9,7 +9,7 @@ from argon2 import PasswordHasher
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.const.permission import PERMISSION_SPECS
+from app.const.permission import PERMISSION_SPECS, PermissionScope
 from app.database import AsyncSessionDatabase
 from app.models.permission import Permission
 from app.models.role import Role
@@ -123,7 +123,13 @@ async def _sync_role_permissions(session: AsyncSession, roles_by_name: dict[str,
 
     missing_pairs = desired_pairs - existing_pairs
     for role_id, permission_id in sorted(missing_pairs):
-        session.add(RolePermission(role_id=role_id, permission_id=permission_id))
+        session.add(
+            RolePermission(
+                role_id=role_id,
+                permission_id=permission_id,
+                scope=PermissionScope.ANY,
+            )
+        )
 
     await session.flush()
     return len(missing_pairs)

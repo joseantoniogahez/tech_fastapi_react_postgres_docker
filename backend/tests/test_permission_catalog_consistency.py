@@ -8,13 +8,16 @@ from app.const.permission import (
     PERMISSION_CATALOG,
     PERMISSION_CATALOG_BY_ID,
     PERMISSION_ID_PATTERN,
+    PERMISSION_SCOPES,
     PermissionDefinition,
     PermissionId,
+    PermissionScope,
     ReadAccessLevel,
     ReadAccessPolicyDefinition,
     _validate_permission_catalog,
     _validate_read_access_policy_catalog,
     build_permission_id,
+    normalize_permission_scope,
 )
 from app.dependencies.authorization_books import BOOK_PERMISSION_IDS
 
@@ -155,3 +158,20 @@ def test_validate_read_access_policy_catalog_allows_permission_based_read_policy
     )
 
     _validate_read_access_policy_catalog(valid_catalog)
+
+
+def test_permission_scopes_catalog_matches_expected_order() -> None:
+    assert PERMISSION_SCOPES == (
+        PermissionScope.OWN,
+        PermissionScope.TENANT,
+        PermissionScope.ANY,
+    )
+
+
+def test_normalize_permission_scope_trims_and_lowercases() -> None:
+    assert normalize_permission_scope("  TENANT  ") == PermissionScope.TENANT
+
+
+def test_normalize_permission_scope_raises_for_invalid_value() -> None:
+    with pytest.raises(ValueError, match="Invalid permission scope 'regional'"):
+        normalize_permission_scope("regional")

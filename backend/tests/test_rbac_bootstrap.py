@@ -57,6 +57,8 @@ def test_bootstrap_rbac_is_idempotent() -> None:
                     assert await _count_rows(session, RolePermission) == len(BASE_PERMISSION_SPECS)
                     assert await _count_rows(session, User) == 1
                     assert await _count_rows(session, UserRole) == 1
+                    role_permissions = (await session.execute(select(RolePermission))).scalars().all()
+                    assert {role_permission.scope for role_permission in role_permissions} == {"any"}
 
                     admin = await session.scalar(select(User).where(User.username == "admin"))
                     assert admin is not None

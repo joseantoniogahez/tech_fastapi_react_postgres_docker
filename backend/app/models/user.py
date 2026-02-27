@@ -11,3 +11,4 @@ class User(BaseModel):
     username: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     disabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    tenant_id: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)

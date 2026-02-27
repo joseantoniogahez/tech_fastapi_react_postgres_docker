@@ -27,6 +27,22 @@ This command:
 1. Exchange credentials for a bearer token with `POST /token`.
 1. Call protected endpoints with `Authorization: Bearer <access_token>`.
 
+## Scoped Authorization
+
+Permission checks support scopes:
+
+- `own`: self-service resources owned by the authenticated user.
+- `tenant`: resources within the authenticated user's tenant.
+- `any`: global access (typically admin-level).
+
+Evaluation is deterministic and handled in `AuthService.user_has_permission(...)`:
+
+- Scope ordering is `own < tenant < any`.
+- Required `any` accepts only granted `any`.
+- Required `tenant` accepts granted `tenant` (with tenant match) or `any`.
+- Required `own` accepts granted `own` (owner match), granted `tenant` (owner or tenant match), or `any`.
+- Missing required context (`resource_owner_id` / `resource_tenant_id`) resolves to deny.
+
 ## `POST /token` Example
 
 Success:
@@ -143,4 +159,4 @@ Transactional behavior:
 }
 ```
 
-See `authorization_matrix.md` for permission-to-endpoint mapping.
+See `authorization_matrix.md` for permission-to-endpoint mapping and required scopes.
