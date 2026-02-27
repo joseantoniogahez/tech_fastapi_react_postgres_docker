@@ -28,6 +28,9 @@ The API exposes routes at root (`/`).
 | `PUT`    | `/books/{id}`      | Yes  | `books:update` | Path `id` + JSON `UpdateBook`                                | `200` `Book`               | `400`, `401`, `403`, `404`, `500` |
 | `DELETE` | `/books/{id}`      | Yes  | `books:delete` | Path `id`                                                    | `204` no body              | `400`, `401`, `403`, `500`        |
 
+Protected rows (`Permission != No`) are contract-checked by
+`tests/routers/test_authorization_policy_coverage.py`.
+
 ## Domain Notes
 
 ### Authentication and user profile

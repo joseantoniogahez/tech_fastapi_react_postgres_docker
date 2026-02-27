@@ -11,16 +11,18 @@ Permission IDs must follow `<resource>:<action>` using lowercase letters, number
 | `books:update` | Update books | `books`  | update |
 | `books:delete` | Delete books | `books`  | delete |
 
-## Route Matrix
+## Protected Endpoint Inventory
 
 Permission policies are enforced by `app/dependencies/authorization.py` and mapped in
 `app/dependencies/authorization_books.py`.
+This table is a contract: `tests/routers/test_authorization_policy_coverage.py` verifies it
+against the live router dependency graph.
 
-| Dependency Alias | Permission     | Endpoint             |
-| ---------------- | -------------- | -------------------- |
-| `BookCreateAuth` | `books:create` | `POST /books/`       |
-| `BookUpdateAuth` | `books:update` | `PUT /books/{id}`    |
-| `BookDeleteAuth` | `books:delete` | `DELETE /books/{id}` |
+| Method   | Path          | Permission     | Dependency Alias |
+| -------- | ------------- | -------------- | ---------------- |
+| `POST`   | `/books/`     | `books:create` | `BookCreateAuth` |
+| `PUT`    | `/books/{id}` | `books:update` | `BookUpdateAuth` |
+| `DELETE` | `/books/{id}` | `books:delete` | `BookDeleteAuth` |
 
 ## Base Role Catalog (Bootstrap)
 
