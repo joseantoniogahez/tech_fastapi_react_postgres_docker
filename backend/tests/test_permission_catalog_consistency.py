@@ -9,7 +9,11 @@ from app.const.permission import (
     PERMISSION_CATALOG_BY_ID,
     PERMISSION_ID_PATTERN,
     PermissionDefinition,
+    PermissionId,
+    ReadAccessLevel,
+    ReadAccessPolicyDefinition,
     _validate_permission_catalog,
+    _validate_read_access_policy_catalog,
     build_permission_id,
 )
 from app.dependencies.authorization_books import BOOK_PERMISSION_IDS
@@ -66,3 +70,88 @@ def test_validate_permission_catalog_raises_for_duplicate_ids() -> None:
 
     with pytest.raises(ValueError, match="Duplicate permission ids in PERMISSION_CATALOG: books:create"):
         _validate_permission_catalog(duplicate_catalog)
+
+
+def test_validate_read_access_policy_catalog_raises_for_invalid_method() -> None:
+    invalid_catalog = (
+        ReadAccessPolicyDefinition(method="POST", path="/books/private", access_level=ReadAccessLevel.PUBLIC),
+    )
+
+    with pytest.raises(ValueError, match="Invalid read-access method 'POST'"):
+        _validate_read_access_policy_catalog(invalid_catalog)
+
+
+def test_validate_read_access_policy_catalog_raises_for_invalid_path() -> None:
+    invalid_catalog = (
+        ReadAccessPolicyDefinition(method="GET", path="books/private", access_level=ReadAccessLevel.PUBLIC),
+    )
+
+    with pytest.raises(ValueError, match="Invalid read-access path 'books/private'"):
+        _validate_read_access_policy_catalog(invalid_catalog)
+
+
+def test_validate_read_access_policy_catalog_raises_for_invalid_access_level() -> None:
+    invalid_catalog = (ReadAccessPolicyDefinition(method="GET", path="/books/private", access_level="internal"),)
+
+    with pytest.raises(ValueError, match="Invalid read-access level 'internal'"):
+        _validate_read_access_policy_catalog(invalid_catalog)
+
+
+def test_validate_read_access_policy_catalog_raises_for_permission_policy_without_permission_id() -> None:
+    invalid_catalog = (
+        ReadAccessPolicyDefinition(method="GET", path="/books/private", access_level=ReadAccessLevel.PERMISSION),
+    )
+
+    with pytest.raises(ValueError, match="Permission-based read-access policies require permission_id"):
+        _validate_read_access_policy_catalog(invalid_catalog)
+
+
+def test_validate_read_access_policy_catalog_raises_for_unknown_permission_id() -> None:
+    invalid_catalog = (
+        ReadAccessPolicyDefinition(
+            method="GET",
+            path="/books/private",
+            access_level=ReadAccessLevel.PERMISSION,
+            permission_id="books:read",
+        ),
+    )
+
+    with pytest.raises(ValueError, match="Unknown permission id 'books:read'"):
+        _validate_read_access_policy_catalog(invalid_catalog)
+
+
+def test_validate_read_access_policy_catalog_raises_for_permission_id_on_non_permission_policy() -> None:
+    invalid_catalog = (
+        ReadAccessPolicyDefinition(
+            method="GET",
+            path="/books/public",
+            access_level=ReadAccessLevel.PUBLIC,
+            permission_id=PermissionId.BOOK_CREATE,
+        ),
+    )
+
+    with pytest.raises(ValueError, match="Non-permission read-access policy"):
+        _validate_read_access_policy_catalog(invalid_catalog)
+
+
+def test_validate_read_access_policy_catalog_raises_for_duplicate_endpoints() -> None:
+    invalid_catalog = (
+        ReadAccessPolicyDefinition(method="GET", path="/books/private", access_level=ReadAccessLevel.PUBLIC),
+        ReadAccessPolicyDefinition(method="GET", path="/books/private", access_level=ReadAccessLevel.PUBLIC),
+    )
+
+    with pytest.raises(ValueError, match="Duplicate endpoints in READ_ACCESS_POLICY_CATALOG: GET /books/private"):
+        _validate_read_access_policy_catalog(invalid_catalog)
+
+
+def test_validate_read_access_policy_catalog_allows_permission_based_read_policy() -> None:
+    valid_catalog = (
+        ReadAccessPolicyDefinition(
+            method="GET",
+            path="/books/private",
+            access_level=ReadAccessLevel.PERMISSION,
+            permission_id=PermissionId.BOOK_CREATE,
+        ),
+    )
+
+    _validate_read_access_policy_catalog(valid_catalog)

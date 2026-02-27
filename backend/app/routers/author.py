@@ -2,6 +2,7 @@ from typing import List
 
 from fastapi import APIRouter
 
+from app.dependencies.authorization import PublicReadAccessDependency
 from app.dependencies.services import AuthorServiceDependency
 from app.openapi.authors import GET_AUTHORS_DOC, AuthorSortQuery, LimitQuery, OffsetQuery
 from app.repositories import DEFAULT_LIST_LIMIT
@@ -16,6 +17,7 @@ router = APIRouter(
 @router.get("/", response_model=List[Author], **GET_AUTHORS_DOC)
 async def get_authors(
     author_service: AuthorServiceDependency,
+    _read_access: PublicReadAccessDependency,
     offset: OffsetQuery = 0,
     limit: LimitQuery = DEFAULT_LIST_LIMIT,
     sort: AuthorSortQuery = "name",

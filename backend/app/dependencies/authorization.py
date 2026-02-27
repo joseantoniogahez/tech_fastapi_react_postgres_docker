@@ -12,6 +12,20 @@ PermissionPolicyDependency = Callable[..., Awaitable[None]]
 AuthorizedUserPolicyDependency = Callable[..., Awaitable[User]]
 
 
+async def allow_public_read_access() -> None:
+    return None
+
+
+PublicReadAccessDependency = Annotated[None, Depends(allow_public_read_access)]
+
+
+async def allow_authenticated_read_access(current_user: CurrentActiveUserDependency) -> User:
+    return current_user
+
+
+AuthenticatedReadAccessDependency = Annotated[User, Depends(allow_authenticated_read_access)]
+
+
 def require_permission(permission_id: str) -> PermissionPolicyDependency:
     async def dependency(
         current_user: CurrentActiveUserDependency,

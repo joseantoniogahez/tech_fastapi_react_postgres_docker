@@ -2,6 +2,7 @@ from typing import List
 
 from fastapi import APIRouter
 
+from app.dependencies.authorization import PublicReadAccessDependency
 from app.dependencies.authorization_books import BookCreateAuth, BookDeleteAuth, BookUpdateAuth
 from app.dependencies.services import BookServiceDependency
 from app.exceptions.services import NotFoundException
@@ -32,6 +33,7 @@ router = APIRouter(
 @router.get("/", response_model=List[Book], **GET_BOOKS_DOC)
 async def get_books(
     book_service: BookServiceDependency,
+    _read_access: PublicReadAccessDependency,
     author_id: AuthorIdQuery = None,
     offset: OffsetQuery = 0,
     limit: LimitQuery = DEFAULT_LIST_LIMIT,
@@ -42,7 +44,10 @@ async def get_books(
 
 
 @router.get("/published", response_model=List[Book], **GET_PUBLISHED_BOOKS_DOC)
-async def get_published_books(book_service: BookServiceDependency) -> List[Book]:
+async def get_published_books(
+    book_service: BookServiceDependency,
+    _read_access: PublicReadAccessDependency,
+) -> List[Book]:
     books = await book_service.get_published()
     return [Book.model_validate(book) for book in books]
 
@@ -50,6 +55,7 @@ async def get_published_books(book_service: BookServiceDependency) -> List[Book]
 @router.get("/{id}", response_model=Book, **GET_BOOK_DOC)
 async def get_book(
     book_service: BookServiceDependency,
+    _read_access: PublicReadAccessDependency,
     id: BookIdPath,
 ) -> Book:
     book = await book_service.get(id)

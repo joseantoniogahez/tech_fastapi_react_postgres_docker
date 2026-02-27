@@ -13,23 +13,37 @@ The API exposes routes at root (`/`).
 
 ## Endpoint Summary
 
-| Method   | Path               | Auth | Permission     | Main Request Contract                                               | Success Response           | Common Error Statuses             |
-| -------- | ------------------ | ---- | -------------- | ------------------------------------------------------------------- | -------------------------- | --------------------------------- |
-| `GET`    | `/health`          | No   | No             | No body                                                             | `200` `{ "status": "ok" }` | -                                 |
-| `POST`   | `/token`           | No   | No             | `application/x-www-form-urlencoded` (`username`, `password`)        | `200` bearer token         | `400`, `401`, `403`, `500`        |
-| `POST`   | `/users/register`  | No   | No             | JSON `RegisterUser`                                                 | `201` `AuthenticatedUser`  | `400`, `409`, `500`               |
-| `GET`    | `/users/me`        | Yes  | No             | No body                                                             | `200` `AuthenticatedUser`  | `401`, `403`, `500`               |
-| `PATCH`  | `/users/me`        | Yes  | No             | JSON `UpdateCurrentUser`                                            | `200` `AuthenticatedUser`  | `400`, `401`, `403`, `409`, `500` |
-| `GET`    | `/authors/`        | No   | No             | Optional query `offset` (`>=0`), `limit` (`1..100`), `sort` (\`name | -name                      | id                                |
-| `GET`    | `/books/`          | No   | No             | Optional query `author_id` (`>=1`)                                  | `200` `Book[]`             | `400`, `500`                      |
-| `GET`    | `/books/published` | No   | No             | No body                                                             | `200` `Book[]`             | `500`                             |
-| `GET`    | `/books/{id}`      | No   | No             | Path `id` (`>=1`)                                                   | `200` `Book`               | `400`, `404`, `500`               |
-| `POST`   | `/books/`          | Yes  | `books:create` | JSON `AddBook`                                                      | `201` `Book`               | `400`, `401`, `403`, `500`        |
-| `PUT`    | `/books/{id}`      | Yes  | `books:update` | Path `id` + JSON `UpdateBook`                                       | `200` `Book`               | `400`, `401`, `403`, `404`, `500` |
-| `DELETE` | `/books/{id}`      | Yes  | `books:delete` | Path `id`                                                           | `204` no body              | `400`, `401`, `403`, `500`        |
+| Method   | Path               | Auth | Permission     | Main Request Contract                                                                    | Success Response           | Common Error Statuses             |
+| -------- | ------------------ | ---- | -------------- | ---------------------------------------------------------------------------------------- | -------------------------- | --------------------------------- |
+| `GET`    | `/health`          | No   | No             | No body                                                                                  | `200` `{ "status": "ok" }` | -                                 |
+| `POST`   | `/token`           | No   | No             | `application/x-www-form-urlencoded` (`username`, `password`)                             | `200` bearer token         | `400`, `401`, `403`, `500`        |
+| `POST`   | `/users/register`  | No   | No             | JSON `RegisterUser`                                                                      | `201` `AuthenticatedUser`  | `400`, `409`, `500`               |
+| `GET`    | `/users/me`        | Yes  | No             | No body                                                                                  | `200` `AuthenticatedUser`  | `401`, `403`, `500`               |
+| `PATCH`  | `/users/me`        | Yes  | No             | JSON `UpdateCurrentUser`                                                                 | `200` `AuthenticatedUser`  | `400`, `401`, `403`, `409`, `500` |
+| `GET`    | `/authors/`        | No   | No             | Optional query: `offset` (`>=0`), `limit` (`1..100`), `sort` in `{name, -name, id, -id}` | `200` `Author[]`           | `400`, `500`                      |
+| `GET`    | `/books/`          | No   | No             | Optional query `author_id` (`>=1`)                                                       | `200` `Book[]`             | `400`, `500`                      |
+| `GET`    | `/books/published` | No   | No             | No body                                                                                  | `200` `Book[]`             | `500`                             |
+| `GET`    | `/books/{id}`      | No   | No             | Path `id` (`>=1`)                                                                        | `200` `Book`               | `400`, `404`, `500`               |
+| `POST`   | `/books/`          | Yes  | `books:create` | JSON `AddBook`                                                                           | `201` `Book`               | `400`, `401`, `403`, `500`        |
+| `PUT`    | `/books/{id}`      | Yes  | `books:update` | Path `id` + JSON `UpdateBook`                                                            | `200` `Book`               | `400`, `401`, `403`, `404`, `500` |
+| `DELETE` | `/books/{id}`      | Yes  | `books:delete` | Path `id`                                                                                | `204` no body              | `400`, `401`, `403`, `500`        |
 
 Protected rows (`Permission != No`) are contract-checked by
 `tests/routers/test_authorization_policy_coverage.py`.
+
+## Read Access Classification
+
+This table explicitly classifies every `GET` endpoint as `public`, `authenticated`, or
+`permission` and is contract-checked by `tests/routers/test_authorization_policy_coverage.py`.
+
+| Method | Path               | Access Level    | Permission |
+| ------ | ------------------ | --------------- | ---------- |
+| `GET`  | `/health`          | `public`        | No         |
+| `GET`  | `/users/me`        | `authenticated` | No         |
+| `GET`  | `/authors/`        | `public`        | No         |
+| `GET`  | `/books/`          | `public`        | No         |
+| `GET`  | `/books/published` | `public`        | No         |
+| `GET`  | `/books/{id}`      | `public`        | No         |
 
 ## Domain Notes
 

@@ -26,6 +26,33 @@ def build_permission_id(*, resource: str, action: str) -> str:
     return permission_id
 
 
+class ReadAccessLevel:
+    PUBLIC = "public"
+    AUTHENTICATED = "authenticated"
+    PERMISSION = "permission"
+
+
+READ_ACCESS_LEVELS: Final[frozenset[str]] = frozenset(
+    {
+        ReadAccessLevel.PUBLIC,
+        ReadAccessLevel.AUTHENTICATED,
+        ReadAccessLevel.PERMISSION,
+    }
+)
+
+
+@dataclass(frozen=True)
+class ReadAccessPolicyDefinition:
+    method: str
+    path: str
+    access_level: str
+    permission_id: str | None = None
+
+    @property
+    def endpoint(self) -> tuple[str, str]:
+        return (self.method, self.path)
+
+
 PERMISSION_CATALOG: tuple[PermissionDefinition, ...] = (
     PermissionDefinition(resource="books", action="create", name="Create books"),
     PermissionDefinition(resource="books", action="update", name="Update books"),
@@ -68,3 +95,75 @@ class PermissionId:
     BOOK_CREATE = _PERMISSION_IDS_BY_RESOURCE_ACTION[("books", "create")]
     BOOK_UPDATE = _PERMISSION_IDS_BY_RESOURCE_ACTION[("books", "update")]
     BOOK_DELETE = _PERMISSION_IDS_BY_RESOURCE_ACTION[("books", "delete")]
+
+
+READ_ACCESS_POLICY_CATALOG: tuple[ReadAccessPolicyDefinition, ...] = (
+    ReadAccessPolicyDefinition(method="GET", path="/health", access_level=ReadAccessLevel.PUBLIC),
+    ReadAccessPolicyDefinition(method="GET", path="/users/me", access_level=ReadAccessLevel.AUTHENTICATED),
+    ReadAccessPolicyDefinition(method="GET", path="/authors/", access_level=ReadAccessLevel.PUBLIC),
+    ReadAccessPolicyDefinition(method="GET", path="/books/", access_level=ReadAccessLevel.PUBLIC),
+    ReadAccessPolicyDefinition(method="GET", path="/books/published", access_level=ReadAccessLevel.PUBLIC),
+    ReadAccessPolicyDefinition(method="GET", path="/books/{id}", access_level=ReadAccessLevel.PUBLIC),
+)
+
+
+def _validate_read_access_policy_structure(policy: ReadAccessPolicyDefinition) -> None:
+    if policy.method != "GET":
+        raise ValueError(f"Invalid read-access method '{policy.method}' for endpoint {policy.method} {policy.path}")
+
+    if not policy.path.startswith("/"):
+        raise ValueError(f"Invalid read-access path '{policy.path}'. Paths must start with '/'.")
+
+    if policy.access_level not in READ_ACCESS_LEVELS:
+        raise ValueError(
+            f"Invalid read-access level '{policy.access_level}' for endpoint {policy.method} {policy.path}. "
+            f"Expected one of {sorted(READ_ACCESS_LEVELS)}."
+        )
+
+
+def _validate_read_access_policy_permission_link(policy: ReadAccessPolicyDefinition) -> None:
+    permission_id = policy.permission_id
+    if policy.access_level == ReadAccessLevel.PERMISSION:
+        if permission_id is None:
+            raise ValueError(
+                "Permission-based read-access policies require permission_id for endpoint "
+                f"{policy.method} {policy.path}."
+            )
+        if permission_id not in PERMISSION_CATALOG_BY_ID:
+            raise ValueError(
+                f"Unknown permission id '{permission_id}' in read-access policy "
+                f"for endpoint {policy.method} {policy.path}."
+            )
+        return
+
+    if permission_id is not None:
+        raise ValueError(
+            f"Non-permission read-access policy for endpoint {policy.method} {policy.path} "
+            f"must not define permission_id '{permission_id}'."
+        )
+
+
+def _validate_read_access_policy_catalog(catalog: tuple[ReadAccessPolicyDefinition, ...]) -> None:
+    duplicated_endpoints: set[tuple[str, str]] = set()
+    seen_endpoints: set[tuple[str, str]] = set()
+
+    for policy in catalog:
+        endpoint = policy.endpoint
+        if endpoint in seen_endpoints:
+            duplicated_endpoints.add(endpoint)
+        else:
+            seen_endpoints.add(endpoint)
+
+        _validate_read_access_policy_structure(policy)
+        _validate_read_access_policy_permission_link(policy)
+
+    if duplicated_endpoints:
+        duplicated_endpoints_list = ", ".join(f"{method} {path}" for method, path in sorted(duplicated_endpoints))
+        raise ValueError(f"Duplicate endpoints in READ_ACCESS_POLICY_CATALOG: {duplicated_endpoints_list}")
+
+
+_validate_read_access_policy_catalog(READ_ACCESS_POLICY_CATALOG)
+
+READ_ACCESS_POLICY_BY_ENDPOINT: dict[tuple[str, str], ReadAccessPolicyDefinition] = {
+    policy.endpoint: policy for policy in READ_ACCESS_POLICY_CATALOG
+}
