@@ -2,15 +2,24 @@ from typing import Any, Protocol
 
 from app.const.book import BookStatus
 from app.models.book import Book
+from app.repositories import DEFAULT_LIST_LIMIT, MAX_LIST_LIMIT
+from app.repositories.book import BookSort
 from app.schemas.book import AddBook, UpdateBook
 from app.services import UnitOfWorkPort
 from app.services.author import AuthorServicePort
 
 
 class BookRepositoryPort(Protocol):
-    async def list_catalog(self, author_id: int | None = None) -> list[Book]: ...
+    async def list_catalog(
+        self,
+        author_id: int | None = None,
+        *,
+        offset: int = 0,
+        limit: int = DEFAULT_LIST_LIMIT,
+        sort: BookSort = "id",
+    ) -> list[Book]: ...
 
-    async def list_published(self) -> list[Book]: ...
+    async def list_published(self, *, offset: int = 0, limit: int = MAX_LIST_LIMIT) -> list[Book]: ...
 
     async def get(self, entity_id: int) -> Book | None: ...
 
@@ -33,7 +42,14 @@ class BookRepositoryPort(Protocol):
 
 
 class BookServicePort(Protocol):
-    async def get_all(self, author_id: int | None = None) -> list[Book]: ...
+    async def get_all(
+        self,
+        author_id: int | None = None,
+        *,
+        offset: int = 0,
+        limit: int = DEFAULT_LIST_LIMIT,
+        sort: BookSort = "id",
+    ) -> list[Book]: ...
 
     async def get_published(self) -> list[Book]: ...
 
@@ -57,8 +73,20 @@ class BookService:
         self.author_service = author_service
         self.unit_of_work = unit_of_work
 
-    async def get_all(self, author_id: int | None = None) -> list[Book]:
-        return await self.book_repository.list_catalog(author_id=author_id)
+    async def get_all(
+        self,
+        author_id: int | None = None,
+        *,
+        offset: int = 0,
+        limit: int = DEFAULT_LIST_LIMIT,
+        sort: BookSort = "id",
+    ) -> list[Book]:
+        return await self.book_repository.list_catalog(
+            author_id=author_id,
+            offset=offset,
+            limit=limit,
+            sort=sort,
+        )
 
     async def get_published(self) -> list[Book]:
         return await self.book_repository.list_published()

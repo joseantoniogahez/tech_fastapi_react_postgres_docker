@@ -1,11 +1,19 @@
 from typing import Protocol
 
 from app.models.author import Author
+from app.repositories import DEFAULT_LIST_LIMIT
+from app.repositories.author import AuthorSort
 from app.services import UnitOfWorkPort
 
 
 class AuthorRepositoryPort(Protocol):
-    async def list_ordered(self) -> list[Author]: ...
+    async def list_ordered(
+        self,
+        *,
+        offset: int = 0,
+        limit: int = DEFAULT_LIST_LIMIT,
+        sort: AuthorSort = "id",
+    ) -> list[Author]: ...
 
     async def get(self, entity_id: int) -> Author | None: ...
 
@@ -13,7 +21,13 @@ class AuthorRepositoryPort(Protocol):
 
 
 class AuthorServicePort(Protocol):
-    async def get_all(self) -> list[Author]: ...
+    async def get_all(
+        self,
+        *,
+        offset: int = 0,
+        limit: int = DEFAULT_LIST_LIMIT,
+        sort: AuthorSort = "id",
+    ) -> list[Author]: ...
 
     async def get_or_add(self, author_id: int | None, name: str) -> Author: ...
 
@@ -23,8 +37,14 @@ class AuthorService:
         self.author_repository = author_repository
         self.unit_of_work = unit_of_work
 
-    async def get_all(self) -> list[Author]:
-        return await self.author_repository.list_ordered()
+    async def get_all(
+        self,
+        *,
+        offset: int = 0,
+        limit: int = DEFAULT_LIST_LIMIT,
+        sort: AuthorSort = "id",
+    ) -> list[Author]:
+        return await self.author_repository.list_ordered(offset=offset, limit=limit, sort=sort)
 
     async def get_or_add(self, author_id: int | None, name: str) -> Author:
         async with self.unit_of_work:

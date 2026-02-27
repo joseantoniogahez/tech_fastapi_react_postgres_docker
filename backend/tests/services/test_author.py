@@ -2,6 +2,7 @@ import asyncio
 from unittest.mock import AsyncMock, MagicMock
 
 from app.models.author import Author
+from app.repositories import DEFAULT_LIST_LIMIT
 from app.services.author import AuthorService
 
 
@@ -31,7 +32,20 @@ def test_get_all_delegates_to_list_ordered() -> None:
         result = await service.get_all()
 
         assert result == expected
-        author_repository.list_ordered.assert_awaited_once_with()
+        author_repository.list_ordered.assert_awaited_once_with(offset=0, limit=DEFAULT_LIST_LIMIT, sort="id")
+        unit_of_work.__aenter__.assert_not_awaited()
+        unit_of_work.__aexit__.assert_not_awaited()
+
+    asyncio.run(run_test())
+
+
+def test_get_all_delegates_custom_pagination_and_sort() -> None:
+    service, author_repository, unit_of_work = _build_service()
+
+    async def run_test() -> None:
+        await service.get_all(offset=3, limit=2, sort="-name")
+
+        author_repository.list_ordered.assert_awaited_once_with(offset=3, limit=2, sort="-name")
         unit_of_work.__aenter__.assert_not_awaited()
         unit_of_work.__aexit__.assert_not_awaited()
 

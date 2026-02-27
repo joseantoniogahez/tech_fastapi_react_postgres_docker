@@ -4,6 +4,8 @@ from fastapi import Body, Path, Query, status
 
 from app.const.permission import PermissionId
 from app.openapi.common import INTERNAL_ERROR_EXAMPLE, build_error_response
+from app.repositories import DEFAULT_LIST_LIMIT, MAX_LIST_LIMIT
+from app.repositories.book import BookSort
 from app.schemas.book import AddBook, UpdateBook
 
 BOOK_EXAMPLE: dict[str, Any] = {
@@ -61,6 +63,33 @@ AuthorIdQuery = Annotated[
     ),
 ]
 
+OffsetQuery = Annotated[
+    int,
+    Query(
+        ge=0,
+        description="Zero-based index of the first item to return.",
+        examples=[0],
+    ),
+]
+
+LimitQuery = Annotated[
+    int,
+    Query(
+        ge=1,
+        le=MAX_LIST_LIMIT,
+        description=f"Maximum number of items to return. Must be between 1 and {MAX_LIST_LIMIT}.",
+        examples=[DEFAULT_LIST_LIMIT],
+    ),
+]
+
+BookSortQuery = Annotated[
+    BookSort,
+    Query(
+        description="Sort field. Use `-` prefix for descending order.",
+        examples=["id", "-year"],
+    ),
+]
+
 BookIdPath = Annotated[
     int,
     Path(
@@ -88,7 +117,10 @@ UpdateBookPayload = Annotated[
 
 GET_BOOKS_DOC: dict[str, Any] = {
     "summary": "List books",
-    "description": "Return the catalog of books. Optionally filter by `author_id`.",
+    "description": (
+        "Return the catalog of books. Supports `author_id` filter, pagination via `offset`/`limit`, "
+        "and deterministic sorting via `sort`."
+    ),
     "response_description": "List of books in the catalog.",
     "responses": {
         status.HTTP_200_OK: {
@@ -101,7 +133,7 @@ GET_BOOKS_DOC: dict[str, Any] = {
                 "detail": "Request validation error",
                 "status": 400,
                 "code": "invalid_input",
-                "meta": [{"loc": ["query", "author_id"], "msg": "Input should be greater than or equal to 1"}],
+                "meta": [{"loc": ["query", "limit"], "msg": f"Input should be less than or equal to {MAX_LIST_LIMIT}"}],
             },
         ),
         status.HTTP_500_INTERNAL_SERVER_ERROR: build_error_response(

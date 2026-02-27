@@ -55,15 +55,33 @@ def test_get_column_raises_when_column_is_missing() -> None:
     assert "Column 'missing' does not exist on 'Author'" in str(exc_info.value)
 
 
-def test_build_query_applies_filters_and_order_by() -> None:
+def test_build_query_applies_filters_and_sort() -> None:
     repository = BaseRepository(session=_build_session_mock(), model=Author)
 
-    query = repository._build_query(filters={"name": "Alice"}, order_by="id")
+    query = repository._build_query(filters={"name": "Alice"}, sort="id")
     query_text = str(query)
 
     assert "FROM authors" in query_text
     assert "WHERE authors.name = :name_1" in query_text
     assert "ORDER BY authors.id" in query_text
+
+
+def test_build_query_applies_descending_sort_with_stable_tiebreaker() -> None:
+    repository = BaseRepository(session=_build_session_mock(), model=Author)
+
+    query = repository._build_query(sort="-name")
+    query_text = str(query)
+
+    assert "ORDER BY authors.name DESC, authors.id ASC" in query_text
+
+
+def test_build_query_raises_when_sort_field_is_empty() -> None:
+    repository = BaseRepository(session=_build_session_mock(), model=Author)
+
+    with pytest.raises(RepositoryException) as exc_info:
+        repository._build_query(sort="-")
+
+    assert "Sort field cannot be empty" in str(exc_info.value)
 
 
 def test_build_creates_entity_instance() -> None:
@@ -137,7 +155,7 @@ def test_list_executes_query_with_pagination_and_returns_entities() -> None:
     session.execute.return_value = result
 
     async def run_test() -> None:
-        entities = await repository.list(filters={"name": "Alice"}, offset=2, limit=5, order_by="id")
+        entities = await repository.list(filters={"name": "Alice"}, offset=2, limit=5, sort="id")
 
         assert entities == expected_items
         session.execute.assert_awaited_once()
@@ -147,6 +165,34 @@ def test_list_executes_query_with_pagination_and_returns_entities() -> None:
         assert "ORDER BY authors.id" in query_text
         assert " LIMIT " in query_text
         assert " OFFSET " in query_text
+
+    asyncio.run(run_test())
+
+
+def test_list_raises_when_offset_is_negative() -> None:
+    session = _build_session_mock()
+    repository = BaseRepository(session=session, model=Author)
+
+    async def run_test() -> None:
+        with pytest.raises(RepositoryException) as exc_info:
+            await repository.list(offset=-1)
+
+        assert "Offset must be greater than or equal to 0" in str(exc_info.value)
+        session.execute.assert_not_awaited()
+
+    asyncio.run(run_test())
+
+
+def test_list_raises_when_limit_is_less_than_one() -> None:
+    session = _build_session_mock()
+    repository = BaseRepository(session=session, model=Author)
+
+    async def run_test() -> None:
+        with pytest.raises(RepositoryException) as exc_info:
+            await repository.list(limit=0)
+
+        assert "Limit must be greater than or equal to 1" in str(exc_info.value)
+        session.execute.assert_not_awaited()
 
     asyncio.run(run_test())
 

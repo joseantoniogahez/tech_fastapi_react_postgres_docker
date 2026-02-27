@@ -1,16 +1,26 @@
+from typing import Literal
+
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.author import Author
-from app.repositories import BaseRepository
+from app.repositories import DEFAULT_LIST_LIMIT, BaseRepository
+
+AuthorSort = Literal["id", "-id", "name", "-name"]
 
 
 class AuthorRepository(BaseRepository[Author]):
     def __init__(self, session: AsyncSession):
         super().__init__(session, Author)
 
-    async def list_ordered(self) -> list[Author]:
-        return await self.list(order_by="id")
+    async def list_ordered(
+        self,
+        *,
+        offset: int = 0,
+        limit: int = DEFAULT_LIST_LIMIT,
+        sort: AuthorSort = "id",
+    ) -> list[Author]:
+        return await self.list(offset=offset, limit=limit, sort=sort)
 
     async def get_by_name(self, name: str) -> Author | None:
         return await self.get_one_by({"name": name})

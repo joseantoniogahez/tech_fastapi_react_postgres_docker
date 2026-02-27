@@ -15,8 +15,12 @@ from app.openapi.books import (
     AddBookPayload,
     AuthorIdQuery,
     BookIdPath,
+    BookSortQuery,
+    LimitQuery,
+    OffsetQuery,
     UpdateBookPayload,
 )
+from app.repositories import DEFAULT_LIST_LIMIT
 from app.schemas.book import Book
 
 router = APIRouter(
@@ -29,8 +33,11 @@ router = APIRouter(
 async def get_books(
     book_service: BookServiceDependency,
     author_id: AuthorIdQuery = None,
+    offset: OffsetQuery = 0,
+    limit: LimitQuery = DEFAULT_LIST_LIMIT,
+    sort: BookSortQuery = "id",
 ) -> List[Book]:
-    books = await book_service.get_all(author_id)
+    books = await book_service.get_all(author_id=author_id, offset=offset, limit=limit, sort=sort)
     return [Book.model_validate(book) for book in books]
 
 

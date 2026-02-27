@@ -2,6 +2,8 @@ from http import HTTPStatus
 
 from starlette.testclient import TestClient
 
+from app.repositories import MAX_LIST_LIMIT
+
 
 def _auth_headers(mock_client: TestClient, username: str = "admin", password: str = "admin123") -> dict[str, str]:
     response = mock_client.post("/token", data={"username": username, "password": password})
@@ -40,6 +42,31 @@ def test_get_books_by_author(mock_client: TestClient):
         assert isinstance(book["author"], dict)
         assert set(book["author"].keys()) == {"id", "name"}
         assert book["author"]["id"] == 1
+
+
+def test_get_books_supports_pagination_and_sort(mock_client: TestClient) -> None:
+    full_response = mock_client.get(f"/books?sort=-year&limit={MAX_LIST_LIMIT}")
+    assert full_response.status_code == HTTPStatus.OK
+    full_books = full_response.json()
+
+    paged_response = mock_client.get("/books?sort=-year&offset=1&limit=2")
+    assert paged_response.status_code == HTTPStatus.OK
+    paged_books = paged_response.json()
+
+    assert paged_books == full_books[1:3]
+    assert len(paged_books) == 2
+
+
+def test_get_books_rejects_limit_over_max(mock_client: TestClient) -> None:
+    response = mock_client.get(f"/books?limit={MAX_LIST_LIMIT + 1}")
+    assert response.status_code == HTTPStatus.BAD_REQUEST
+    assert response.json()["code"] == "invalid_input"
+
+
+def test_get_books_rejects_unknown_sort_field(mock_client: TestClient) -> None:
+    response = mock_client.get("/books?sort=author")
+    assert response.status_code == HTTPStatus.BAD_REQUEST
+    assert response.json()["code"] == "invalid_input"
 
 
 def test_get_published_books(mock_client: TestClient):

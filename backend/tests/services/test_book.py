@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, MagicMock
 from app.const.book import BookStatus
 from app.models.author import Author
 from app.models.book import Book
+from app.repositories import DEFAULT_LIST_LIMIT
 from app.schemas.book import AddBook, UpdateBook
 from app.services.book import BookService
 
@@ -46,7 +47,30 @@ def test_get_all_delegates_to_list_catalog_with_author_filter() -> None:
         books = await service.get_all(author_id=2)
 
         assert books == expected_books
-        book_repository.list_catalog.assert_awaited_once_with(author_id=2)
+        book_repository.list_catalog.assert_awaited_once_with(
+            author_id=2,
+            offset=0,
+            limit=DEFAULT_LIST_LIMIT,
+            sort="id",
+        )
+        unit_of_work.__aenter__.assert_not_awaited()
+        unit_of_work.__aexit__.assert_not_awaited()
+
+    asyncio.run(run_test())
+
+
+def test_get_all_delegates_custom_pagination_and_sort() -> None:
+    service, book_repository, _, unit_of_work = _build_service()
+
+    async def run_test() -> None:
+        await service.get_all(author_id=5, offset=10, limit=7, sort="-year")
+
+        book_repository.list_catalog.assert_awaited_once_with(
+            author_id=5,
+            offset=10,
+            limit=7,
+            sort="-year",
+        )
         unit_of_work.__aenter__.assert_not_awaited()
         unit_of_work.__aexit__.assert_not_awaited()
 
