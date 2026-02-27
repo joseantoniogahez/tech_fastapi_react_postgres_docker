@@ -18,7 +18,7 @@ async def get_authors(
     author_service: AuthorServiceDependency,
     offset: OffsetQuery = 0,
     limit: LimitQuery = DEFAULT_LIST_LIMIT,
-    sort: AuthorSortQuery = "id",
+    sort: AuthorSortQuery = "name",
 ) -> List[Author]:
     authors = await author_service.get_all(offset=offset, limit=limit, sort=sort)
     return [Author.model_validate(author) for author in authors]

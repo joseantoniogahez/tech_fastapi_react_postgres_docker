@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.author import Author
 from app.repositories import DEFAULT_LIST_LIMIT, BaseRepository
 
-AuthorSort = Literal["id", "-id", "name", "-name"]
+AuthorSort = Literal["name", "-name", "id", "-id"]
 
 
 class AuthorRepository(BaseRepository[Author]):
@@ -18,7 +18,7 @@ class AuthorRepository(BaseRepository[Author]):
         *,
         offset: int = 0,
         limit: int = DEFAULT_LIST_LIMIT,
-        sort: AuthorSort = "id",
+        sort: AuthorSort = "name",
     ) -> list[Author]:
         return await self.list(offset=offset, limit=limit, sort=sort)
 

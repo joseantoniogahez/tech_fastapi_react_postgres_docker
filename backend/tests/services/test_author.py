@@ -32,7 +32,7 @@ def test_get_all_delegates_to_list_ordered() -> None:
         result = await service.get_all()
 
         assert result == expected
-        author_repository.list_ordered.assert_awaited_once_with(offset=0, limit=DEFAULT_LIST_LIMIT, sort="id")
+        author_repository.list_ordered.assert_awaited_once_with(offset=0, limit=DEFAULT_LIST_LIMIT, sort="name")
         unit_of_work.__aenter__.assert_not_awaited()
         unit_of_work.__aexit__.assert_not_awaited()
 

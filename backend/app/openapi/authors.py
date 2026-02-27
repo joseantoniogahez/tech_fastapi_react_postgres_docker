@@ -28,8 +28,10 @@ LimitQuery = Annotated[
 AuthorSortQuery = Annotated[
     AuthorSort,
     Query(
-        description="Sort field. Use `-` prefix for descending order.",
-        examples=["id", "-name"],
+        description=(
+            "Sort field (`name`, `-name`, `id`, `-id`). Use `-` prefix for descending order. Default: `name`."
+        ),
+        examples=["name", "-name"],
     ),
 ]
 
@@ -37,7 +39,7 @@ GET_AUTHORS_DOC: dict[str, Any] = {
     "summary": "List authors",
     "description": (
         "Return authors in the catalog. Supports pagination via `offset`/`limit` "
-        "and deterministic sorting via `sort`."
+        "and deterministic sorting via `sort` (default `name` ascending)."
     ),
     "response_description": "List of available authors.",
     "responses": {

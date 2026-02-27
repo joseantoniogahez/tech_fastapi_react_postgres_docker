@@ -12,7 +12,7 @@ class AuthorRepositoryPort(Protocol):
         *,
         offset: int = 0,
         limit: int = DEFAULT_LIST_LIMIT,
-        sort: AuthorSort = "id",
+        sort: AuthorSort = "name",
     ) -> list[Author]: ...
 
     async def get(self, entity_id: int) -> Author | None: ...
@@ -26,7 +26,7 @@ class AuthorServicePort(Protocol):
         *,
         offset: int = 0,
         limit: int = DEFAULT_LIST_LIMIT,
-        sort: AuthorSort = "id",
+        sort: AuthorSort = "name",
     ) -> list[Author]: ...
 
     async def get_or_add(self, author_id: int | None, name: str) -> Author: ...
@@ -42,7 +42,7 @@ class AuthorService:
         *,
         offset: int = 0,
         limit: int = DEFAULT_LIST_LIMIT,
-        sort: AuthorSort = "id",
+        sort: AuthorSort = "name",
     ) -> list[Author]:
         return await self.author_repository.list_ordered(offset=offset, limit=limit, sort=sort)
 

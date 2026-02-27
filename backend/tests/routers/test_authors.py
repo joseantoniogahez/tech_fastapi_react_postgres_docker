@@ -17,6 +17,15 @@ def test_get_authors(mock_client: TestClient) -> None:
         }, "Author keys should be {'id', 'name'}."
 
 
+def test_get_authors_default_sort_is_name_ascending(mock_client: TestClient) -> None:
+    response = mock_client.get("/authors")
+    assert response.status_code == HTTPStatus.OK
+
+    json_response = response.json()
+    names = [author["name"] for author in json_response]
+    assert names == sorted(names)
+
+
 def test_get_authors_supports_pagination_and_sort(mock_client: TestClient) -> None:
     full_response = mock_client.get(f"/authors?sort=-name&limit={MAX_LIST_LIMIT}")
     assert full_response.status_code == HTTPStatus.OK

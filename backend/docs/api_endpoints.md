@@ -13,20 +13,20 @@ The API exposes routes at root (`/`).
 
 ## Endpoint Summary
 
-| Method   | Path               | Auth | Permission     | Main Request Contract                                        | Success Response           | Common Error Statuses             |
-| -------- | ------------------ | ---- | -------------- | ------------------------------------------------------------ | -------------------------- | --------------------------------- |
-| `GET`    | `/health`          | No   | No             | No body                                                      | `200` `{ "status": "ok" }` | -                                 |
-| `POST`   | `/token`           | No   | No             | `application/x-www-form-urlencoded` (`username`, `password`) | `200` bearer token         | `400`, `401`, `403`, `500`        |
-| `POST`   | `/users/register`  | No   | No             | JSON `RegisterUser`                                          | `201` `AuthenticatedUser`  | `400`, `409`, `500`               |
-| `GET`    | `/users/me`        | Yes  | No             | No body                                                      | `200` `AuthenticatedUser`  | `401`, `403`, `500`               |
-| `PATCH`  | `/users/me`        | Yes  | No             | JSON `UpdateCurrentUser`                                     | `200` `AuthenticatedUser`  | `400`, `401`, `403`, `409`, `500` |
-| `GET`    | `/authors/`        | No   | No             | No body                                                      | `200` `Author[]`           | `500`                             |
-| `GET`    | `/books/`          | No   | No             | Optional query `author_id` (`>=1`)                           | `200` `Book[]`             | `400`, `500`                      |
-| `GET`    | `/books/published` | No   | No             | No body                                                      | `200` `Book[]`             | `500`                             |
-| `GET`    | `/books/{id}`      | No   | No             | Path `id` (`>=1`)                                            | `200` `Book`               | `400`, `404`, `500`               |
-| `POST`   | `/books/`          | Yes  | `books:create` | JSON `AddBook`                                               | `201` `Book`               | `400`, `401`, `403`, `500`        |
-| `PUT`    | `/books/{id}`      | Yes  | `books:update` | Path `id` + JSON `UpdateBook`                                | `200` `Book`               | `400`, `401`, `403`, `404`, `500` |
-| `DELETE` | `/books/{id}`      | Yes  | `books:delete` | Path `id`                                                    | `204` no body              | `400`, `401`, `403`, `500`        |
+| Method   | Path               | Auth | Permission     | Main Request Contract                                               | Success Response           | Common Error Statuses             |
+| -------- | ------------------ | ---- | -------------- | ------------------------------------------------------------------- | -------------------------- | --------------------------------- |
+| `GET`    | `/health`          | No   | No             | No body                                                             | `200` `{ "status": "ok" }` | -                                 |
+| `POST`   | `/token`           | No   | No             | `application/x-www-form-urlencoded` (`username`, `password`)        | `200` bearer token         | `400`, `401`, `403`, `500`        |
+| `POST`   | `/users/register`  | No   | No             | JSON `RegisterUser`                                                 | `201` `AuthenticatedUser`  | `400`, `409`, `500`               |
+| `GET`    | `/users/me`        | Yes  | No             | No body                                                             | `200` `AuthenticatedUser`  | `401`, `403`, `500`               |
+| `PATCH`  | `/users/me`        | Yes  | No             | JSON `UpdateCurrentUser`                                            | `200` `AuthenticatedUser`  | `400`, `401`, `403`, `409`, `500` |
+| `GET`    | `/authors/`        | No   | No             | Optional query `offset` (`>=0`), `limit` (`1..100`), `sort` (\`name | -name                      | id                                |
+| `GET`    | `/books/`          | No   | No             | Optional query `author_id` (`>=1`)                                  | `200` `Book[]`             | `400`, `500`                      |
+| `GET`    | `/books/published` | No   | No             | No body                                                             | `200` `Book[]`             | `500`                             |
+| `GET`    | `/books/{id}`      | No   | No             | Path `id` (`>=1`)                                                   | `200` `Book`               | `400`, `404`, `500`               |
+| `POST`   | `/books/`          | Yes  | `books:create` | JSON `AddBook`                                                      | `201` `Book`               | `400`, `401`, `403`, `500`        |
+| `PUT`    | `/books/{id}`      | Yes  | `books:update` | Path `id` + JSON `UpdateBook`                                       | `200` `Book`               | `400`, `401`, `403`, `404`, `500` |
+| `DELETE` | `/books/{id}`      | Yes  | `books:delete` | Path `id`                                                           | `204` no body              | `400`, `401`, `403`, `500`        |
 
 Protected rows (`Permission != No`) are contract-checked by
 `tests/routers/test_authorization_policy_coverage.py`.
@@ -47,6 +47,11 @@ See `authentication.md` for examples and error scenarios.
 - `PUT /books/{id}` returns `404` when the book does not exist.
 - `POST /books/` returns `201 Created` when the book is created.
 - `DELETE /books/{id}` returns `204 No Content` with an empty body; missing IDs are treated as a no-op.
+
+### Authors behavior
+
+- `GET /authors/` defaults to sorting by `name` ascending.
+- `GET /authors/` accepts `sort=name|-name|id|-id` to override ordering.
 
 Valid `Book.status` values:
 
