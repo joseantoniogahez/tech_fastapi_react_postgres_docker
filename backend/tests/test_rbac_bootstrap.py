@@ -11,8 +11,8 @@ from app.models.role import Role
 from app.models.role_permission import RolePermission
 from app.models.user import User
 from app.models.user_role import UserRole
-from utils.database import MockDatabase
 from utils.rbac_bootstrap import BASE_PERMISSION_SPECS, BASE_ROLE_PERMISSION_SPECS, bootstrap_rbac
+from utils.testing_support.database import MockDatabase
 
 
 async def _count_rows(session: AsyncSession, model: type[object]) -> int:

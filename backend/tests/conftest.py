@@ -18,8 +18,8 @@ from app.models.role import Role
 from app.models.role_permission import RolePermission
 from app.models.user import User
 from app.models.user_role import UserRole
-from utils.database import MockDatabase
-from utils.fixtures import get_fixture_data, load_mock_data
+from utils.testing_support.database import MockDatabase
+from utils.testing_support.fixtures import get_fixture_data, load_mock_data
 
 
 @pytest.fixture(scope="module")

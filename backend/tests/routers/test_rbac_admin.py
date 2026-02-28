@@ -8,7 +8,7 @@ from app.const.permission import PERMISSION_SPECS, PermissionId
 from app.models.role import Role
 from app.models.role_permission import RolePermission
 from app.models.user_role import UserRole
-from utils.database import MockDatabase
+from utils.testing_support.database import MockDatabase
 
 
 def _auth_headers(mock_client: TestClient, username: str, password: str) -> dict[str, str]:

@@ -1,7 +1,7 @@
 import json
 from typing import Any, Dict, List
 
-from utils.database import MockDatabase
+from utils.testing_support.database import MockDatabase
 
 
 def get_fixture_data(path: str, fixture_name: str) -> List[Dict[str, Any]]:
