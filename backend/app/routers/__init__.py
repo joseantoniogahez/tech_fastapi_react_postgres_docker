@@ -5,6 +5,7 @@ ROUTER_MODULES: Final[tuple[str, ...]] = (
     "auth",
     "book",
     "author",
+    "rbac",
 )
 
 ROUTER_ATTRIBUTE: Final[str] = "router"

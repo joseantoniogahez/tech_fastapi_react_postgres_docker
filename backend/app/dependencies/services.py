@@ -6,9 +6,15 @@ from app.const.settings import AuthSettings
 from app.services.auth import AuthService, AuthServicePort
 from app.services.author import AuthorService, AuthorServicePort
 from app.services.book import BookService, BookServicePort
+from app.services.rbac import RBACService, RBACServicePort
 
 from .db import UnitOfWorkDependency
-from .repositories import AuthorRepositoryDependency, AuthRepositoryDependency, BookRepositoryDependency
+from .repositories import (
+    AuthorRepositoryDependency,
+    AuthRepositoryDependency,
+    BookRepositoryDependency,
+    RBACRepositoryDependency,
+)
 
 
 async def get_authors_service(
@@ -56,3 +62,16 @@ async def get_auth_service(
 
 
 AuthServiceDependency = Annotated[AuthServicePort, Depends(get_auth_service)]
+
+
+async def get_rbac_service(
+    rbac_repository: RBACRepositoryDependency,
+    unit_of_work: UnitOfWorkDependency,
+) -> RBACServicePort:
+    return RBACService(
+        rbac_repository=rbac_repository,
+        unit_of_work=unit_of_work,
+    )
+
+
+RBACServiceDependency = Annotated[RBACServicePort, Depends(get_rbac_service)]

@@ -20,6 +20,7 @@ from app.const.permission import (
     normalize_permission_scope,
 )
 from app.dependencies.authorization_books import BOOK_PERMISSION_IDS
+from app.dependencies.authorization_rbac import RBAC_PERMISSION_IDS
 
 PERMISSION_TOKEN_PATTERN = re.compile(r"`([a-z][a-z0-9_]*:[a-z][a-z0-9_]*)`")
 AUTHORIZATION_MATRIX_PATH = Path(__file__).resolve().parent.parent / "docs" / "authorization_matrix.md"
@@ -45,6 +46,12 @@ def test_permission_catalog_ids_follow_resource_action_naming() -> None:
 def test_book_authorization_dependencies_reference_catalog_permissions() -> None:
     catalog_ids = set(PERMISSION_CATALOG_BY_ID)
     orphan_ids = sorted(set(BOOK_PERMISSION_IDS.values()) - catalog_ids)
+    assert orphan_ids == []
+
+
+def test_rbac_authorization_dependencies_reference_catalog_permissions() -> None:
+    catalog_ids = set(PERMISSION_CATALOG_BY_ID)
+    orphan_ids = sorted(set(RBAC_PERMISSION_IDS.values()) - catalog_ids)
     assert orphan_ids == []
 
 
