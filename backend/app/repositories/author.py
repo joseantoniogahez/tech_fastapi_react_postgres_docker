@@ -3,8 +3,9 @@ from typing import Literal
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.common.pagination import DEFAULT_LIST_LIMIT
 from app.models.author import Author
-from app.repositories import DEFAULT_LIST_LIMIT, BaseRepository
+from app.repositories.base import BaseRepository
 
 AuthorSort = Literal["name", "-name", "id", "-id"]
 

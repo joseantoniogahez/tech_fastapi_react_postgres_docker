@@ -2,10 +2,10 @@ from typing import List
 
 from fastapi import APIRouter
 
+from app.common.pagination import DEFAULT_LIST_LIMIT
 from app.dependencies.authorization import PublicReadAccessDependency
 from app.dependencies.services import AuthorServiceDependency
 from app.openapi.authors import GET_AUTHORS_DOC, AuthorSortQuery, LimitQuery, OffsetQuery
-from app.repositories import DEFAULT_LIST_LIMIT
 from app.schemas.author import Author
 
 router = APIRouter(

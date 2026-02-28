@@ -5,7 +5,7 @@ from app.const.permission import PERMISSION_SCOPE_RANK
 from app.models.role_permission import RolePermission
 from app.models.user import User
 from app.models.user_role import UserRole
-from app.repositories import BaseRepository
+from app.repositories.base import BaseRepository
 
 
 class AuthRepository(BaseRepository[User]):

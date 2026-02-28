@@ -140,4 +140,5 @@ The command is safe to run repeatedly and does not create duplicates.
 - Unit of Work transaction boundary and atomic write policy: `docs/unit_of_work.md`
 - OpenAPI documentation pattern: `docs/openapi_documentation.md`
 - Dependency injection guide: `docs/dependency_injection.md`
+- Layered architecture target, ports/adapters, and refactor rules: `docs/clean_architecture_ports_adapters.md`
 - Router auto-registration: `docs/router_registration.md`

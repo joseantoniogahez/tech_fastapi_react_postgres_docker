@@ -1,10 +1,10 @@
 import asyncio
 from unittest.mock import AsyncMock, MagicMock
 
+from app.common.pagination import DEFAULT_LIST_LIMIT
 from app.const.book import BookStatus
 from app.models.author import Author
 from app.models.book import Book
-from app.repositories import DEFAULT_LIST_LIMIT
 from app.schemas.book import AddBook, UpdateBook
 from app.services.book import BookService
 

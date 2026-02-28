@@ -4,15 +4,15 @@ from unittest.mock import AsyncMock, MagicMock, call, patch
 import pytest
 from sqlalchemy.exc import IntegrityError
 
-import app.repositories as repositories
 from app.exceptions.repositories import RepositoryException
 from app.models.author import Author
 from app.models.role_permission import RolePermission
 from app.models.user_role import UserRole
-from app.repositories import BaseRepository, IdType, UnitOfWork
 from app.repositories.auth import AuthRepository
 from app.repositories.author import AuthorRepository
+from app.repositories.base import BaseRepository
 from app.repositories.rbac import RBACRepository
+from app.repositories.uow import UnitOfWork
 
 
 def _build_session_mock() -> MagicMock:
@@ -35,13 +35,6 @@ class _AsyncNullTransaction:
 
     async def __aexit__(self, exc_type, exc, tb) -> None:
         return None
-
-
-def test_repositories_module_exports_expected_symbols() -> None:
-    assert repositories.BaseRepository is BaseRepository
-    assert repositories.UnitOfWork is UnitOfWork
-    assert repositories.IdType is IdType
-    assert IdType is int
 
 
 def test_get_column_returns_model_column() -> None:

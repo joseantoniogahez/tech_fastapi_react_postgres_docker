@@ -2,6 +2,7 @@ from typing import List
 
 from fastapi import APIRouter
 
+from app.common.pagination import DEFAULT_LIST_LIMIT
 from app.dependencies.authorization import PublicReadAccessDependency
 from app.dependencies.authorization_books import BookCreateAuth, BookDeleteAuth, BookUpdateAuth
 from app.dependencies.services import BookServiceDependency
@@ -21,7 +22,6 @@ from app.openapi.books import (
     OffsetQuery,
     UpdateBookPayload,
 )
-from app.repositories import DEFAULT_LIST_LIMIT
 from app.schemas.book import Book
 
 router = APIRouter(

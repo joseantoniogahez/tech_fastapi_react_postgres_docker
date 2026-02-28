@@ -1,10 +1,9 @@
-from typing import Annotated, Any
+from typing import Any
 
-from fastapi import Body, Path, status
+from fastapi import status
 
-from app.const.permission import PERMISSION_ID_PATTERN, PermissionId, PermissionScope
+from app.const.permission import PermissionId, PermissionScope
 from app.openapi.common import INTERNAL_ERROR_EXAMPLE, build_error_response
-from app.schemas.rbac import CreateRole, SetRolePermission, UpdateRole
 
 PERMISSION_EXAMPLE: dict[str, Any] = {
     "id": PermissionId.BOOK_CREATE,
@@ -38,74 +37,6 @@ USER_ROLE_ASSIGNMENT_EXAMPLE: dict[str, Any] = {
     "user_id": 3,
     "role_id": 2,
 }
-
-RoleIdPath = Annotated[
-    int,
-    Path(
-        ge=1,
-        description="Role ID.",
-        examples=[1],
-    ),
-]
-
-UserIdPath = Annotated[
-    int,
-    Path(
-        ge=1,
-        description="User ID.",
-        examples=[1],
-    ),
-]
-
-PermissionIdPath = Annotated[
-    str,
-    Path(
-        min_length=1,
-        max_length=100,
-        pattern=PERMISSION_ID_PATTERN.pattern,
-        description="Permission ID in `<resource>:<action>` format.",
-        examples=[PermissionId.BOOK_CREATE],
-    ),
-]
-
-CreateRolePayload = Annotated[
-    CreateRole,
-    Body(
-        description="Payload to create a role.",
-        examples={
-            "default": {
-                "summary": "Create a new role",
-                "value": {"name": "catalog_editor"},
-            }
-        },
-    ),
-]
-
-UpdateRolePayload = Annotated[
-    UpdateRole,
-    Body(
-        description="Payload to rename a role.",
-        examples={
-            "default": {
-                "summary": "Rename an existing role",
-                "value": {"name": "catalog_manager"},
-            }
-        },
-    ),
-]
-
-SetRolePermissionPayload = Annotated[
-    SetRolePermission,
-    Body(
-        description="Assign or update a permission grant on a role.",
-        examples={
-            "default": {
-                "summary": "Grant tenant-scoped access",
-                "value": {"scope": PermissionScope.TENANT},
-            }
-        },
-    ),
-]
 
 
 def _unauthorized_response() -> dict[str, Any]:

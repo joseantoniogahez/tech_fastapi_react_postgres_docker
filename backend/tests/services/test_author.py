@@ -1,8 +1,8 @@
 import asyncio
 from unittest.mock import AsyncMock, MagicMock
 
+from app.common.pagination import DEFAULT_LIST_LIMIT
 from app.models.author import Author
-from app.repositories import DEFAULT_LIST_LIMIT
 from app.services.author import AuthorService
 
 

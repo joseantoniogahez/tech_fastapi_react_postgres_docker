@@ -4,7 +4,7 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import AsyncSessionDatabase
-from app.repositories import UnitOfWork
+from app.repositories.uow import UnitOfWork
 from app.services import UnitOfWorkPort
 
 

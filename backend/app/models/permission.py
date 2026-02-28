@@ -1,7 +1,7 @@
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models import BaseModel
+from app.models.base import BaseModel
 
 
 class Permission(BaseModel):

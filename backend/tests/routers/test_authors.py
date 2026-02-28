@@ -2,7 +2,7 @@ from http import HTTPStatus
 
 from starlette.testclient import TestClient
 
-from app.repositories import MAX_LIST_LIMIT
+from app.common.pagination import MAX_LIST_LIMIT
 
 
 def test_get_authors(mock_client: TestClient) -> None:

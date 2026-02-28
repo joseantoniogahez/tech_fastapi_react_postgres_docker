@@ -1,8 +1,8 @@
 from typing import Any, Protocol
 
+from app.common.pagination import DEFAULT_LIST_LIMIT, MAX_LIST_LIMIT
 from app.const.book import BookStatus
 from app.models.book import Book
-from app.repositories import DEFAULT_LIST_LIMIT, MAX_LIST_LIMIT
 from app.repositories.book import BookSort
 from app.schemas.book import AddBook, UpdateBook
 from app.services import UnitOfWorkPort

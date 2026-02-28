@@ -8,8 +8,9 @@ known_first_party = ["app", "tests", "utils"]
 
 [tool.autoflake]
 in-place = true
-remove-all-unused-imports = true
 expand-star-imports = true
+ignore-init-module-imports = true
+remove-all-unused-imports = true
 remove-duplicate-keys = true
 remove-unused-variables = true
 
@@ -17,6 +18,7 @@ remove-unused-variables = true
 max-complexity = 10
 statistics = true
 max-line-length = 120
+per-file-ignores = ["__init__.py:F401"]
 
 [tool.mypy]
 plugins = ["pydantic.mypy"]

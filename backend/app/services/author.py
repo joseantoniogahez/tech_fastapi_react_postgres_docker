@@ -1,7 +1,7 @@
 from typing import Protocol
 
+from app.common.pagination import DEFAULT_LIST_LIMIT
 from app.models.author import Author
-from app.repositories import DEFAULT_LIST_LIMIT
 from app.repositories.author import AuthorSort
 from app.services import UnitOfWorkPort
 

@@ -2,9 +2,10 @@ from typing import Literal
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.common.pagination import DEFAULT_LIST_LIMIT, MAX_LIST_LIMIT
 from app.const.book import BookStatus
 from app.models.book import Book
-from app.repositories import DEFAULT_LIST_LIMIT, MAX_LIST_LIMIT, BaseRepository
+from app.repositories.base import BaseRepository
 
 BookSort = Literal["id", "-id", "title", "-title", "year", "-year"]
 
