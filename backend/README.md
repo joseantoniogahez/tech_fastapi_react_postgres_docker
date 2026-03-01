@@ -133,12 +133,12 @@ The command is safe to run repeatedly and does not create duplicates.
 ## Documentation By Topic
 
 - Docs index: `docs/README.md`
-- API endpoints: `docs/api_endpoints.md`
-- Authentication and account management: `docs/authentication.md`
-- RBAC permission matrix: `docs/authorization_matrix.md`
-- Error mapping and payload format: `docs/error_mapping.md`
-- Unit of Work transaction boundary and atomic write policy: `docs/unit_of_work.md`
-- OpenAPI documentation pattern: `docs/openapi_documentation.md`
-- Dependency injection guide: `docs/dependency_injection.md`
-- Layered architecture target, ports/adapters, and refactor rules: `docs/clean_architecture_ports_adapters.md`
-- Router auto-registration: `docs/router_registration.md`
+- API endpoints: `docs/operations/api_endpoints.md`
+- Authentication and account management: `docs/operations/authentication.md`
+- RBAC permission matrix: `docs/operations/authorization_matrix.md`
+- Error mapping and payload format: `docs/operations/error_mapping.md`
+- Unit of Work transaction boundary and atomic write policy: `docs/architecture/unit_of_work.md`
+- OpenAPI documentation pattern: `docs/architecture/openapi_documentation.md`
+- Dependency injection guide: `docs/architecture/dependency_injection.md`
+- Layered architecture target, ports/adapters, and refactor rules: `docs/architecture/clean_architecture_ports_adapters.md`
+- Router auto-registration: `docs/architecture/router_registration.md`

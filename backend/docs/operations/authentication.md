@@ -117,7 +117,7 @@ Transactional behavior:
 
 - `POST /users/register` and `PATCH /users/me` run inside Unit of Work transaction scopes.
 - On failure, pending account writes are rolled back.
-- See `unit_of_work.md` for transaction details.
+- See `../architecture/unit_of_work.md` for transaction details.
 
 ## Common Auth Errors
 

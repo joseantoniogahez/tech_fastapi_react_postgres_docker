@@ -9,7 +9,7 @@ The API exposes routes at root (`/`).
 - Standard error payload: `{ detail, status, code, meta? }`.
 - Request validation errors are normalized to `400 invalid_input` (not exposed as `422`).
 - Write endpoints (`POST`/`PUT`/`PATCH`/`DELETE`) execute inside a Unit of Work transaction boundary.
-  See `unit_of_work.md` for commit/rollback behavior.
+  See `../architecture/unit_of_work.md` for commit/rollback behavior.
 
 ## Endpoint Summary
 
