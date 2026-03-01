@@ -1,4 +1,3 @@
-import re
 from datetime import datetime, timedelta, timezone
 from typing import Any, Protocol
 
@@ -14,6 +13,15 @@ from app.const.settings import AuthSettings
 from app.exceptions.services import ConflictException, ForbiddenException, InvalidInputException, UnauthorizedException
 from app.models.user import User
 from app.schemas.auth import AuthenticatedUser, Credentials, RegisterUser, Token, TokenPayload, UpdateCurrentUser
+from app.security.policies import (
+    USERNAME_ALLOWED_DESCRIPTION,
+    PasswordPolicyError,
+    UsernamePolicyError,
+    UsernamePolicyErrorCode,
+    format_password_policy_messages,
+    normalize_username,
+    validate_password_policy,
+)
 from app.services import UnitOfWorkPort
 
 
@@ -53,8 +61,6 @@ class AuthServicePort(Protocol):
 
 
 class AuthService:
-    _username_pattern = re.compile(r"^[a-z0-9_.-]+$")
-
     def __init__(
         self,
         auth_repository: AuthRepositoryPort,
@@ -70,38 +76,27 @@ class AuthService:
         self.access_token_expire_minutes = settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES
 
     def _normalize_username(self, username: str) -> str:
-        normalized_username = username.strip().lower()
-        if not normalized_username:
-            raise InvalidInputException(message="Username is required")
+        try:
+            return normalize_username(username)
+        except UsernamePolicyError as exc:
+            if exc.code is UsernamePolicyErrorCode.REQUIRED:
+                raise InvalidInputException(message="Username is required") from exc
 
-        if not self._username_pattern.fullmatch(normalized_username):
             raise InvalidInputException(
                 message="Username has invalid format",
                 details={
-                    "allowed": "lowercase letters, numbers, dot, underscore and hyphen",
+                    "allowed": USERNAME_ALLOWED_DESCRIPTION,
                 },
-            )
-
-        return normalized_username
+            ) from exc
 
     def _validate_password_policy(self, password: str, username: str) -> None:
-        violations: list[str] = []
-        if len(password) < 8:
-            violations.append("Password must be at least 8 characters long")
-        if not re.search(r"[a-z]", password):
-            violations.append("Password must include at least one lowercase letter")
-        if not re.search(r"[A-Z]", password):
-            violations.append("Password must include at least one uppercase letter")
-        if not re.search(r"\d", password):
-            violations.append("Password must include at least one number")
-        if username in password.lower():
-            violations.append("Password cannot contain the username")
-
-        if violations:
+        try:
+            validate_password_policy(password, username)
+        except PasswordPolicyError as exc:
             raise InvalidInputException(
                 message="Password does not meet policy",
-                details={"violations": violations},
-            )
+                details={"violations": format_password_policy_messages(exc.violations)},
+            ) from exc
 
     def _hash_password(self, plain_password: str) -> str:
         return self.password_hasher.hash(plain_password)

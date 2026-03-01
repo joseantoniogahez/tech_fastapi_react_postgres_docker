@@ -1,7 +1,6 @@
 import argparse
 import asyncio
 import os
-import re
 import sys
 from dataclasses import dataclass
 
@@ -16,6 +15,14 @@ from app.models.role import Role
 from app.models.role_permission import RolePermission
 from app.models.user import User
 from app.models.user_role import UserRole
+from app.security.policies import (
+    PasswordPolicyError,
+    UsernamePolicyError,
+    UsernamePolicyErrorCode,
+    format_password_policy_summary,
+    normalize_username,
+    validate_password_policy,
+)
 
 BASE_PERMISSION_SPECS: tuple[tuple[str, str], ...] = PERMISSION_SPECS
 
@@ -25,8 +32,6 @@ BASE_ROLE_PERMISSION_SPECS: dict[str, tuple[str, ...]] = {
     "admin_role": BASE_PERMISSION_IDS,
     "reader_role": (),
 }
-
-_USERNAME_PATTERN = re.compile(r"^[a-z0-9_.-]+$")
 
 
 @dataclass(frozen=True)
@@ -41,31 +46,24 @@ class BootstrapReport:
 
 
 def _normalize_username(username: str) -> str:
-    normalized_username = username.strip().lower()
-    if not normalized_username:
-        raise ValueError("Admin username is required.")
+    try:
+        return normalize_username(username)
+    except UsernamePolicyError as exc:
+        if exc.code is UsernamePolicyErrorCode.REQUIRED:
+            raise ValueError("Admin username is required.") from exc
 
-    if _USERNAME_PATTERN.fullmatch(normalized_username) is None:
-        raise ValueError("Admin username has invalid format. Use lowercase letters, numbers, dot, underscore, hyphen.")
-
-    return normalized_username
+        raise ValueError(
+            "Admin username has invalid format. Use lowercase letters, numbers, dot, underscore, hyphen."
+        ) from exc
 
 
 def _validate_password_policy(password: str, username: str) -> None:
-    violations: list[str] = []
-    if len(password) < 8:
-        violations.append("at least 8 characters")
-    if re.search(r"[a-z]", password) is None:
-        violations.append("at least one lowercase letter")
-    if re.search(r"[A-Z]", password) is None:
-        violations.append("at least one uppercase letter")
-    if re.search(r"\d", password) is None:
-        violations.append("at least one number")
-    if username in password.lower():
-        violations.append("must not contain the username")
-
-    if violations:
-        raise ValueError(f"Admin password does not meet policy: {', '.join(violations)}.")
+    try:
+        validate_password_policy(password, username)
+    except PasswordPolicyError as exc:
+        raise ValueError(
+            f"Admin password does not meet policy: {format_password_policy_summary(exc.violations)}."
+        ) from exc
 
 
 async def _sync_permissions(session: AsyncSession) -> tuple[dict[str, Permission], int, int]:

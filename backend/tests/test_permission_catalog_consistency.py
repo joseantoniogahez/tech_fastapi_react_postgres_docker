@@ -1,6 +1,5 @@
 import re
 from collections import Counter
-from pathlib import Path
 
 import pytest
 
@@ -21,9 +20,9 @@ from app.const.permission import (
 )
 from app.dependencies.authorization_books import BOOK_PERMISSION_IDS
 from app.dependencies.authorization_rbac import RBAC_PERMISSION_IDS
+from utils.testing_support.docs import AUTHORIZATION_MATRIX_PATH
 
 PERMISSION_TOKEN_PATTERN = re.compile(r"`([a-z][a-z0-9_]*:[a-z][a-z0-9_]*)`")
-AUTHORIZATION_MATRIX_PATH = Path(__file__).resolve().parent.parent / "docs" / "authorization_matrix.md"
 
 
 def _extract_permission_ids_from_markdown(markdown: str) -> set[str]:

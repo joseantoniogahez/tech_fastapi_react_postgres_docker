@@ -16,10 +16,7 @@ from app.const.permission import (
 )
 from app.dependencies.authorization import allow_authenticated_read_access, allow_public_read_access
 from app.main import app
-
-BACKEND_DIR = Path(__file__).resolve().parents[2]
-AUTHORIZATION_MATRIX_PATH = BACKEND_DIR / "docs" / "authorization_matrix.md"
-API_ENDPOINTS_PATH = BACKEND_DIR / "docs" / "api_endpoints.md"
+from utils.testing_support.docs import API_ENDPOINTS_PATH, AUTHORIZATION_MATRIX_PATH
 
 HTTP_METHODS = frozenset({"GET", "POST", "PUT", "PATCH", "DELETE"})
 SECTION_PATTERN_TEMPLATE = r"^## {heading}\n(?P<section>[\s\S]*?)(?=^## |\Z)"
