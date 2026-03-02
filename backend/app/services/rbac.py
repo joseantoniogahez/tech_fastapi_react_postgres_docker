@@ -1,7 +1,5 @@
 from typing import Protocol
 
-from sqlalchemy.exc import IntegrityError
-
 from app.const.permission import normalize_permission_scope
 from app.exceptions.services import ConflictException, InvalidInputException, NotFoundException
 from app.models.permission import Permission
@@ -192,42 +190,30 @@ class RBACService:
 
     async def create_role(self, role_data: CreateRole) -> RBACRole:
         normalized_name = self._normalize_role_name(role_data.name)
-        try:
-            async with self.unit_of_work:
-                if await self.rbac_repository.role_name_exists(normalized_name):
-                    raise ConflictException(
-                        message="Role name already exists",
-                        details={"name": normalized_name},
-                    )
-                role = await self.rbac_repository.create_role(name=normalized_name)
-        except IntegrityError as exc:
-            raise ConflictException(
-                message="Role name already exists",
-                details={"name": normalized_name},
-            ) from exc
+        async with self.unit_of_work:
+            if await self.rbac_repository.role_name_exists(normalized_name):
+                raise ConflictException(
+                    message="Role name already exists",
+                    details={"name": normalized_name},
+                )
+            role = await self.rbac_repository.create_role(name=normalized_name)
 
         return await self._build_role_response(role)
 
     async def update_role(self, role_id: int, role_data: UpdateRole) -> RBACRole:
         normalized_name = self._normalize_role_name(role_data.name)
-        try:
-            async with self.unit_of_work:
-                role = await self._get_role_or_raise(role_id)
-                if normalized_name != role.name and await self.rbac_repository.role_name_exists(
-                    normalized_name,
-                    exclude_role_id=role.id,
-                ):
-                    raise ConflictException(
-                        message="Role name already exists",
-                        details={"name": normalized_name},
-                    )
-                if normalized_name != role.name:
-                    role = await self.rbac_repository.update_role(role, name=normalized_name)
-        except IntegrityError as exc:
-            raise ConflictException(
-                message="Role name already exists",
-                details={"name": normalized_name},
-            ) from exc
+        async with self.unit_of_work:
+            role = await self._get_role_or_raise(role_id)
+            if normalized_name != role.name and await self.rbac_repository.role_name_exists(
+                normalized_name,
+                exclude_role_id=role.id,
+            ):
+                raise ConflictException(
+                    message="Role name already exists",
+                    details={"name": normalized_name},
+                )
+            if normalized_name != role.name:
+                role = await self.rbac_repository.update_role(role, name=normalized_name)
 
         return await self._build_role_response(role)
 

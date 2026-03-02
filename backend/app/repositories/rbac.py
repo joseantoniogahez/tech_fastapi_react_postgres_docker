@@ -1,6 +1,8 @@
 from sqlalchemy import delete, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.exceptions.repositories import RepositoryConflictException
 from app.models.permission import Permission
 from app.models.role import Role
 from app.models.role_permission import RolePermission
@@ -48,10 +50,22 @@ class RBACRepository(BaseRepository[Role]):
         return result.scalar_one_or_none() is not None
 
     async def create_role(self, *, name: str) -> Role:
-        return await self.create(name=name)
+        try:
+            return await self.create(name=name)
+        except IntegrityError as exc:
+            raise RepositoryConflictException(
+                message="Role name already exists",
+                details={"name": name},
+            ) from exc
 
     async def update_role(self, role: Role, *, name: str) -> Role:
-        return await self.update(role, name=name)
+        try:
+            return await self.update(role, name=name)
+        except IntegrityError as exc:
+            raise RepositoryConflictException(
+                message="Role name already exists",
+                details={"name": name},
+            ) from exc
 
     async def delete_role(self, role_id: int) -> bool:
         role = await self.get(role_id)

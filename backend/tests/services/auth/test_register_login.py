@@ -2,8 +2,8 @@ import asyncio
 from unittest.mock import patch
 
 import pytest
-from sqlalchemy.exc import IntegrityError
 
+from app.exceptions.repositories import RepositoryConflictException
 from app.exceptions.services import ConflictException, ForbiddenException, UnauthorizedException
 from app.schemas.auth import Credentials, RegisterUser
 from utils.testing_support.auth_service import assert_unit_of_work_scope_committed, build_service, build_user
@@ -120,13 +120,16 @@ def test_register_creates_user_and_returns_authenticated_user() -> None:
     asyncio.run(run_test())
 
 
-def test_register_raises_conflict_when_create_hits_integrity_error() -> None:
+def test_register_propagates_repository_conflict_from_create() -> None:
     service, repository = build_service()
     registration = RegisterUser(username="john", password="StrongPass1")
-    repository.create.side_effect = IntegrityError("insert", {}, Exception("duplicate"))
+    repository.create.side_effect = RepositoryConflictException(
+        message="Username already exists",
+        details={"username": "john"},
+    )
 
     async def run_test() -> None:
-        with pytest.raises(ConflictException) as exc_info:
+        with pytest.raises(RepositoryConflictException) as exc_info:
             await service.register(registration)
 
         assert "Username already exists" in str(exc_info.value)

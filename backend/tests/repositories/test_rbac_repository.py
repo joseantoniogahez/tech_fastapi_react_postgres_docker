@@ -1,5 +1,10 @@
 import asyncio
 
+import pytest
+from sqlalchemy.exc import IntegrityError
+
+from app.exceptions.repositories import RepositoryConflictException
+from app.models.role import Role
 from app.models.role_permission import RolePermission
 from app.models.user_role import UserRole
 from app.repositories.rbac import RBACRepository
@@ -105,5 +110,39 @@ def test_rbac_repository_remove_user_role_returns_false_when_assignment_missing(
         assert removed is False
         session.delete.assert_not_called()
         session.flush.assert_not_awaited()
+
+    asyncio.run(run_test())
+
+
+def test_rbac_repository_create_role_translates_integrity_error_to_repository_conflict() -> None:
+    session = build_session_mock()
+    session.flush.side_effect = IntegrityError("insert", {}, Exception("duplicate"))
+    repository = RBACRepository(session=session)
+
+    async def run_test() -> None:
+        with pytest.raises(RepositoryConflictException) as exc_info:
+            await repository.create_role(name="ops_role")
+
+        assert "Role name already exists" in str(exc_info.value)
+        assert exc_info.value.details == {"name": "ops_role"}
+        session.refresh.assert_not_awaited()
+
+    asyncio.run(run_test())
+
+
+def test_rbac_repository_update_role_translates_integrity_error_to_repository_conflict() -> None:
+    session = build_session_mock()
+    session.flush.side_effect = IntegrityError("update", {}, Exception("duplicate"))
+    role = Role(id=4, name="ops_role")
+    session.merge.return_value = role
+    repository = RBACRepository(session=session)
+
+    async def run_test() -> None:
+        with pytest.raises(RepositoryConflictException) as exc_info:
+            await repository.update_role(role, name="ops_role_v2")
+
+        assert "Role name already exists" in str(exc_info.value)
+        assert exc_info.value.details == {"name": "ops_role_v2"}
+        session.refresh.assert_not_awaited()
 
     asyncio.run(run_test())

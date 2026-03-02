@@ -1,6 +1,11 @@
 import asyncio
 from unittest.mock import AsyncMock, patch
 
+import pytest
+from sqlalchemy.exc import IntegrityError
+
+from app.exceptions.repositories import RepositoryConflictException, RepositoryInternalErrorException
+from app.models.user import User
 from app.repositories.auth import AuthRepository
 from utils.testing_support.repositories import build_session_mock
 
@@ -19,5 +24,79 @@ def test_auth_repository_user_has_permission_delegates_to_scope_lookup() -> None
             user_id=3,
             permission_id="books:update",
         )
+
+    asyncio.run(run_test())
+
+
+def test_auth_repository_create_translates_integrity_error_to_repository_conflict() -> None:
+    session = build_session_mock()
+    session.flush.side_effect = IntegrityError("insert", {}, Exception("duplicate"))
+    repository = AuthRepository(session=session)
+
+    async def run_test() -> None:
+        with pytest.raises(RepositoryConflictException) as exc_info:
+            await repository.create(
+                username="john",
+                hashed_password="hash",
+                disabled=False,
+            )
+
+        assert "Username already exists" in str(exc_info.value)
+        assert exc_info.value.details == {"username": "john"}
+        session.refresh.assert_not_awaited()
+
+    asyncio.run(run_test())
+
+
+def test_auth_repository_create_translates_non_username_integrity_error_to_repository_internal_error() -> None:
+    session = build_session_mock()
+    session.flush.side_effect = IntegrityError("insert", {}, Exception("constraint"))
+    repository = AuthRepository(session=session)
+
+    async def run_test() -> None:
+        with pytest.raises(RepositoryInternalErrorException) as exc_info:
+            await repository.create(
+                username=None,
+                hashed_password="hash",
+                disabled=False,
+            )
+
+        assert "Internal server error" in str(exc_info.value)
+        session.refresh.assert_not_awaited()
+
+    asyncio.run(run_test())
+
+
+def test_auth_repository_update_translates_username_integrity_error_to_repository_conflict() -> None:
+    session = build_session_mock()
+    session.flush.side_effect = IntegrityError("update", {}, Exception("duplicate"))
+    user = User(id=3, username="john", hashed_password="hash", disabled=False)
+    session.merge.return_value = user
+    repository = AuthRepository(session=session)
+
+    async def run_test() -> None:
+        with pytest.raises(RepositoryConflictException) as exc_info:
+            await repository.update(user, username="new-user")
+
+        assert "Username already exists" in str(exc_info.value)
+        assert exc_info.value.details == {"username": "new-user"}
+        session.refresh.assert_not_awaited()
+
+    asyncio.run(run_test())
+
+
+def test_auth_repository_update_translates_other_integrity_errors_to_repository_internal_error() -> None:
+    session = build_session_mock()
+    session.flush.side_effect = IntegrityError("update", {}, Exception("constraint"))
+    user = User(id=3, username="john", hashed_password="hash", disabled=False)
+    session.merge.return_value = user
+    repository = AuthRepository(session=session)
+
+    async def run_test() -> None:
+        with pytest.raises(RepositoryInternalErrorException) as exc_info:
+            await repository.update(user, hashed_password="new-hash")
+
+        assert "Internal server error" in str(exc_info.value)
+        session.refresh.assert_not_awaited()
 
     asyncio.run(run_test())

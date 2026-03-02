@@ -11,7 +11,11 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.requests import Request
 
 from app.exceptions.domain import DomainErrorType, DomainException, ErrorLayer
-from app.exceptions.repositories import RepositoryException
+from app.exceptions.repositories import (
+    RepositoryConflictException,
+    RepositoryException,
+    RepositoryInternalErrorException,
+)
 from app.exceptions.routers import RouterException
 from app.exceptions.services import UnauthorizedException
 from app.exceptions.setup.handlers import (
@@ -48,10 +52,16 @@ def _payload(response: JSONResponse) -> dict[str, Any]:
 
 def test_repository_and_router_exception_set_expected_layer() -> None:
     repository_exc = RepositoryException(message="Repo failure")
+    repository_conflict_exc = RepositoryConflictException(message="Repo conflict")
+    repository_internal_exc = RepositoryInternalErrorException()
     router_exc = RouterException(DomainErrorType.NOT_FOUND, "Route failure")
 
     assert repository_exc.layer == ErrorLayer.REPOSITORY
     assert repository_exc.code == DomainErrorType.INTERNAL_ERROR.value
+    assert repository_conflict_exc.layer == ErrorLayer.REPOSITORY
+    assert repository_conflict_exc.code == DomainErrorType.CONFLICT.value
+    assert repository_internal_exc.layer == ErrorLayer.REPOSITORY
+    assert repository_internal_exc.code == DomainErrorType.INTERNAL_ERROR.value
     assert router_exc.layer == ErrorLayer.ROUTER
     assert router_exc.code == DomainErrorType.NOT_FOUND.value
 

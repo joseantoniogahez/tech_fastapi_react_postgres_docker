@@ -1,8 +1,8 @@
 import asyncio
 
 import pytest
-from sqlalchemy.exc import IntegrityError
 
+from app.exceptions.repositories import RepositoryConflictException, RepositoryInternalErrorException
 from app.exceptions.services import ConflictException, InvalidInputException, UnauthorizedException
 from app.schemas.auth import UpdateCurrentUser
 from utils.testing_support.auth_service import assert_unit_of_work_scope_committed, build_service, build_user
@@ -88,13 +88,16 @@ def test_build_password_change_validates_current_and_new_password() -> None:
     assert service.password_service.verify_password("AnotherPass1", changes["hashed_password"]) is True
 
 
-def test_persist_user_changes_maps_integrity_error_for_username_change() -> None:
+def test_persist_user_changes_propagates_repository_conflict_for_username_change() -> None:
     service, repository = build_service()
     current_user = build_user(service)
-    repository.update.side_effect = IntegrityError("update", {}, Exception("duplicate"))
+    repository.update.side_effect = RepositoryConflictException(
+        message="Username already exists",
+        details={"username": "new-user"},
+    )
 
     async def run_test() -> None:
-        with pytest.raises(ConflictException) as exc_info:
+        with pytest.raises(RepositoryConflictException) as exc_info:
             await service._persist_user_changes(current_user, {"username": "new-user"})
 
         assert "Username already exists" in str(exc_info.value)
@@ -103,14 +106,16 @@ def test_persist_user_changes_maps_integrity_error_for_username_change() -> None
     asyncio.run(run_test())
 
 
-def test_persist_user_changes_reraises_non_username_integrity_error() -> None:
+def test_persist_user_changes_propagates_repository_internal_error() -> None:
     service, repository = build_service()
     current_user = build_user(service)
-    repository.update.side_effect = IntegrityError("update", {}, Exception("constraint"))
+    repository.update.side_effect = RepositoryInternalErrorException()
 
     async def run_test() -> None:
-        with pytest.raises(IntegrityError):
+        with pytest.raises(RepositoryInternalErrorException) as exc_info:
             await service._persist_user_changes(current_user, {"hashed_password": "hash"})
+
+        assert "Internal server error" in str(exc_info.value)
 
     asyncio.run(run_test())
 

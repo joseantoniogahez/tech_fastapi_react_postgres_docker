@@ -2,9 +2,9 @@ import asyncio
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from sqlalchemy.exc import IntegrityError
 
-from app.exceptions.services import ConflictException, InvalidInputException
+from app.exceptions.repositories import RepositoryConflictException
+from app.exceptions.services import InvalidInputException
 from app.models.role import Role
 from app.schemas.rbac import CreateRole, UpdateRole
 from app.services.rbac import RBACService
@@ -66,12 +66,15 @@ def test_list_roles_returns_empty_without_fetching_permissions() -> None:
     asyncio.run(run_test())
 
 
-def test_create_role_maps_integrity_error_to_conflict() -> None:
+def test_create_role_propagates_repository_conflict() -> None:
     service, repository, _ = _build_service()
-    repository.create_role.side_effect = IntegrityError("insert", {}, Exception("duplicate"))
+    repository.create_role.side_effect = RepositoryConflictException(
+        message="Role name already exists",
+        details={"name": "ops_role"},
+    )
 
     async def run_test() -> None:
-        with pytest.raises(ConflictException) as exc_info:
+        with pytest.raises(RepositoryConflictException) as exc_info:
             await service.create_role(CreateRole(name="ops_role"))
 
         assert "Role name already exists" in str(exc_info.value)
@@ -81,13 +84,16 @@ def test_create_role_maps_integrity_error_to_conflict() -> None:
     asyncio.run(run_test())
 
 
-def test_update_role_maps_integrity_error_to_conflict() -> None:
+def test_update_role_propagates_repository_conflict() -> None:
     service, repository, _ = _build_service()
     repository.get_role.return_value = Role(id=7, name="ops_role")
-    repository.update_role.side_effect = IntegrityError("update", {}, Exception("duplicate"))
+    repository.update_role.side_effect = RepositoryConflictException(
+        message="Role name already exists",
+        details={"name": "ops_role_v2"},
+    )
 
     async def run_test() -> None:
-        with pytest.raises(ConflictException) as exc_info:
+        with pytest.raises(RepositoryConflictException) as exc_info:
             await service.update_role(7, UpdateRole(name="ops_role_v2"))
 
         assert "Role name already exists" in str(exc_info.value)

@@ -19,3 +19,21 @@ class RepositoryException(DomainException):
             headers=headers,
             layer=ErrorLayer.REPOSITORY,
         )
+
+
+class RepositoryConflictException(RepositoryException):
+    def __init__(self, message: str = "Conflict", *, details: Any | None = None):
+        super().__init__(
+            message=message,
+            error_type=DomainErrorType.CONFLICT,
+            details=details,
+        )
+
+
+class RepositoryInternalErrorException(RepositoryException):
+    def __init__(self, message: str = "Internal server error", *, details: Any | None = None):
+        super().__init__(
+            message=message,
+            error_type=DomainErrorType.INTERNAL_ERROR,
+            details=details,
+        )

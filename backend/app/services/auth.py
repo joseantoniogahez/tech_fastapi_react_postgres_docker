@@ -1,7 +1,5 @@
 from typing import Any, Protocol
 
-from sqlalchemy.exc import IntegrityError
-
 from app.const.permission import PermissionScope
 from app.const.settings import AuthSettings
 from app.exceptions.services import ConflictException, ForbiddenException, InvalidInputException, UnauthorizedException
@@ -117,24 +115,18 @@ class AuthService:
         username = self._normalize_username(registration.username)
         self._validate_password_policy(registration.password, username)
 
-        try:
-            async with self.unit_of_work:
-                if await self.auth_repository.username_exists(username):
-                    raise ConflictException(
-                        message="Username already exists",
-                        details={"username": username},
-                    )
-
-                user = await self.auth_repository.create(
-                    username=username,
-                    hashed_password=self.password_service.hash_password(registration.password),
-                    disabled=False,
+        async with self.unit_of_work:
+            if await self.auth_repository.username_exists(username):
+                raise ConflictException(
+                    message="Username already exists",
+                    details={"username": username},
                 )
-        except IntegrityError as exc:
-            raise ConflictException(
-                message="Username already exists",
-                details={"username": username},
-            ) from exc
+
+            user = await self.auth_repository.create(
+                username=username,
+                hashed_password=self.password_service.hash_password(registration.password),
+                disabled=False,
+            )
 
         return AuthenticatedUser.model_validate(user)
 
@@ -187,15 +179,7 @@ class AuthService:
         return {"hashed_password": self.password_service.hash_password(update_data.new_password)}
 
     async def _persist_user_changes(self, current_user: User, changes: dict[str, str]) -> User:
-        try:
-            return await self.auth_repository.update(current_user, **changes)
-        except IntegrityError as exc:
-            if "username" in changes:
-                raise ConflictException(
-                    message="Username already exists",
-                    details={"username": changes["username"]},
-                ) from exc
-            raise
+        return await self.auth_repository.update(current_user, **changes)
 
     async def update_current_user(self, current_user: User, update_data: UpdateCurrentUser) -> AuthenticatedUser:
         self._validate_update_request(update_data)
