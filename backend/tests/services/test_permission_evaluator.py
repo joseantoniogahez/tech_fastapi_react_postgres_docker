@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 import pytest
 
-from app.const.permission import PermissionScope
+from app.authorization import PermissionScope
 from app.services.permission_evaluator import PermissionEvaluator
 
 

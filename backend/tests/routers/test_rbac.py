@@ -2,7 +2,7 @@ from http import HTTPStatus
 
 from starlette.testclient import TestClient
 
-from app.const.permission import PermissionId
+from app.authorization import PermissionId
 
 
 def _auth_headers(mock_client: TestClient, username: str, password: str) -> dict[str, str]:

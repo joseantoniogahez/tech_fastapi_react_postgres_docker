@@ -2,7 +2,7 @@ from typing import Any
 
 from fastapi import status
 
-from app.const.permission import PermissionId, PermissionScope
+from app.authorization import PermissionId, PermissionScope
 from app.openapi.common import INTERNAL_ERROR_EXAMPLE, build_error_response
 
 PERMISSION_EXAMPLE: dict[str, Any] = {

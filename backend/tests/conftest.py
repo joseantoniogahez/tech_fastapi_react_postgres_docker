@@ -7,7 +7,7 @@ import pytest
 from argon2 import PasswordHasher
 from starlette.testclient import TestClient
 
-from app.const.permission import PERMISSION_SPECS
+from app.authorization import PERMISSION_SPECS
 from app.database import Base
 from app.dependencies.db import get_db_session
 from app.main import app

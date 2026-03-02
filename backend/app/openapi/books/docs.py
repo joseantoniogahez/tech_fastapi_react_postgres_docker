@@ -2,8 +2,8 @@ from typing import Any
 
 from fastapi import status
 
+from app.authorization import PermissionId
 from app.common.pagination import MAX_LIST_LIMIT
-from app.const.permission import PermissionId
 from app.openapi.common import INTERNAL_ERROR_EXAMPLE, build_error_response
 
 BOOK_EXAMPLE: dict[str, Any] = {

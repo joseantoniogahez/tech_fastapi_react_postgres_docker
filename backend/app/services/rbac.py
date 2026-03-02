@@ -1,6 +1,6 @@
 from typing import Protocol
 
-from app.const.permission import normalize_permission_scope
+from app.authorization import normalize_permission_scope
 from app.exceptions.services import ConflictException, InvalidInputException, NotFoundException
 from app.models.permission import Permission
 from app.models.role import Role

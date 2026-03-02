@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from app.const.permission import PermissionId, PermissionScope
+from app.authorization import PermissionId, PermissionScope
 from app.services.permission_evaluator import PermissionEvaluator
 from utils.testing_support.auth_service import build_service
 

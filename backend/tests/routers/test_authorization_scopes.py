@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock
 from fastapi import Depends, FastAPI
 from starlette.testclient import TestClient
 
-from app.const.permission import PermissionId, PermissionScope
+from app.authorization import PermissionId, PermissionScope
 from app.const.settings import AuthSettings
 from app.dependencies.authentication import get_current_active_user
 from app.dependencies.authorization import PermissionResourceContext, require_permission

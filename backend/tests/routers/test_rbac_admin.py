@@ -4,7 +4,7 @@ from http import HTTPStatus
 from sqlalchemy import select
 from starlette.testclient import TestClient
 
-from app.const.permission import PERMISSION_SPECS, PermissionId
+from app.authorization import PERMISSION_SPECS, PermissionId
 from app.models.role import Role
 from app.models.role_permission import RolePermission
 from app.models.user_role import UserRole

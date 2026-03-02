@@ -3,7 +3,7 @@ from typing import Annotated, Awaitable, Callable
 
 from fastapi import Depends
 
-from app.const.permission import PermissionScope, normalize_permission_scope
+from app.authorization import PermissionScope, normalize_permission_scope
 from app.exceptions.services import ForbiddenException
 from app.models.user import User
 

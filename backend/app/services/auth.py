@@ -1,6 +1,6 @@
 from typing import Any, Protocol
 
-from app.const.permission import PermissionScope
+from app.authorization import PermissionScope
 from app.const.settings import AuthSettings
 from app.exceptions.services import ConflictException, ForbiddenException, InvalidInputException, UnauthorizedException
 from app.models.user import User

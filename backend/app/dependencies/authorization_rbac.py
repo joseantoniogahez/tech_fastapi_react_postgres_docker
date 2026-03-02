@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from app.const.permission import PermissionId, PermissionScope
+from app.authorization import PermissionId, PermissionScope
 from app.models.user import User
 
 from .authorization import require_authorized_user

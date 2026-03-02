@@ -6,7 +6,7 @@ from typing import Callable, Iterable
 from fastapi.dependencies.models import Dependant
 from fastapi.routing import APIRoute
 
-from app.const.permission import (
+from app.authorization import (
     PERMISSION_ID_PATTERN,
     PERMISSION_SCOPES,
     READ_ACCESS_LEVELS,

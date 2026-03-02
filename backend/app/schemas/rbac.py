@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.const.permission import PermissionScope
+from app.authorization import PermissionScope
 
 
 class RBACPermission(BaseModel):

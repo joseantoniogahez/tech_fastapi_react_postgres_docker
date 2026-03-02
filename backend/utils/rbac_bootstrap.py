@@ -8,7 +8,7 @@ from argon2 import PasswordHasher
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.const.permission import PERMISSION_SPECS, PermissionScope
+from app.authorization import PERMISSION_SPECS, PermissionScope
 from app.database import AsyncSessionDatabase
 from app.models.permission import Permission
 from app.models.role import Role

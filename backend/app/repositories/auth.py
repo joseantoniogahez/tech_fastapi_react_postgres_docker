@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.const.permission import PERMISSION_SCOPE_RANK
+from app.authorization import PERMISSION_SCOPE_RANK
 from app.exceptions.repositories import RepositoryConflictException, RepositoryInternalErrorException
 from app.models.role_permission import RolePermission
 from app.models.user import User

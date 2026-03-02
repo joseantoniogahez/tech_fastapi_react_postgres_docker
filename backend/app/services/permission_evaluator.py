@@ -1,6 +1,6 @@
 from typing import Protocol
 
-from app.const.permission import PERMISSION_SCOPE_RANK, PermissionScope, normalize_permission_scope
+from app.authorization import PERMISSION_SCOPE_RANK, PermissionScope, normalize_permission_scope
 
 
 class PermissionEvaluatorPort(Protocol):

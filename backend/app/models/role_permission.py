@@ -1,7 +1,7 @@
 from sqlalchemy import CheckConstraint, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.const.permission import PERMISSION_SCOPES, PermissionScope
+from app.authorization import PERMISSION_SCOPES, PermissionScope
 from app.database import Base
 
 
