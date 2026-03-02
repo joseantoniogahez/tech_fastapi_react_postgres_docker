@@ -1,11 +1,11 @@
 from app.schemas.api.rbac import (
-    CreateRole,
+    CreateRoleRequest,
     RBACPermission,
     RBACRole,
     RBACRolePermission,
-    SetRolePermission,
-    UpdateRole,
-    UserRoleAssignment,
+    SetRolePermissionRequest,
+    UpdateRoleRequest,
+    UserRoleAssignmentResponse,
 )
 from app.schemas.application.rbac import (
     CreateRoleCommand,
@@ -18,16 +18,16 @@ from app.schemas.application.rbac import (
 )
 
 
-def to_create_role_command(role_data: CreateRole) -> CreateRoleCommand:
+def to_create_role_command(role_data: CreateRoleRequest) -> CreateRoleCommand:
     return CreateRoleCommand.from_api(role_data)
 
 
-def to_update_role_command(role_data: UpdateRole) -> UpdateRoleCommand:
+def to_update_role_command(role_data: UpdateRoleRequest) -> UpdateRoleCommand:
     return UpdateRoleCommand.from_api(role_data)
 
 
 def to_set_role_permission_command(
-    assignment: SetRolePermission,
+    assignment: SetRolePermissionRequest,
 ) -> SetRolePermissionCommand:
     return SetRolePermissionCommand.from_api(assignment)
 
@@ -54,5 +54,5 @@ def to_role_response_list(roles: list[RoleResult]) -> list[RBACRole]:
 
 def to_user_role_assignment_response(
     assignment: UserRoleAssignmentResult,
-) -> UserRoleAssignment:
-    return UserRoleAssignment.from_application(assignment)
+) -> UserRoleAssignmentResponse:
+    return UserRoleAssignmentResponse.from_application(assignment)

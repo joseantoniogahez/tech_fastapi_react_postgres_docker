@@ -19,17 +19,17 @@ from .repositories import (
 )
 
 
-async def get_authors_service(
+async def get_author_service(
     author_repository: AuthorRepositoryDependency,
     unit_of_work: UnitOfWorkDependency,
 ) -> AuthorServicePort:
     return AuthorService(author_repository=author_repository, unit_of_work=unit_of_work)
 
 
-AuthorServiceDependency = Annotated[AuthorServicePort, Depends(get_authors_service)]
+AuthorServiceDependency = Annotated[AuthorServicePort, Depends(get_author_service)]
 
 
-async def get_books_service(
+async def get_book_service(
     book_repository: BookRepositoryDependency,
     author_service: AuthorServiceDependency,
     unit_of_work: UnitOfWorkDependency,
@@ -41,7 +41,7 @@ async def get_books_service(
     )
 
 
-BookServiceDependency = Annotated[BookServicePort, Depends(get_books_service)]
+BookServiceDependency = Annotated[BookServicePort, Depends(get_book_service)]
 
 
 async def get_auth_settings() -> AuthSettings:

@@ -52,13 +52,13 @@ def test_get_all_delegates_custom_pagination_and_sort() -> None:
     asyncio.run(run_test())
 
 
-def test_get_or_add_returns_existing_author_when_id_exists() -> None:
+def test_get_by_id_or_create_by_name_returns_existing_author_when_id_exists() -> None:
     service, author_repository, unit_of_work = _build_service()
     existing_author = Author(id=5, name="Arthur C. Clarke")
     author_repository.get.return_value = existing_author
 
     async def run_test() -> None:
-        result = await service.get_or_add(author_id=5, name="ignored")
+        result = await service.get_by_id_or_create_by_name(author_id=5, name="ignored")
 
         assert result is existing_author
         author_repository.get.assert_awaited_once_with(5)
@@ -69,14 +69,14 @@ def test_get_or_add_returns_existing_author_when_id_exists() -> None:
     asyncio.run(run_test())
 
 
-def test_get_or_add_falls_back_to_name_when_id_not_found() -> None:
+def test_get_by_id_or_create_by_name_falls_back_to_name_when_id_not_found() -> None:
     service, author_repository, unit_of_work = _build_service()
     created_author = Author(id=6, name="Ursula Le Guin")
     author_repository.get.return_value = None
     author_repository.get_or_create_by_name.return_value = created_author
 
     async def run_test() -> None:
-        result = await service.get_or_add(author_id=99, name="Ursula Le Guin")
+        result = await service.get_by_id_or_create_by_name(author_id=99, name="Ursula Le Guin")
 
         assert result is created_author
         author_repository.get.assert_awaited_once_with(99)
@@ -87,13 +87,13 @@ def test_get_or_add_falls_back_to_name_when_id_not_found() -> None:
     asyncio.run(run_test())
 
 
-def test_get_or_add_uses_name_when_author_id_is_none() -> None:
+def test_get_by_id_or_create_by_name_uses_name_when_author_id_is_none() -> None:
     service, author_repository, unit_of_work = _build_service()
     created_author = Author(id=7, name="Octavia Butler")
     author_repository.get_or_create_by_name.return_value = created_author
 
     async def run_test() -> None:
-        result = await service.get_or_add(author_id=None, name="Octavia Butler")
+        result = await service.get_by_id_or_create_by_name(author_id=None, name="Octavia Butler")
 
         assert result is created_author
         author_repository.get.assert_not_awaited()

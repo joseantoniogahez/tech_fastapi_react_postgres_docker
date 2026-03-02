@@ -9,7 +9,7 @@ class AuthorBase(ApiSchema):
     model_config = ConfigDict(str_strip_whitespace=True)
 
 
-class Author(AuthorBase):
+class AuthorResponse(AuthorBase):
     id: int
 
     model_config = ConfigDict(from_attributes=True)

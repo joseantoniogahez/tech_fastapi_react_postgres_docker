@@ -12,8 +12,8 @@ Dependency providers are split by concern under `app/dependencies/`:
   - `get_author_repository`
   - `get_auth_repository`
 - `services.py`
-  - `get_books_service`
-  - `get_authors_service`
+  - `get_book_service`
+  - `get_author_service`
   - `get_auth_service`
   - `get_auth_settings`
 - `authentication.py`
@@ -46,15 +46,15 @@ Dependency providers are split by concern under `app/dependencies/`:
 ### `POST /books/`
 
 ```python
-from app.schemas.application.books import BookMutationCommand
+from app.schemas.application.book import BookMutationCommand
 
-@router.post("/", response_model=Book, **ADD_BOOK_DOC)
-async def add_book(
+@router.post("/", response_model=BookResponse, **CREATE_BOOK_DOC)
+async def create_book(
     book_service: BookServiceDependency,
     _authorized_user: BookCreateAuth,
-    book_data: AddBook = Body(...),
-) -> Book:
-    book = await book_service.add(
+    book_data: CreateBookRequest = Body(...),
+) -> BookResponse:
+    book = await book_service.create(
         BookMutationCommand(
             title=book_data.title,
             year=book_data.year,
@@ -63,23 +63,23 @@ async def add_book(
             author_name=book_data.author_name,
         )
     )
-    return Book.model_validate(book)
+    return BookResponse.model_validate(book)
 ```
 
-### `PUT /books/{id}`
+### `PUT /books/{book_id}`
 
 ```python
-from app.schemas.application.books import BookMutationCommand
+from app.schemas.application.book import BookMutationCommand
 
-@router.put("/{id}", response_model=Book, **UPDATE_BOOK_DOC)
+@router.put("/{book_id}", response_model=BookResponse, **UPDATE_BOOK_DOC)
 async def update_book(
     book_service: BookServiceDependency,
     _authorized_user: BookUpdateAuth,
-    id: int = Path(..., ge=1),
-    book_data: UpdateBook = Body(...),
-) -> Book:
+    book_id: int = Path(..., ge=1),
+    book_data: UpdateBookRequest = Body(...),
+) -> BookResponse:
     book = await book_service.update(
-        id,
+        book_id,
         BookMutationCommand(
             title=book_data.title,
             year=book_data.year,
@@ -89,8 +89,8 @@ async def update_book(
         ),
     )
     if book is None:
-        raise NotFoundException(message=f"Book {id} not found", details={"id": id})
-    return Book.model_validate(book)
+        raise NotFoundException(message=f"Book {book_id} not found", details={"book_id": book_id})
+    return BookResponse.model_validate(book)
 ```
 
 ## 4) How DI enables one transaction per use case
@@ -129,10 +129,11 @@ app.dependency_overrides[get_db_session] = override_db_session
 
 ```python
 from app.dependencies.services import get_auth_service
+from app.schemas.application.auth import AccessTokenResult
 
 class FakeAuthService:
     async def login(self, credentials):
-        return Token(access_token="fake-token")
+        return AccessTokenResult(access_token="fake-token")
 
 app.dependency_overrides[get_auth_service] = lambda: FakeAuthService()
 ```

@@ -1,6 +1,6 @@
 # Authorization Matrix
 
-Canonical permission definitions live in `app/const/permission.py`.
+Canonical permission definitions live in `app/authorization/catalog.py`.
 Permission IDs must follow `<resource>:<action>` using lowercase letters, numbers, and underscores.
 
 ## Permission Catalog
@@ -24,8 +24,8 @@ against the live router dependency graph.
 | Method   | Path                                                | Permission                | Required Scope | Dependency Alias              |
 | -------- | --------------------------------------------------- | ------------------------- | -------------- | ----------------------------- |
 | `POST`   | `/books/`                                           | `books:create`            | `any`          | `BookCreateAuth`              |
-| `PUT`    | `/books/{id}`                                       | `books:update`            | `any`          | `BookUpdateAuth`              |
-| `DELETE` | `/books/{id}`                                       | `books:delete`            | `any`          | `BookDeleteAuth`              |
+| `PUT`    | `/books/{book_id}`                                  | `books:update`            | `any`          | `BookUpdateAuth`              |
+| `DELETE` | `/books/{book_id}`                                  | `books:delete`            | `any`          | `BookDeleteAuth`              |
 | `GET`    | `/rbac/roles`                                       | `roles:manage`            | `any`          | `RBACRoleAdminAuth`           |
 | `GET`    | `/rbac/permissions`                                 | `role_permissions:manage` | `any`          | `RBACRolePermissionAdminAuth` |
 | `POST`   | `/rbac/roles`                                       | `roles:manage`            | `any`          | `RBACRoleAdminAuth`           |
@@ -53,7 +53,7 @@ Deterministic evaluation rules:
 
 ## Read Endpoint Access Policy
 
-Canonical read-access policy definitions live in `app/const/permission.py` as
+Canonical read-access policy definitions live in `app/authorization/catalog.py` as
 `READ_ACCESS_POLICY_CATALOG`.
 This table is a contract: `tests/routers/test_authorization_policy_coverage.py` verifies it
 against both the live router dependency graph and the catalog constants.
@@ -65,7 +65,7 @@ against both the live router dependency graph and the catalog constants.
 | `GET`  | `/authors/`         | `public`        | No                        |
 | `GET`  | `/books/`           | `public`        | No                        |
 | `GET`  | `/books/published`  | `public`        | No                        |
-| `GET`  | `/books/{id}`       | `public`        | No                        |
+| `GET`  | `/books/{book_id}`  | `public`        | No                        |
 | `GET`  | `/rbac/roles`       | `permission`    | `roles:manage`            |
 | `GET`  | `/rbac/permissions` | `permission`    | `role_permissions:manage` |
 
@@ -85,5 +85,5 @@ Seed source: `utils/rbac_bootstrap.py`
 - Router-level scope/context wiring is defined in `app/dependencies/authorization.py`.
 - Read endpoints are classified as exactly one of `public`, `authenticated`, or `permission`.
 - Missing permission returns `403 forbidden` with `meta.permission_id`.
-- OpenAPI endpoint docs for protected routes live in `app/openapi/books.py` and `app/openapi/rbac.py`.
+- OpenAPI endpoint docs for protected routes live under `app/openapi/books/` and `app/openapi/rbac/`.
 - Bootstrap command is idempotent: `python -m utils.rbac_bootstrap`.

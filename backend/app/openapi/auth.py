@@ -3,7 +3,7 @@ from typing import Annotated, Any
 from fastapi import Body, status
 
 from app.openapi.common import INTERNAL_ERROR_EXAMPLE, build_error_response
-from app.schemas.api.auth import RegisterUser, UpdateCurrentUser
+from app.schemas.api.auth import RegisterUserRequest, UpdateCurrentUserRequest
 
 TOKEN_RESPONSE_EXAMPLE: dict[str, Any] = {
     "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
@@ -49,7 +49,7 @@ UPDATE_CURRENT_USER_BODY_EXAMPLES: dict[str, Any] = {
 }
 
 RegisterUserPayload = Annotated[
-    RegisterUser,
+    RegisterUserRequest,
     Body(
         description="New user registration payload.",
         examples=REGISTER_USER_BODY_EXAMPLES,
@@ -57,7 +57,7 @@ RegisterUserPayload = Annotated[
 ]
 
 UpdateCurrentUserPayload = Annotated[
-    UpdateCurrentUser,
+    UpdateCurrentUserRequest,
     Body(
         description="Optional fields to update the authenticated user.",
         examples=UPDATE_CURRENT_USER_BODY_EXAMPLES,

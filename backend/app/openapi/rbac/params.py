@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import Body, Path
 
 from app.authorization import PERMISSION_ID_PATTERN, PermissionId, PermissionScope
-from app.schemas.api.rbac import CreateRole, SetRolePermission, UpdateRole
+from app.schemas.api.rbac import CreateRoleRequest, SetRolePermissionRequest, UpdateRoleRequest
 
 RoleIdPath = Annotated[
     int,
@@ -35,7 +35,7 @@ PermissionIdPath = Annotated[
 ]
 
 CreateRolePayload = Annotated[
-    CreateRole,
+    CreateRoleRequest,
     Body(
         description="Payload to create a role.",
         examples={
@@ -48,7 +48,7 @@ CreateRolePayload = Annotated[
 ]
 
 UpdateRolePayload = Annotated[
-    UpdateRole,
+    UpdateRoleRequest,
     Body(
         description="Payload to rename a role.",
         examples={
@@ -61,7 +61,7 @@ UpdateRolePayload = Annotated[
 ]
 
 SetRolePermissionPayload = Annotated[
-    SetRolePermission,
+    SetRolePermissionRequest,
     Body(
         description="Assign or update a permission grant on a role.",
         examples={

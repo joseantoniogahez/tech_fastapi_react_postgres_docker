@@ -5,19 +5,19 @@ from pydantic import ConfigDict, Field
 from .base import ApiSchema
 
 
-class Credentials(ApiSchema):
+class LoginCredentialsRequest(ApiSchema):
     username: str = Field(min_length=1, max_length=255)
     password: str = Field(min_length=1)
 
     model_config = ConfigDict(str_strip_whitespace=True)
 
 
-class Token(ApiSchema):
+class AccessTokenResponse(ApiSchema):
     access_token: str = Field(min_length=1)
     token_type: Literal["bearer"] = "bearer"
 
 
-class AuthenticatedUser(ApiSchema):
+class AuthenticatedUserResponse(ApiSchema):
     id: int
     username: str = Field(min_length=1, max_length=255)
     disabled: bool
@@ -25,14 +25,14 @@ class AuthenticatedUser(ApiSchema):
     model_config = ConfigDict(from_attributes=True)
 
 
-class RegisterUser(ApiSchema):
+class RegisterUserRequest(ApiSchema):
     username: str = Field(min_length=1, max_length=255)
     password: str = Field(min_length=8, max_length=255)
 
     model_config = ConfigDict(str_strip_whitespace=True)
 
 
-class UpdateCurrentUser(ApiSchema):
+class UpdateCurrentUserRequest(ApiSchema):
     username: str | None = Field(default=None, min_length=1, max_length=255)
     current_password: str | None = Field(default=None, min_length=1, max_length=255)
     new_password: str | None = Field(default=None, min_length=8, max_length=255)

@@ -5,7 +5,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 from app.exceptions.services import ForbiddenException
 from app.models.user import User
-from app.schemas.api.auth import Credentials
+from app.schemas.api.auth import LoginCredentialsRequest
 
 from .services import AuthServiceDependency
 
@@ -13,11 +13,11 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 BearerTokenDependency = Annotated[str, Depends(oauth2_scheme)]
 
 
-async def get_auth_credentials(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> Credentials:
-    return Credentials(username=form_data.username, password=form_data.password)
+async def get_auth_credentials(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> LoginCredentialsRequest:
+    return LoginCredentialsRequest(username=form_data.username, password=form_data.password)
 
 
-AuthCredentialsDependency = Annotated[Credentials, Depends(get_auth_credentials)]
+AuthCredentialsDependency = Annotated[LoginCredentialsRequest, Depends(get_auth_credentials)]
 
 
 async def get_current_user(

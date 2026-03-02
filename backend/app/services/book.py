@@ -4,7 +4,7 @@ from app.common.pagination import DEFAULT_LIST_LIMIT, MAX_LIST_LIMIT
 from app.const.book import BookStatus
 from app.models.book import Book
 from app.repositories.book import BookSort
-from app.schemas.application.books import BookMutationCommand
+from app.schemas.application.book import BookMutationCommand
 from app.services import UnitOfWorkPort
 from app.services.author import AuthorServicePort
 
@@ -21,7 +21,7 @@ class BookRepositoryPort(Protocol):
 
     async def list_published(self, *, offset: int = 0, limit: int = MAX_LIST_LIMIT) -> list[Book]: ...
 
-    async def get(self, entity_id: int) -> Book | None: ...
+    async def get(self, book_id: int) -> Book | None: ...
 
     async def create(
         self,
@@ -38,7 +38,7 @@ class BookRepositoryPort(Protocol):
         **changes: Any,
     ) -> Book: ...
 
-    async def delete(self, entity_id: int) -> bool: ...
+    async def delete(self, book_id: int) -> bool: ...
 
 
 class BookServicePort(Protocol):
@@ -53,13 +53,13 @@ class BookServicePort(Protocol):
 
     async def get_published(self) -> list[Book]: ...
 
-    async def get(self, id: int) -> Book | None: ...
+    async def get(self, book_id: int) -> Book | None: ...
 
-    async def add(self, book_data: BookMutationCommand) -> Book: ...
+    async def create(self, book_data: BookMutationCommand) -> Book: ...
 
-    async def update(self, id: int, book_data: BookMutationCommand) -> Book | None: ...
+    async def update(self, book_id: int, book_data: BookMutationCommand) -> Book | None: ...
 
-    async def delete(self, id: int) -> None: ...
+    async def delete(self, book_id: int) -> None: ...
 
 
 class BookService:
@@ -91,16 +91,16 @@ class BookService:
     async def get_published(self) -> list[Book]:
         return await self.book_repository.list_published()
 
-    async def get(self, id: int) -> Book | None:
-        return await self.book_repository.get(id)
+    async def get(self, book_id: int) -> Book | None:
+        return await self.book_repository.get(book_id)
 
-    async def _get_author_id(self, author_id: int | None, author_name: str) -> int:
-        author = await self.author_service.get_or_add(author_id=author_id, name=author_name)
+    async def _resolve_author_id(self, author_id: int | None, author_name: str) -> int:
+        author = await self.author_service.get_by_id_or_create_by_name(author_id=author_id, name=author_name)
         return author.id
 
-    async def add(self, book_data: BookMutationCommand) -> Book:
+    async def create(self, book_data: BookMutationCommand) -> Book:
         async with self.unit_of_work:
-            author_id = await self._get_author_id(book_data.author_id, book_data.author_name)
+            author_id = await self._resolve_author_id(book_data.author_id, book_data.author_name)
             return await self.book_repository.create(
                 title=book_data.title,
                 year=book_data.year,
@@ -108,13 +108,13 @@ class BookService:
                 author_id=author_id,
             )
 
-    async def update(self, id: int, book_data: BookMutationCommand) -> Book | None:
+    async def update(self, book_id: int, book_data: BookMutationCommand) -> Book | None:
         async with self.unit_of_work:
-            book = await self.book_repository.get(id)
+            book = await self.book_repository.get(book_id)
             if book is None:
                 return None
 
-            author_id = await self._get_author_id(book_data.author_id, book_data.author_name)
+            author_id = await self._resolve_author_id(book_data.author_id, book_data.author_name)
             return await self.book_repository.update(
                 book,
                 title=book_data.title,
@@ -123,6 +123,6 @@ class BookService:
                 author_id=author_id,
             )
 
-    async def delete(self, id: int) -> None:
+    async def delete(self, book_id: int) -> None:
         async with self.unit_of_work:
-            await self.book_repository.delete(id)
+            await self.book_repository.delete(book_id)

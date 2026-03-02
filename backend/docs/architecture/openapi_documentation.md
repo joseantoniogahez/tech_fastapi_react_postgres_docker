@@ -9,7 +9,8 @@ Keep routers readable while still providing rich Swagger UI docs at `http://loca
 - Common helpers: `app/openapi/common.py`
 - Domain-specific docs:
   - `app/openapi/auth.py`
-  - `app/openapi/books.py`
+  - `app/openapi/books/`
+  - `app/openapi/rbac/`
   - `app/openapi/authors.py`
   - `app/openapi/health.py`
 - Routers consume those constants with `**DOC_CONSTANT`.
@@ -19,7 +20,7 @@ Keep routers readable while still providing rich Swagger UI docs at `http://loca
 Router modules should stay focused on behavior:
 
 ```python
-@router.get("/", response_model=List[Book], **GET_BOOKS_DOC)
+@router.get("/", response_model=List[BookResponse], **GET_BOOKS_DOC)
 async def get_books(...):
     ...
 ```
@@ -32,20 +33,20 @@ AuthorIdQuery = Annotated[
     Query(ge=1, description="Filter by author ID", examples=[1]),
 ]
 
-AddBookPayload = Annotated[
-    AddBook,
-    Body(description="Payload to create a book.", examples=ADD_BOOK_BODY_EXAMPLES),
+CreateBookPayload = Annotated[
+    CreateBookRequest,
+    Body(description="Payload to create a book.", examples=CREATE_BOOK_BODY_EXAMPLES),
 ]
 ```
 
 Router usage stays minimal:
 
 ```python
-async def add_book(
+async def create_book(
     book_service: BookServiceDependency,
     _authorized_user: BookCreateAuth,
-    book_data: AddBookPayload,
-) -> Book:
+    book_data: CreateBookPayload,
+) -> BookResponse:
     ...
 ```
 
@@ -54,7 +55,7 @@ async def add_book(
 - Endpoint metadata: `<ENDPOINT_NAME>_DOC`
   - Example: `GET_BOOK_DOC`, `UPDATE_CURRENT_USER_DOC`
 - Request body examples: `<ENDPOINT_NAME>_BODY_EXAMPLES`
-  - Example: `ADD_BOOK_BODY_EXAMPLES`
+  - Example: `CREATE_BOOK_BODY_EXAMPLES`
 - Shared helpers:
   - `build_error_response`
   - `INTERNAL_ERROR_EXAMPLE`

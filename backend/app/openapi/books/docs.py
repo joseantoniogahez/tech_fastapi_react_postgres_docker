@@ -76,7 +76,7 @@ GET_BOOK_DOC: dict[str, Any] = {
                 "detail": "Request validation error",
                 "status": 400,
                 "code": "invalid_input",
-                "meta": [{"loc": ["path", "id"], "msg": "Input should be greater than or equal to 1"}],
+                "meta": [{"loc": ["path", "book_id"], "msg": "Input should be greater than or equal to 1"}],
             },
         ),
         status.HTTP_404_NOT_FOUND: build_error_response(
@@ -85,7 +85,7 @@ GET_BOOK_DOC: dict[str, Any] = {
                 "detail": "Book 999 not found",
                 "status": 404,
                 "code": "not_found",
-                "meta": {"id": 999},
+                "meta": {"book_id": 999},
             },
         ),
         status.HTTP_500_INTERNAL_SERVER_ERROR: build_error_response(
@@ -95,7 +95,7 @@ GET_BOOK_DOC: dict[str, Any] = {
     },
 }
 
-ADD_BOOK_DOC: dict[str, Any] = {
+CREATE_BOOK_DOC: dict[str, Any] = {
     "status_code": status.HTTP_201_CREATED,
     "summary": "Create book",
     "description": (f"Create a new book. Requires authenticated user with `{PermissionId.BOOK_CREATE}` permission."),
@@ -157,7 +157,7 @@ UPDATE_BOOK_DOC: dict[str, Any] = {
                 "detail": "Request validation error",
                 "status": 400,
                 "code": "invalid_input",
-                "meta": [{"loc": ["path", "id"], "msg": "Input should be greater than or equal to 1"}],
+                "meta": [{"loc": ["path", "book_id"], "msg": "Input should be greater than or equal to 1"}],
             },
         ),
         status.HTTP_404_NOT_FOUND: build_error_response(
@@ -166,7 +166,7 @@ UPDATE_BOOK_DOC: dict[str, Any] = {
                 "detail": "Book 999 not found",
                 "status": 404,
                 "code": "not_found",
-                "meta": {"id": 999},
+                "meta": {"book_id": 999},
             },
         ),
         status.HTTP_401_UNAUTHORIZED: build_error_response(
@@ -212,7 +212,7 @@ DELETE_BOOK_DOC: dict[str, Any] = {
                 "detail": "Request validation error",
                 "status": 400,
                 "code": "invalid_input",
-                "meta": [{"loc": ["path", "id"], "msg": "Input should be greater than or equal to 1"}],
+                "meta": [{"loc": ["path", "book_id"], "msg": "Input should be greater than or equal to 1"}],
             },
         ),
         status.HTTP_401_UNAUTHORIZED: build_error_response(

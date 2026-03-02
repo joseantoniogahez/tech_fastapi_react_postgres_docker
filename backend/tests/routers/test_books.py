@@ -98,11 +98,11 @@ def test_get_book_by_id_not_found(mock_client: TestClient):
         "detail": "Book 999 not found",
         "status": HTTPStatus.NOT_FOUND,
         "code": "not_found",
-        "meta": {"id": 999},
+        "meta": {"book_id": 999},
     }
 
 
-def test_add_book(mock_client: TestClient):
+def test_create_book(mock_client: TestClient):
     book_data = {
         "title": "I, Robot",
         "year": 1950,
@@ -162,7 +162,7 @@ def test_update_book_not_found(mock_client: TestClient):
         "detail": "Book 999 not found",
         "status": HTTPStatus.NOT_FOUND,
         "code": "not_found",
-        "meta": {"id": 999},
+        "meta": {"book_id": 999},
     }
 
 

@@ -40,7 +40,7 @@ READ_ACCESS_POLICY_CATALOG: tuple[ReadAccessPolicyDefinition, ...] = (
     ReadAccessPolicyDefinition(method="GET", path="/authors/", access_level=ReadAccessLevel.PUBLIC),
     ReadAccessPolicyDefinition(method="GET", path="/books/", access_level=ReadAccessLevel.PUBLIC),
     ReadAccessPolicyDefinition(method="GET", path="/books/published", access_level=ReadAccessLevel.PUBLIC),
-    ReadAccessPolicyDefinition(method="GET", path="/books/{id}", access_level=ReadAccessLevel.PUBLIC),
+    ReadAccessPolicyDefinition(method="GET", path="/books/{book_id}", access_level=ReadAccessLevel.PUBLIC),
     ReadAccessPolicyDefinition(
         method="GET",
         path="/rbac/roles",

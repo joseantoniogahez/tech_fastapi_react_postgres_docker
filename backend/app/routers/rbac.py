@@ -29,7 +29,7 @@ from app.routers.mappers.rbac import (
     to_update_role_command,
     to_user_role_assignment_response,
 )
-from app.schemas.api.rbac import RBACPermission, RBACRole, RBACRolePermission, UserRoleAssignment
+from app.schemas.api.rbac import RBACPermission, RBACRole, RBACRolePermission, UserRoleAssignmentResponse
 
 router = APIRouter(
     prefix="/rbac",
@@ -120,7 +120,7 @@ async def remove_role_permission(
 
 @router.put(
     "/users/{user_id}/roles/{role_id}",
-    response_model=UserRoleAssignment,
+    response_model=UserRoleAssignmentResponse,
     **ASSIGN_USER_ROLE_DOC,
 )
 async def assign_user_role(
@@ -128,7 +128,7 @@ async def assign_user_role(
     _authorized_user: RBACUserRoleAdminAuth,
     user_id: UserIdPath,
     role_id: RoleIdPath,
-) -> UserRoleAssignment:
+) -> UserRoleAssignmentResponse:
     assignment = await rbac_service.assign_user_role(user_id, role_id)
     return to_user_role_assignment_response(assignment)
 

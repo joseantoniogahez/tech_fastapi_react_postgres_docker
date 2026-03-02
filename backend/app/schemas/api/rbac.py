@@ -22,22 +22,22 @@ class RBACRole(ApiSchema):
     permissions: list[RBACRolePermission] = Field(default_factory=list)
 
 
-class CreateRole(ApiSchema):
+class CreateRoleRequest(ApiSchema):
     name: str = Field(min_length=1, max_length=100)
 
     model_config = ConfigDict(str_strip_whitespace=True)
 
 
-class UpdateRole(CreateRole):
+class UpdateRoleRequest(CreateRoleRequest):
     pass
 
 
-class SetRolePermission(ApiSchema):
+class SetRolePermissionRequest(ApiSchema):
     scope: str = Field(default=PermissionScope.ANY, min_length=1, max_length=20)
 
     model_config = ConfigDict(str_strip_whitespace=True)
 
 
-class UserRoleAssignment(ApiSchema):
+class UserRoleAssignmentResponse(ApiSchema):
     user_id: int
     role_id: int

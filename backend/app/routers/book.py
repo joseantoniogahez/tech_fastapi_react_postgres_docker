@@ -8,22 +8,22 @@ from app.dependencies.authorization_books import BookCreateAuth, BookDeleteAuth,
 from app.dependencies.services import BookServiceDependency
 from app.exceptions.services import NotFoundException
 from app.openapi.books import (
-    ADD_BOOK_DOC,
+    CREATE_BOOK_DOC,
     DELETE_BOOK_DOC,
     GET_BOOK_DOC,
     GET_BOOKS_DOC,
     GET_PUBLISHED_BOOKS_DOC,
     UPDATE_BOOK_DOC,
-    AddBookPayload,
     AuthorIdQuery,
     BookIdPath,
     BookSortQuery,
+    CreateBookPayload,
     LimitQuery,
     OffsetQuery,
     UpdateBookPayload,
 )
-from app.schemas.api.book import Book
-from app.schemas.application.books import BookMutationCommand
+from app.schemas.api.book import BookResponse
+from app.schemas.application.book import BookMutationCommand
 
 router = APIRouter(
     prefix="/books",
@@ -31,7 +31,7 @@ router = APIRouter(
 )
 
 
-@router.get("/", response_model=List[Book], **GET_BOOKS_DOC)
+@router.get("/", response_model=List[BookResponse], **GET_BOOKS_DOC)
 async def get_books(
     book_service: BookServiceDependency,
     _read_access: PublicReadAccessDependency,
@@ -39,59 +39,59 @@ async def get_books(
     offset: OffsetQuery = 0,
     limit: LimitQuery = DEFAULT_LIST_LIMIT,
     sort: BookSortQuery = "id",
-) -> List[Book]:
+) -> List[BookResponse]:
     books = await book_service.get_all(author_id=author_id, offset=offset, limit=limit, sort=sort)
-    return [Book.model_validate(book) for book in books]
+    return [BookResponse.model_validate(book) for book in books]
 
 
-@router.get("/published", response_model=List[Book], **GET_PUBLISHED_BOOKS_DOC)
+@router.get("/published", response_model=List[BookResponse], **GET_PUBLISHED_BOOKS_DOC)
 async def get_published_books(
     book_service: BookServiceDependency,
     _read_access: PublicReadAccessDependency,
-) -> List[Book]:
+) -> List[BookResponse]:
     books = await book_service.get_published()
-    return [Book.model_validate(book) for book in books]
+    return [BookResponse.model_validate(book) for book in books]
 
 
-@router.get("/{id}", response_model=Book, **GET_BOOK_DOC)
+@router.get("/{book_id}", response_model=BookResponse, **GET_BOOK_DOC)
 async def get_book(
     book_service: BookServiceDependency,
     _read_access: PublicReadAccessDependency,
-    id: BookIdPath,
-) -> Book:
-    book = await book_service.get(id)
+    book_id: BookIdPath,
+) -> BookResponse:
+    book = await book_service.get(book_id)
     if book is None:
-        raise NotFoundException(message=f"Book {id} not found", details={"id": id})
-    return Book.model_validate(book)
+        raise NotFoundException(message=f"Book {book_id} not found", details={"book_id": book_id})
+    return BookResponse.model_validate(book)
 
 
-@router.post("/", response_model=Book, **ADD_BOOK_DOC)
-async def add_book(
+@router.post("/", response_model=BookResponse, **CREATE_BOOK_DOC)
+async def create_book(
     book_service: BookServiceDependency,
     _authorized_user: BookCreateAuth,
-    book_data: AddBookPayload,
-) -> Book:
-    book = await book_service.add(BookMutationCommand.from_api(book_data))
-    return Book.model_validate(book)
+    book_data: CreateBookPayload,
+) -> BookResponse:
+    book = await book_service.create(BookMutationCommand.from_api(book_data))
+    return BookResponse.model_validate(book)
 
 
-@router.put("/{id}", response_model=Book, **UPDATE_BOOK_DOC)
+@router.put("/{book_id}", response_model=BookResponse, **UPDATE_BOOK_DOC)
 async def update_book(
     book_service: BookServiceDependency,
     _authorized_user: BookUpdateAuth,
-    id: BookIdPath,
+    book_id: BookIdPath,
     book_data: UpdateBookPayload,
-) -> Book:
-    book = await book_service.update(id, BookMutationCommand.from_api(book_data))
+) -> BookResponse:
+    book = await book_service.update(book_id, BookMutationCommand.from_api(book_data))
     if book is None:
-        raise NotFoundException(message=f"Book {id} not found", details={"id": id})
-    return Book.model_validate(book)
+        raise NotFoundException(message=f"Book {book_id} not found", details={"book_id": book_id})
+    return BookResponse.model_validate(book)
 
 
-@router.delete("/{id}", **DELETE_BOOK_DOC)
+@router.delete("/{book_id}", **DELETE_BOOK_DOC)
 async def delete_book(
     book_service: BookServiceDependency,
     _authorized_user: BookDeleteAuth,
-    id: BookIdPath,
+    book_id: BookIdPath,
 ) -> None:
-    await book_service.delete(id)
+    await book_service.delete(book_id)

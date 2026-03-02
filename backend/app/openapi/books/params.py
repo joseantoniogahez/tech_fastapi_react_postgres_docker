@@ -4,9 +4,9 @@ from fastapi import Body, Path, Query
 
 from app.common.pagination import DEFAULT_LIST_LIMIT, MAX_LIST_LIMIT
 from app.repositories.book import BookSort
-from app.schemas.api.book import AddBook, UpdateBook
+from app.schemas.api.book import CreateBookRequest, UpdateBookRequest
 
-ADD_BOOK_BODY_EXAMPLES: dict[str, Any] = {
+CREATE_BOOK_BODY_EXAMPLES: dict[str, Any] = {
     "with_existing_author": {
         "summary": "Using an existing author_id",
         "value": {
@@ -86,16 +86,16 @@ BookIdPath = Annotated[
     ),
 ]
 
-AddBookPayload = Annotated[
-    AddBook,
+CreateBookPayload = Annotated[
+    CreateBookRequest,
     Body(
         description="Payload to create a book.",
-        examples=ADD_BOOK_BODY_EXAMPLES,
+        examples=CREATE_BOOK_BODY_EXAMPLES,
     ),
 ]
 
 UpdateBookPayload = Annotated[
-    UpdateBook,
+    UpdateBookRequest,
     Body(
         description="Full payload used to update the book.",
         examples=UPDATE_BOOK_BODY_EXAMPLES,

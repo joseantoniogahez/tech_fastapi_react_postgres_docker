@@ -1,12 +1,18 @@
-from .auth import AuthenticatedUser, Credentials, RegisterUser, Token, UpdateCurrentUser
-from .author import Author
-from .book import AddBook, Book, UpdateBook
+from .auth import (
+    AccessTokenResponse,
+    AuthenticatedUserResponse,
+    LoginCredentialsRequest,
+    RegisterUserRequest,
+    UpdateCurrentUserRequest,
+)
+from .author import AuthorResponse
+from .book import BookResponse, CreateBookRequest, UpdateBookRequest
 from .rbac import (
-    CreateRole,
+    CreateRoleRequest,
     RBACPermission,
     RBACRole,
     RBACRolePermission,
-    SetRolePermission,
-    UpdateRole,
-    UserRoleAssignment,
+    SetRolePermissionRequest,
+    UpdateRoleRequest,
+    UserRoleAssignmentResponse,
 )

@@ -15,7 +15,7 @@ class AuthorRepositoryPort(Protocol):
         sort: AuthorSort = "name",
     ) -> list[Author]: ...
 
-    async def get(self, entity_id: int) -> Author | None: ...
+    async def get(self, author_id: int) -> Author | None: ...
 
     async def get_or_create_by_name(self, name: str) -> Author: ...
 
@@ -29,7 +29,7 @@ class AuthorServicePort(Protocol):
         sort: AuthorSort = "name",
     ) -> list[Author]: ...
 
-    async def get_or_add(self, author_id: int | None, name: str) -> Author: ...
+    async def get_by_id_or_create_by_name(self, author_id: int | None, name: str) -> Author: ...
 
 
 class AuthorService:
@@ -46,7 +46,7 @@ class AuthorService:
     ) -> list[Author]:
         return await self.author_repository.list_ordered(offset=offset, limit=limit, sort=sort)
 
-    async def get_or_add(self, author_id: int | None, name: str) -> Author:
+    async def get_by_id_or_create_by_name(self, author_id: int | None, name: str) -> Author:
         async with self.unit_of_work:
             if author_id is not None:
                 author = await self.author_repository.get(author_id)

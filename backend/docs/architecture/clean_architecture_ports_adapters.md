@@ -189,7 +189,7 @@ Operational rules:
 Real example:
 
 - `BookService` depends on `BookRepositoryPort`, `AuthorServicePort`, and `UnitOfWorkPort`.
-- `BookService` does not create `AuthorService`; `get_books_service` injects it.
+- `BookService` does not create `AuthorService`; `get_book_service` injects it.
 
 ## 6) Safe Change Order
 
@@ -225,7 +225,7 @@ Create `app/repositories/publisher.py` implementing `PublisherRepositoryPort`.
 In dependency composition modules add:
 
 - `get_publisher_repository() -> PublisherRepositoryPort`
-- `get_publishers_service() -> PublisherServicePort`
+- `get_publisher_service() -> PublisherServicePort`
 - `PublisherServiceDependency = Annotated[PublisherServicePort, Depends(...)]`
 
 ### Step D: Use from routers

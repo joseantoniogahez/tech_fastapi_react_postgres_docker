@@ -56,13 +56,13 @@ Write use cases wrap business logic with `async with self.unit_of_work`.
 
 Examples:
 
-- `BookService.add`, `BookService.update`, `BookService.delete`
+- `BookService.create`, `BookService.update`, `BookService.delete`
 - `AuthService.register`, `AuthService.update_current_user`
-- `AuthorService.get_or_add`
+- `AuthorService.get_by_id_or_create_by_name`
 
 ### Cross-service atomicity example
 
-`BookService.add` may call `AuthorService.get_or_add`.
+`BookService.create` may call `AuthorService.get_by_id_or_create_by_name`.
 
 Both services receive the same `UnitOfWork` instance from DI, so both repository operations share the same transaction.
 
