@@ -11,19 +11,26 @@ Dependency providers are split by concern under `app/dependencies/`:
   - `get_book_repository`
   - `get_author_repository`
   - `get_auth_repository`
+  - `get_rbac_repository`
 - `services.py`
   - `get_book_service`
   - `get_author_service`
   - `get_auth_service`
   - `get_auth_settings`
+  - `get_password_service`
+  - `get_token_service`
+  - `get_rbac_service`
 - `authentication.py`
   - `get_auth_credentials`
   - `get_current_user`
   - `get_current_active_user`
 - `authorization.py`
+  - read-access dependencies (`allow_public_read_access`, `allow_authenticated_read_access`)
   - generic policy builders (`require_permission`, `require_authorized_user`)
 - `authorization_books.py`
   - book-specific authorization aliases
+- `authorization_rbac.py`
+  - RBAC-specific authorization aliases
 
 ## 2) Typed aliases used in routers
 
@@ -31,63 +38,56 @@ Dependency providers are split by concern under `app/dependencies/`:
   - `BookServiceDependency`
   - `AuthorServiceDependency`
   - `AuthServiceDependency`
+  - `RBACServiceDependency`
 - Transaction alias:
   - `UnitOfWorkDependency`
 - User aliases:
   - `CurrentUserDependency`
   - `CurrentActiveUserDependency`
+- Read access aliases:
+  - `PublicReadAccessDependency`
+  - `AuthenticatedReadAccessDependency`
 - Permission aliases:
   - `BookCreateAuth`
   - `BookUpdateAuth`
   - `BookDeleteAuth`
+  - `RBACRoleAdminAuth`
+  - `RBACRolePermissionAdminAuth`
+  - `RBACUserRoleAdminAuth`
 
 ## 3) Endpoint examples
 
 ### `POST /books/`
 
 ```python
+from app.openapi.books import CreateBookPayload
 from app.schemas.application.book import BookMutationCommand
 
 @router.post("/", response_model=BookResponse, **CREATE_BOOK_DOC)
 async def create_book(
     book_service: BookServiceDependency,
     _authorized_user: BookCreateAuth,
-    book_data: CreateBookRequest = Body(...),
+    book_data: CreateBookPayload,
 ) -> BookResponse:
-    book = await book_service.create(
-        BookMutationCommand(
-            title=book_data.title,
-            year=book_data.year,
-            status=book_data.status,
-            author_id=book_data.author_id,
-            author_name=book_data.author_name,
-        )
-    )
+    book = await book_service.create(BookMutationCommand.from_api(book_data))
     return BookResponse.model_validate(book)
 ```
 
 ### `PUT /books/{book_id}`
 
 ```python
+from app.openapi.books import BookIdPath, UpdateBookPayload
+from app.exceptions.services import NotFoundException
 from app.schemas.application.book import BookMutationCommand
 
 @router.put("/{book_id}", response_model=BookResponse, **UPDATE_BOOK_DOC)
 async def update_book(
     book_service: BookServiceDependency,
     _authorized_user: BookUpdateAuth,
-    book_id: int = Path(..., ge=1),
-    book_data: UpdateBookRequest = Body(...),
+    book_id: BookIdPath,
+    book_data: UpdateBookPayload,
 ) -> BookResponse:
-    book = await book_service.update(
-        book_id,
-        BookMutationCommand(
-            title=book_data.title,
-            year=book_data.year,
-            status=book_data.status,
-            author_id=book_data.author_id,
-            author_name=book_data.author_name,
-        ),
-    )
+    book = await book_service.update(book_id, BookMutationCommand.from_api(book_data))
     if book is None:
         raise NotFoundException(message=f"Book {book_id} not found", details={"book_id": book_id})
     return BookResponse.model_validate(book)

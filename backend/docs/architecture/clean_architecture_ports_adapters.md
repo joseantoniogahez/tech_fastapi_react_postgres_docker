@@ -26,13 +26,17 @@ This backend already applies:
 - `app/services/auth.py`
   - `AuthRepositoryPort`
   - `AuthServicePort`
+- `app/services/rbac/service.py`
+  - `RBACRepositoryPort`
+  - `RBACServicePort`
 
 ### Adapters (concrete implementations)
 
 - `app/repositories/author.py` implements `AuthorRepositoryPort`
 - `app/repositories/book.py` implements `BookRepositoryPort`
 - `app/repositories/auth.py` implements `AuthRepositoryPort`
-- `app/repositories/__init__.py` (`UnitOfWork`) implements `UnitOfWorkPort`
+- `app/repositories/rbac.py` implements `RBACRepositoryPort`
+- `app/repositories/uow.py` (`UnitOfWork`) implements `UnitOfWorkPort`
 
 ### Composition Root
 
@@ -44,7 +48,7 @@ This backend already applies:
   - Wires service implementations through ports
 - `app/dependencies/authentication.py`
   - Wires token and current-user dependencies
-- `app/dependencies/authorization.py` + `authorization_books.py`
+- `app/dependencies/authorization.py` + `authorization_books.py` + `authorization_rbac.py`
   - Wires generic and resource-specific authorization dependencies
 
 ## 2) Incremental Target Architecture (Still Layered)
@@ -63,7 +67,7 @@ The package shape can stay close to the current one while boundaries become stri
   - service ports defined with `Protocol`
 - Infrastructure / persistence layer:
   - `app/repositories/*`
-  - `app/database.py` and related DB wiring until it is moved later
+  - `app/infrastructure/database.py`
 - Data definitions:
   - `app/models/*`
   - `app/schemas/api/*`

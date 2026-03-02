@@ -13,12 +13,14 @@ With UoW, a use case either:
 
 ## Where UoW is implemented
 
-- Core class: `app/repositories/__init__.py` (`UnitOfWork`)
+- Core class: `app/repositories/uow.py` (`UnitOfWork`)
+- Compatibility re-export: `app/repositories/__init__.py`
 - DI provider: `app/dependencies/db.py` (`get_unit_of_work`)
 - Service usage:
   - `app/services/book.py`
   - `app/services/author.py`
   - `app/services/auth.py`
+  - `app/services/rbac/operations.py`
 
 ## Core behavior
 
@@ -90,7 +92,7 @@ This guarantees repositories and UoW operate on the same SQLAlchemy session.
 
 UoW behavior is verified in:
 
-- `tests/test_repositories.py`:
+- `tests/repositories/test_unit_of_work.py`:
   - commit on success
   - rollback on exception
   - nested scope behavior
