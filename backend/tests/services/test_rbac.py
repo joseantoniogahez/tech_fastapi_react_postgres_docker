@@ -8,6 +8,7 @@ from app.exceptions.services import InvalidInputException
 from app.models.role import Role
 from app.schemas.application.rbac import CreateRoleCommand, UpdateRoleCommand
 from app.services.rbac import RBACService
+from app.services.rbac.mappers import normalize_role_name
 
 
 def _build_repository_mock() -> MagicMock:
@@ -44,10 +45,8 @@ def _build_service() -> tuple[RBACService, MagicMock, MagicMock]:
 
 
 def test_normalize_role_name_raises_for_blank_value() -> None:
-    service, _, _ = _build_service()
-
     with pytest.raises(InvalidInputException) as exc_info:
-        service._normalize_role_name("   ")
+        normalize_role_name("   ")
 
     assert "Role name is required" in str(exc_info.value)
 

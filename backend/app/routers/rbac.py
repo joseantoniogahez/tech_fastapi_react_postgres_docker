@@ -19,37 +19,22 @@ from app.openapi.rbac import (
     UpdateRolePayload,
     UserIdPath,
 )
-from app.schemas.api.rbac import RBACPermission, RBACRole, RBACRolePermission, UserRoleAssignment
-from app.schemas.application.rbac import (
-    CreateRoleCommand,
-    PermissionResult,
-    RolePermissionResult,
-    RoleResult,
-    SetRolePermissionCommand,
-    UpdateRoleCommand,
-    UserRoleAssignmentResult,
+from app.routers.mappers.rbac import (
+    to_create_role_command,
+    to_permission_response_list,
+    to_role_permission_response,
+    to_role_response,
+    to_role_response_list,
+    to_set_role_permission_command,
+    to_update_role_command,
+    to_user_role_assignment_response,
 )
+from app.schemas.api.rbac import RBACPermission, RBACRole, RBACRolePermission, UserRoleAssignment
 
 router = APIRouter(
     prefix="/rbac",
     tags=["rbac"],
 )
-
-
-def _to_permission_response(permission: PermissionResult) -> RBACPermission:
-    return RBACPermission.from_application(permission)
-
-
-def _to_role_permission_response(permission: RolePermissionResult) -> RBACRolePermission:
-    return RBACRolePermission.from_application(permission)
-
-
-def _to_role_response(role: RoleResult) -> RBACRole:
-    return RBACRole.from_application(role)
-
-
-def _to_user_role_assignment_response(assignment: UserRoleAssignmentResult) -> UserRoleAssignment:
-    return UserRoleAssignment.from_application(assignment)
 
 
 @router.get("/roles", response_model=list[RBACRole], **GET_ROLES_DOC)
@@ -58,7 +43,7 @@ async def list_roles(
     _authorized_user: RBACRoleAdminAuth,
 ) -> list[RBACRole]:
     roles = await rbac_service.list_roles()
-    return [_to_role_response(role) for role in roles]
+    return to_role_response_list(roles)
 
 
 @router.get("/permissions", response_model=list[RBACPermission], **GET_PERMISSIONS_DOC)
@@ -67,7 +52,7 @@ async def list_permissions(
     _authorized_user: RBACRolePermissionAdminAuth,
 ) -> list[RBACPermission]:
     permissions = await rbac_service.list_permissions()
-    return [_to_permission_response(permission) for permission in permissions]
+    return to_permission_response_list(permissions)
 
 
 @router.post("/roles", response_model=RBACRole, **CREATE_ROLE_DOC)
@@ -76,8 +61,8 @@ async def create_role(
     _authorized_user: RBACRoleAdminAuth,
     role_data: CreateRolePayload,
 ) -> RBACRole:
-    role = await rbac_service.create_role(CreateRoleCommand.from_api(role_data))
-    return _to_role_response(role)
+    role = await rbac_service.create_role(to_create_role_command(role_data))
+    return to_role_response(role)
 
 
 @router.put("/roles/{role_id}", response_model=RBACRole, **UPDATE_ROLE_DOC)
@@ -87,8 +72,8 @@ async def update_role(
     role_id: RoleIdPath,
     role_data: UpdateRolePayload,
 ) -> RBACRole:
-    role = await rbac_service.update_role(role_id, UpdateRoleCommand.from_api(role_data))
-    return _to_role_response(role)
+    role = await rbac_service.update_role(role_id, to_update_role_command(role_data))
+    return to_role_response(role)
 
 
 @router.delete("/roles/{role_id}", **DELETE_ROLE_DOC)
@@ -115,9 +100,9 @@ async def assign_role_permission(
     role_permission = await rbac_service.assign_role_permission(
         role_id,
         permission_id,
-        SetRolePermissionCommand.from_api(assignment),
+        to_set_role_permission_command(assignment),
     )
-    return _to_role_permission_response(role_permission)
+    return to_role_permission_response(role_permission)
 
 
 @router.delete(
@@ -145,7 +130,7 @@ async def assign_user_role(
     role_id: RoleIdPath,
 ) -> UserRoleAssignment:
     assignment = await rbac_service.assign_user_role(user_id, role_id)
-    return _to_user_role_assignment_response(assignment)
+    return to_user_role_assignment_response(assignment)
 
 
 @router.delete("/users/{user_id}/roles/{role_id}", **REMOVE_USER_ROLE_DOC)
