@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, MagicMock
 from app.const.settings import AuthSettings
 from app.models.user import User
 from app.services.auth import AuthService
+from app.services.permission_evaluator import PermissionEvaluatorPort
 
 
 def assert_unit_of_work_scope_committed(unit_of_work: object) -> None:
@@ -32,7 +33,11 @@ def _build_unit_of_work_mock() -> MagicMock:
     return unit_of_work
 
 
-def build_service(repository: MagicMock | None = None) -> tuple[AuthService, MagicMock]:
+def build_service(
+    repository: MagicMock | None = None,
+    *,
+    permission_evaluator: PermissionEvaluatorPort | None = None,
+) -> tuple[AuthService, MagicMock]:
     repo = repository or _build_repository_mock()
     unit_of_work = _build_unit_of_work_mock()
     settings = AuthSettings(
@@ -40,7 +45,15 @@ def build_service(repository: MagicMock | None = None) -> tuple[AuthService, Mag
         JWT_ALGORITHM="HS256",
         JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30,
     )
-    return AuthService(auth_repository=repo, unit_of_work=unit_of_work, auth_settings=settings), repo
+    return (
+        AuthService(
+            auth_repository=repo,
+            unit_of_work=unit_of_work,
+            auth_settings=settings,
+            permission_evaluator=permission_evaluator,
+        ),
+        repo,
+    )
 
 
 def build_user(
