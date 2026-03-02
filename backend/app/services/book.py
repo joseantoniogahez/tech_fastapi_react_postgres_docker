@@ -4,7 +4,7 @@ from app.common.pagination import DEFAULT_LIST_LIMIT, MAX_LIST_LIMIT
 from app.const.book import BookStatus
 from app.models.book import Book
 from app.repositories.book import BookSort
-from app.schemas.book import AddBook, UpdateBook
+from app.schemas.application.books import BookMutationCommand
 from app.services import UnitOfWorkPort
 from app.services.author import AuthorServicePort
 
@@ -55,9 +55,9 @@ class BookServicePort(Protocol):
 
     async def get(self, id: int) -> Book | None: ...
 
-    async def add(self, book_data: AddBook) -> Book: ...
+    async def add(self, book_data: BookMutationCommand) -> Book: ...
 
-    async def update(self, id: int, book_data: UpdateBook) -> Book | None: ...
+    async def update(self, id: int, book_data: BookMutationCommand) -> Book | None: ...
 
     async def delete(self, id: int) -> None: ...
 
@@ -98,7 +98,7 @@ class BookService:
         author = await self.author_service.get_or_add(author_id=author_id, name=author_name)
         return author.id
 
-    async def add(self, book_data: AddBook) -> Book:
+    async def add(self, book_data: BookMutationCommand) -> Book:
         async with self.unit_of_work:
             author_id = await self._get_author_id(book_data.author_id, book_data.author_name)
             return await self.book_repository.create(
@@ -108,7 +108,7 @@ class BookService:
                 author_id=author_id,
             )
 
-    async def update(self, id: int, book_data: UpdateBook) -> Book | None:
+    async def update(self, id: int, book_data: BookMutationCommand) -> Book | None:
         async with self.unit_of_work:
             book = await self.book_repository.get(id)
             if book is None:

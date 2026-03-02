@@ -4,7 +4,7 @@ from unittest.mock import patch
 import pytest
 
 from app.exceptions.services import UnauthorizedException
-from app.schemas.auth import TokenPayload
+from app.schemas.application.auth import AccessTokenPayload
 from utils.testing_support.auth_service import build_service, build_user
 
 
@@ -24,7 +24,7 @@ def test_get_user_from_token_raises_for_invalid_payload() -> None:
 
 def test_get_user_from_token_raises_when_user_does_not_exist() -> None:
     service, repository = build_service()
-    payload = TokenPayload(sub="john", exp=123456789)
+    payload = AccessTokenPayload(sub="john", exp=123456789)
     repository.get_by_username.return_value = None
 
     async def run_test() -> None:
@@ -39,7 +39,7 @@ def test_get_user_from_token_raises_when_user_does_not_exist() -> None:
 
 def test_get_user_from_token_returns_user_when_token_is_valid() -> None:
     service, repository = build_service()
-    payload = TokenPayload(sub="john", exp=123456789)
+    payload = AccessTokenPayload(sub="john", exp=123456789)
     expected_user = build_user(service, username="john")
     repository.get_by_username.return_value = expected_user
 

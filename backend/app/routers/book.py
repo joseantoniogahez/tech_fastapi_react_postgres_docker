@@ -22,7 +22,8 @@ from app.openapi.books import (
     OffsetQuery,
     UpdateBookPayload,
 )
-from app.schemas.book import Book
+from app.schemas.api.book import Book
+from app.schemas.application.books import BookMutationCommand
 
 router = APIRouter(
     prefix="/books",
@@ -70,7 +71,7 @@ async def add_book(
     _authorized_user: BookCreateAuth,
     book_data: AddBookPayload,
 ) -> Book:
-    book = await book_service.add(book_data)
+    book = await book_service.add(BookMutationCommand.from_api(book_data))
     return Book.model_validate(book)
 
 
@@ -81,7 +82,7 @@ async def update_book(
     id: BookIdPath,
     book_data: UpdateBookPayload,
 ) -> Book:
-    book = await book_service.update(id, book_data)
+    book = await book_service.update(id, BookMutationCommand.from_api(book_data))
     if book is None:
         raise NotFoundException(message=f"Book {id} not found", details={"id": id})
     return Book.model_validate(book)

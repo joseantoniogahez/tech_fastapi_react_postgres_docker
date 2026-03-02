@@ -4,7 +4,7 @@ from app.authorization import PermissionScope
 from app.const.settings import AuthSettings
 from app.exceptions.services import ConflictException, ForbiddenException, InvalidInputException, UnauthorizedException
 from app.models.user import User
-from app.schemas.auth import AuthenticatedUser, Credentials, RegisterUser, Token, UpdateCurrentUser
+from app.schemas.application.auth import AccessTokenResult, LoginCommand, RegisterUserCommand, UpdateCurrentUserCommand
 from app.security.policies import (
     USERNAME_ALLOWED_DESCRIPTION,
     PasswordPolicyError,
@@ -35,11 +35,11 @@ class AuthRepositoryPort(Protocol):
 
 
 class AuthServicePort(Protocol):
-    async def login(self, credentials: Credentials) -> Token: ...
+    async def login(self, credentials: LoginCommand) -> AccessTokenResult: ...
 
-    async def register(self, registration: RegisterUser) -> AuthenticatedUser: ...
+    async def register(self, registration: RegisterUserCommand) -> User: ...
 
-    async def update_current_user(self, current_user: User, update_data: UpdateCurrentUser) -> AuthenticatedUser: ...
+    async def update_current_user(self, current_user: User, update_data: UpdateCurrentUserCommand) -> User: ...
 
     async def get_user_from_token(self, token: str) -> User: ...
 
@@ -95,7 +95,7 @@ class AuthService:
                 details={"violations": format_password_policy_messages(exc.violations)},
             ) from exc
 
-    async def _authenticate_or_raise(self, credentials: Credentials) -> User:
+    async def _authenticate_or_raise(self, credentials: LoginCommand) -> User:
         username = self._normalize_username(credentials.username)
         user = await self.auth_repository.get_by_username(username)
         if user is None or not self.password_service.verify_password(credentials.password, user.hashed_password):
@@ -106,12 +106,12 @@ class AuthService:
 
         return user
 
-    async def login(self, credentials: Credentials) -> Token:
+    async def login(self, credentials: LoginCommand) -> AccessTokenResult:
         user = await self._authenticate_or_raise(credentials)
         access_token = self.token_service.encode_access_token(subject=user.username)
-        return Token(access_token=access_token)
+        return AccessTokenResult(access_token=access_token)
 
-    async def register(self, registration: RegisterUser) -> AuthenticatedUser:
+    async def register(self, registration: RegisterUserCommand) -> User:
         username = self._normalize_username(registration.username)
         self._validate_password_policy(registration.password, username)
 
@@ -128,9 +128,9 @@ class AuthService:
                 disabled=False,
             )
 
-        return AuthenticatedUser.model_validate(user)
+        return user
 
-    def _validate_update_request(self, update_data: UpdateCurrentUser) -> None:
+    def _validate_update_request(self, update_data: UpdateCurrentUserCommand) -> None:
         if update_data.current_password and update_data.new_password is None:
             raise InvalidInputException(message="new_password is required when current_password is provided")
 
@@ -162,7 +162,7 @@ class AuthService:
     def _build_password_change(
         self,
         current_user: User,
-        update_data: UpdateCurrentUser,
+        update_data: UpdateCurrentUserCommand,
         normalized_username: str,
     ) -> dict[str, str]:
         if update_data.new_password is None:
@@ -181,7 +181,7 @@ class AuthService:
     async def _persist_user_changes(self, current_user: User, changes: dict[str, str]) -> User:
         return await self.auth_repository.update(current_user, **changes)
 
-    async def update_current_user(self, current_user: User, update_data: UpdateCurrentUser) -> AuthenticatedUser:
+    async def update_current_user(self, current_user: User, update_data: UpdateCurrentUserCommand) -> User:
         self._validate_update_request(update_data)
         async with self.unit_of_work:
             normalized_username, username_change = await self._build_username_change(current_user, update_data.username)
@@ -192,7 +192,7 @@ class AuthService:
                 raise InvalidInputException(message="No changes detected")
 
             updated_user = await self._persist_user_changes(current_user, changes)
-        return AuthenticatedUser.model_validate(updated_user)
+        return updated_user
 
     async def get_user_from_token(self, token: str) -> User:
         payload = self.token_service.decode_access_token(token)

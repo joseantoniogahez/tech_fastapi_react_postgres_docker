@@ -3,7 +3,7 @@ from typing import Annotated, Any
 from fastapi import Body, status
 
 from app.openapi.common import INTERNAL_ERROR_EXAMPLE, build_error_response
-from app.schemas.auth import RegisterUser, UpdateCurrentUser
+from app.schemas.api.auth import RegisterUser, UpdateCurrentUser
 
 TOKEN_RESPONSE_EXAMPLE: dict[str, Any] = {
     "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",

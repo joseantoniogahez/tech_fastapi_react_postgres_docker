@@ -4,7 +4,7 @@ from fastapi import Body, Path, Query
 
 from app.common.pagination import DEFAULT_LIST_LIMIT, MAX_LIST_LIMIT
 from app.repositories.book import BookSort
-from app.schemas.book import AddBook, UpdateBook
+from app.schemas.api.book import AddBook, UpdateBook
 
 ADD_BOOK_BODY_EXAMPLES: dict[str, Any] = {
     "with_existing_author": {

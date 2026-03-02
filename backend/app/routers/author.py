@@ -6,7 +6,7 @@ from app.common.pagination import DEFAULT_LIST_LIMIT
 from app.dependencies.authorization import PublicReadAccessDependency
 from app.dependencies.services import AuthorServiceDependency
 from app.openapi.authors import GET_AUTHORS_DOC, AuthorSortQuery, LimitQuery, OffsetQuery
-from app.schemas.author import Author
+from app.schemas.api.author import Author
 
 router = APIRouter(
     prefix="/authors",

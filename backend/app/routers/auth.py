@@ -11,7 +11,8 @@ from app.openapi.auth import (
     RegisterUserPayload,
     UpdateCurrentUserPayload,
 )
-from app.schemas.auth import AuthenticatedUser, Token
+from app.schemas.api.auth import AuthenticatedUser, Token
+from app.schemas.application.auth import LoginCommand, RegisterUserCommand, UpdateCurrentUserCommand
 
 router = APIRouter(tags=["auth"])
 
@@ -21,7 +22,8 @@ async def login_for_access_token(
     credentials: AuthCredentialsDependency,
     auth_service: AuthServiceDependency,
 ) -> Token:
-    return await auth_service.login(credentials)
+    token = await auth_service.login(LoginCommand.from_api(credentials))
+    return Token.from_application(token)
 
 
 @router.post("/users/register", response_model=AuthenticatedUser, **REGISTER_USER_DOC)
@@ -29,7 +31,8 @@ async def register_user(
     auth_service: AuthServiceDependency,
     register_data: RegisterUserPayload,
 ) -> AuthenticatedUser:
-    return await auth_service.register(register_data)
+    user = await auth_service.register(RegisterUserCommand.from_api(register_data))
+    return AuthenticatedUser.model_validate(user)
 
 
 @router.get("/users/me", response_model=AuthenticatedUser, **READ_CURRENT_USER_DOC)
@@ -43,4 +46,8 @@ async def update_current_user(
     auth_service: AuthServiceDependency,
     update_data: UpdateCurrentUserPayload,
 ) -> AuthenticatedUser:
-    return await auth_service.update_current_user(current_user=current_user, update_data=update_data)
+    updated_user = await auth_service.update_current_user(
+        current_user=current_user,
+        update_data=UpdateCurrentUserCommand.from_api(update_data),
+    )
+    return AuthenticatedUser.model_validate(updated_user)

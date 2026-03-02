@@ -46,19 +46,31 @@ Dependency providers are split by concern under `app/dependencies/`:
 ### `POST /books/`
 
 ```python
+from app.schemas.application.books import BookMutationCommand
+
 @router.post("/", response_model=Book, **ADD_BOOK_DOC)
 async def add_book(
     book_service: BookServiceDependency,
     _authorized_user: BookCreateAuth,
     book_data: AddBook = Body(...),
 ) -> Book:
-    book = await book_service.add(book_data)
+    book = await book_service.add(
+        BookMutationCommand(
+            title=book_data.title,
+            year=book_data.year,
+            status=book_data.status,
+            author_id=book_data.author_id,
+            author_name=book_data.author_name,
+        )
+    )
     return Book.model_validate(book)
 ```
 
 ### `PUT /books/{id}`
 
 ```python
+from app.schemas.application.books import BookMutationCommand
+
 @router.put("/{id}", response_model=Book, **UPDATE_BOOK_DOC)
 async def update_book(
     book_service: BookServiceDependency,
@@ -66,7 +78,16 @@ async def update_book(
     id: int = Path(..., ge=1),
     book_data: UpdateBook = Body(...),
 ) -> Book:
-    book = await book_service.update(id, book_data)
+    book = await book_service.update(
+        id,
+        BookMutationCommand(
+            title=book_data.title,
+            year=book_data.year,
+            status=book_data.status,
+            author_id=book_data.author_id,
+            author_name=book_data.author_name,
+        ),
+    )
     if book is None:
         raise NotFoundException(message=f"Book {id} not found", details={"id": id})
     return Book.model_validate(book)

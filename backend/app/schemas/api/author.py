@@ -1,7 +1,9 @@
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import ConfigDict, Field
+
+from .base import ApiSchema
 
 
-class AuthorBase(BaseModel):
+class AuthorBase(ApiSchema):
     name: str = Field(min_length=1, max_length=255)
 
     model_config = ConfigDict(str_strip_whitespace=True)

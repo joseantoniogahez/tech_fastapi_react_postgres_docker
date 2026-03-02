@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import Body, Path
 
 from app.authorization import PERMISSION_ID_PATTERN, PermissionId, PermissionScope
-from app.schemas.rbac import CreateRole, SetRolePermission, UpdateRole
+from app.schemas.api.rbac import CreateRole, SetRolePermission, UpdateRole
 
 RoleIdPath = Annotated[
     int,

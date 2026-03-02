@@ -6,14 +6,14 @@ from app.models.permission import Permission
 from app.models.role import Role
 from app.models.role_permission import RolePermission
 from app.models.user import User
-from app.schemas.rbac import (
-    CreateRole,
-    RBACPermission,
-    RBACRole,
-    RBACRolePermission,
-    SetRolePermission,
-    UpdateRole,
-    UserRoleAssignment,
+from app.schemas.application.rbac import (
+    CreateRoleCommand,
+    PermissionResult,
+    RolePermissionResult,
+    RoleResult,
+    SetRolePermissionCommand,
+    UpdateRoleCommand,
+    UserRoleAssignmentResult,
 )
 from app.services import UnitOfWorkPort
 
@@ -59,13 +59,13 @@ class RBACRepositoryPort(Protocol):
 
 
 class RBACServicePort(Protocol):
-    async def list_roles(self) -> list[RBACRole]: ...
+    async def list_roles(self) -> list[RoleResult]: ...
 
-    async def list_permissions(self) -> list[RBACPermission]: ...
+    async def list_permissions(self) -> list[PermissionResult]: ...
 
-    async def create_role(self, role_data: CreateRole) -> RBACRole: ...
+    async def create_role(self, role_data: CreateRoleCommand) -> RoleResult: ...
 
-    async def update_role(self, role_id: int, role_data: UpdateRole) -> RBACRole: ...
+    async def update_role(self, role_id: int, role_data: UpdateRoleCommand) -> RoleResult: ...
 
     async def delete_role(self, role_id: int) -> None: ...
 
@@ -73,12 +73,12 @@ class RBACServicePort(Protocol):
         self,
         role_id: int,
         permission_id: str,
-        assignment: SetRolePermission,
-    ) -> RBACRolePermission: ...
+        assignment: SetRolePermissionCommand,
+    ) -> RolePermissionResult: ...
 
     async def remove_role_permission(self, role_id: int, permission_id: str) -> None: ...
 
-    async def assign_user_role(self, user_id: int, role_id: int) -> UserRoleAssignment: ...
+    async def assign_user_role(self, user_id: int, role_id: int) -> UserRoleAssignmentResult: ...
 
     async def remove_user_role(self, user_id: int, role_id: int) -> None: ...
 
@@ -116,8 +116,8 @@ class RBACService:
     def _build_role_permission_schema(
         role_permission: RolePermission,
         permission_names: dict[str, str],
-    ) -> RBACRolePermission:
-        return RBACRolePermission(
+    ) -> RolePermissionResult:
+        return RolePermissionResult(
             id=role_permission.permission_id,
             name=permission_names.get(role_permission.permission_id, role_permission.permission_id),
             scope=role_permission.scope,
@@ -128,8 +128,8 @@ class RBACService:
         role: Role,
         role_permissions: list[RolePermission],
         permission_names: dict[str, str],
-    ) -> RBACRole:
-        return RBACRole(
+    ) -> RoleResult:
+        return RoleResult(
             id=role.id,
             name=role.name,
             permissions=[
@@ -159,13 +159,13 @@ class RBACService:
             raise NotFoundException(message=f"User {user_id} not found", details={"id": user_id})
         return user
 
-    async def _build_role_response(self, role: Role) -> RBACRole:
+    async def _build_role_response(self, role: Role) -> RoleResult:
         permissions = await self.rbac_repository.list_permissions()
         permission_names = self._build_permission_name_map(permissions)
         role_permissions = await self.rbac_repository.list_role_permissions(role_ids=(role.id,))
         return self._build_role_schema(role, role_permissions, permission_names)
 
-    async def list_roles(self) -> list[RBACRole]:
+    async def list_roles(self) -> list[RoleResult]:
         roles = await self.rbac_repository.list_roles()
         if not roles:
             return []
@@ -184,11 +184,11 @@ class RBACService:
             for role in roles
         ]
 
-    async def list_permissions(self) -> list[RBACPermission]:
+    async def list_permissions(self) -> list[PermissionResult]:
         permissions = await self.rbac_repository.list_permissions()
-        return [RBACPermission.model_validate(permission) for permission in permissions]
+        return [PermissionResult(id=permission.id, name=permission.name) for permission in permissions]
 
-    async def create_role(self, role_data: CreateRole) -> RBACRole:
+    async def create_role(self, role_data: CreateRoleCommand) -> RoleResult:
         normalized_name = self._normalize_role_name(role_data.name)
         async with self.unit_of_work:
             if await self.rbac_repository.role_name_exists(normalized_name):
@@ -200,7 +200,7 @@ class RBACService:
 
         return await self._build_role_response(role)
 
-    async def update_role(self, role_id: int, role_data: UpdateRole) -> RBACRole:
+    async def update_role(self, role_id: int, role_data: UpdateRoleCommand) -> RoleResult:
         normalized_name = self._normalize_role_name(role_data.name)
         async with self.unit_of_work:
             role = await self._get_role_or_raise(role_id)
@@ -226,8 +226,8 @@ class RBACService:
         self,
         role_id: int,
         permission_id: str,
-        assignment: SetRolePermission,
-    ) -> RBACRolePermission:
+        assignment: SetRolePermissionCommand,
+    ) -> RolePermissionResult:
         try:
             normalized_scope = normalize_permission_scope(assignment.scope)
         except ValueError as exc:
@@ -242,7 +242,7 @@ class RBACService:
                 scope=normalized_scope,
             )
 
-        return RBACRolePermission(
+        return RolePermissionResult(
             id=permission.id,
             name=permission.name,
             scope=role_permission.scope,
@@ -257,7 +257,7 @@ class RBACService:
                 permission_id=permission.id,
             )
 
-    async def assign_user_role(self, user_id: int, role_id: int) -> UserRoleAssignment:
+    async def assign_user_role(self, user_id: int, role_id: int) -> UserRoleAssignmentResult:
         async with self.unit_of_work:
             await self._get_user_or_raise(user_id)
             role = await self._get_role_or_raise(role_id)
@@ -266,7 +266,7 @@ class RBACService:
                 role_id=role.id,
             )
 
-        return UserRoleAssignment(user_id=user_id, role_id=role.id)
+        return UserRoleAssignmentResult(user_id=user_id, role_id=role.id)
 
     async def remove_user_role(self, user_id: int, role_id: int) -> None:
         async with self.unit_of_work:

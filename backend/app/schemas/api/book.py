@@ -1,12 +1,13 @@
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import ConfigDict, Field
 
 from app.const.book import BookStatus
-from app.schemas.author import Author
+from app.schemas.api.author import Author
+from app.schemas.api.base import ApiSchema
 
 
-class BookBase(BaseModel):
+class BookBase(ApiSchema):
     title: str = Field(min_length=1, max_length=255)
     year: int
     status: BookStatus
@@ -25,7 +26,6 @@ class UpdateBook(AddBook):
 
 class Book(BookBase):
     id: int
-
     author: Author
 
     model_config = ConfigDict(from_attributes=True)

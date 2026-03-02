@@ -1,26 +1,23 @@
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import ConfigDict, Field
+
+from .base import ApiSchema
 
 
-class Credentials(BaseModel):
+class Credentials(ApiSchema):
     username: str = Field(min_length=1, max_length=255)
     password: str = Field(min_length=1)
 
     model_config = ConfigDict(str_strip_whitespace=True)
 
 
-class Token(BaseModel):
+class Token(ApiSchema):
     access_token: str = Field(min_length=1)
     token_type: Literal["bearer"] = "bearer"
 
 
-class TokenPayload(BaseModel):
-    sub: str = Field(min_length=1, max_length=255)
-    exp: int
-
-
-class AuthenticatedUser(BaseModel):
+class AuthenticatedUser(ApiSchema):
     id: int
     username: str = Field(min_length=1, max_length=255)
     disabled: bool
@@ -28,14 +25,14 @@ class AuthenticatedUser(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class RegisterUser(BaseModel):
+class RegisterUser(ApiSchema):
     username: str = Field(min_length=1, max_length=255)
     password: str = Field(min_length=8, max_length=255)
 
     model_config = ConfigDict(str_strip_whitespace=True)
 
 
-class UpdateCurrentUser(BaseModel):
+class UpdateCurrentUser(ApiSchema):
     username: str | None = Field(default=None, min_length=1, max_length=255)
     current_password: str | None = Field(default=None, min_length=1, max_length=255)
     new_password: str | None = Field(default=None, min_length=8, max_length=255)

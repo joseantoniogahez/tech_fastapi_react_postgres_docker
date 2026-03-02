@@ -1,9 +1,11 @@
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import ConfigDict, Field
 
 from app.authorization import PermissionScope
 
+from .base import ApiSchema
 
-class RBACPermission(BaseModel):
+
+class RBACPermission(ApiSchema):
     id: str = Field(min_length=1, max_length=100)
     name: str = Field(min_length=1, max_length=255)
 
@@ -14,13 +16,13 @@ class RBACRolePermission(RBACPermission):
     scope: str = Field(min_length=1, max_length=20)
 
 
-class RBACRole(BaseModel):
+class RBACRole(ApiSchema):
     id: int
     name: str = Field(min_length=1, max_length=100)
     permissions: list[RBACRolePermission] = Field(default_factory=list)
 
 
-class CreateRole(BaseModel):
+class CreateRole(ApiSchema):
     name: str = Field(min_length=1, max_length=100)
 
     model_config = ConfigDict(str_strip_whitespace=True)
@@ -30,12 +32,12 @@ class UpdateRole(CreateRole):
     pass
 
 
-class SetRolePermission(BaseModel):
+class SetRolePermission(ApiSchema):
     scope: str = Field(default=PermissionScope.ANY, min_length=1, max_length=20)
 
     model_config = ConfigDict(str_strip_whitespace=True)
 
 
-class UserRoleAssignment(BaseModel):
+class UserRoleAssignment(ApiSchema):
     user_id: int
     role_id: int

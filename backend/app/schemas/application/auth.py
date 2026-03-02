@@ -1,0 +1,29 @@
+from pydantic import Field
+
+from .base import ApplicationSchema
+
+
+class LoginCommand(ApplicationSchema):
+    username: str
+    password: str
+
+
+class RegisterUserCommand(ApplicationSchema):
+    username: str
+    password: str
+
+
+class UpdateCurrentUserCommand(ApplicationSchema):
+    username: str | None = None
+    current_password: str | None = None
+    new_password: str | None = None
+
+
+class AccessTokenResult(ApplicationSchema):
+    access_token: str
+    token_type: str = "bearer"
+
+
+class AccessTokenPayload(ApplicationSchema):
+    sub: str = Field(min_length=1, max_length=255)
+    exp: int

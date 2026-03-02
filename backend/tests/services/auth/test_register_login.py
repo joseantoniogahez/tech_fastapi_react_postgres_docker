@@ -5,13 +5,13 @@ import pytest
 
 from app.exceptions.repositories import RepositoryConflictException
 from app.exceptions.services import ConflictException, ForbiddenException, UnauthorizedException
-from app.schemas.auth import Credentials, RegisterUser
+from app.schemas.application.auth import LoginCommand, RegisterUserCommand
 from utils.testing_support.auth_service import assert_unit_of_work_scope_committed, build_service, build_user
 
 
 def test_authenticate_or_raise_raises_unauthorized_when_user_not_found() -> None:
     service, repository = build_service()
-    credentials = Credentials(username="John", password="StrongPass1")
+    credentials = LoginCommand(username="John", password="StrongPass1")
     repository.get_by_username.return_value = None
 
     async def run_test() -> None:
@@ -26,7 +26,7 @@ def test_authenticate_or_raise_raises_unauthorized_when_user_not_found() -> None
 
 def test_authenticate_or_raise_raises_unauthorized_when_password_is_invalid() -> None:
     service, repository = build_service()
-    credentials = Credentials(username="john", password="WrongPass1")
+    credentials = LoginCommand(username="john", password="WrongPass1")
     repository.get_by_username.return_value = build_user(service, password="StrongPass1")
 
     async def run_test() -> None:
@@ -38,7 +38,7 @@ def test_authenticate_or_raise_raises_unauthorized_when_password_is_invalid() ->
 
 def test_authenticate_or_raise_raises_forbidden_for_disabled_user() -> None:
     service, repository = build_service()
-    credentials = Credentials(username="john", password="StrongPass1")
+    credentials = LoginCommand(username="john", password="StrongPass1")
     repository.get_by_username.return_value = build_user(service, disabled=True)
 
     async def run_test() -> None:
@@ -52,7 +52,7 @@ def test_authenticate_or_raise_raises_forbidden_for_disabled_user() -> None:
 
 def test_login_returns_bearer_token_for_authenticated_user() -> None:
     service, repository = build_service()
-    credentials = Credentials(username="john", password="StrongPass1")
+    credentials = LoginCommand(username="john", password="StrongPass1")
     repository.get_by_username.return_value = build_user(service)
 
     async def run_test() -> None:
@@ -71,7 +71,7 @@ def test_login_returns_bearer_token_for_authenticated_user() -> None:
 def test_register_raises_conflict_when_username_already_exists() -> None:
     service, repository = build_service()
     repository.username_exists.return_value = True
-    registration = RegisterUser(username=" John ", password="StrongPass1")
+    registration = RegisterUserCommand(username=" John ", password="StrongPass1")
 
     async def run_test() -> None:
         with pytest.raises(ConflictException) as exc_info:
@@ -86,7 +86,7 @@ def test_register_raises_conflict_when_username_already_exists() -> None:
 
 def test_register_creates_user_and_returns_authenticated_user() -> None:
     service, repository = build_service()
-    registration = RegisterUser(username=" John ", password="StrongPass1")
+    registration = RegisterUserCommand(username=" John ", password="StrongPass1")
 
     async def create_user(**kwargs: str | bool):
         from app.models.user import User
@@ -122,7 +122,7 @@ def test_register_creates_user_and_returns_authenticated_user() -> None:
 
 def test_register_propagates_repository_conflict_from_create() -> None:
     service, repository = build_service()
-    registration = RegisterUser(username="john", password="StrongPass1")
+    registration = RegisterUserCommand(username="john", password="StrongPass1")
     repository.create.side_effect = RepositoryConflictException(
         message="Username already exists",
         details={"username": "john"},

@@ -6,7 +6,7 @@ import pytest
 from app.exceptions.repositories import RepositoryConflictException
 from app.exceptions.services import InvalidInputException
 from app.models.role import Role
-from app.schemas.rbac import CreateRole, UpdateRole
+from app.schemas.application.rbac import CreateRoleCommand, UpdateRoleCommand
 from app.services.rbac import RBACService
 
 
@@ -75,7 +75,7 @@ def test_create_role_propagates_repository_conflict() -> None:
 
     async def run_test() -> None:
         with pytest.raises(RepositoryConflictException) as exc_info:
-            await service.create_role(CreateRole(name="ops_role"))
+            await service.create_role(CreateRoleCommand(name="ops_role"))
 
         assert "Role name already exists" in str(exc_info.value)
         assert exc_info.value.details == {"name": "ops_role"}
@@ -94,7 +94,7 @@ def test_update_role_propagates_repository_conflict() -> None:
 
     async def run_test() -> None:
         with pytest.raises(RepositoryConflictException) as exc_info:
-            await service.update_role(7, UpdateRole(name="ops_role_v2"))
+            await service.update_role(7, UpdateRoleCommand(name="ops_role_v2"))
 
         assert "Role name already exists" in str(exc_info.value)
         assert exc_info.value.details == {"name": "ops_role_v2"}

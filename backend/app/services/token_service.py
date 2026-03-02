@@ -6,13 +6,13 @@ from jwt import InvalidTokenError
 from pydantic import ValidationError
 
 from app.const.settings import AuthSettings
-from app.schemas.auth import TokenPayload
+from app.schemas.application.auth import AccessTokenPayload
 
 
 class TokenServicePort(Protocol):
     def encode_access_token(self, subject: str, expires_delta: timedelta | None = None) -> str: ...
 
-    def decode_access_token(self, token: str) -> TokenPayload | None: ...
+    def decode_access_token(self, token: str) -> AccessTokenPayload | None: ...
 
 
 class JwtTokenService:
@@ -28,9 +28,9 @@ class JwtTokenService:
         payload = {"sub": subject, "exp": expire_at}
         return jwt.encode(payload, self.secret_key, algorithm=self.algorithm)
 
-    def decode_access_token(self, token: str) -> TokenPayload | None:
+    def decode_access_token(self, token: str) -> AccessTokenPayload | None:
         try:
             payload = jwt.decode(token, self.secret_key, algorithms=[self.algorithm])
-            return TokenPayload.model_validate(payload)
+            return AccessTokenPayload.model_validate(payload)
         except (InvalidTokenError, ValidationError):
             return None

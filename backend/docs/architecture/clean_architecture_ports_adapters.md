@@ -66,7 +66,8 @@ The package shape can stay close to the current one while boundaries become stri
   - `app/database.py` and related DB wiring until it is moved later
 - Data definitions:
   - `app/models/*`
-  - `app/schemas/*`
+  - `app/schemas/api/*`
+  - `app/schemas/application/*`
 - Cross-cutting rules and errors:
   - `app/exceptions/*`
   - neutral shared modules outside `repositories` when cross-layer constants/helpers are extracted
@@ -95,11 +96,13 @@ Use these rules as the default dependency direction:
   - persistence-only constants exported from `repositories`
 - `services` may depend on:
   - service/repository ports (`Protocol`)
+  - application-owned schemas in `app.schemas.application.*`
   - domain/application exceptions
   - neutral shared modules (`const`, future common modules, validators, policy helpers)
 - `services` must not depend on:
   - SQLAlchemy exception types
   - concrete repository implementations
+  - delivery-layer schemas from `app.schemas.api`
   - request/response framework wiring
 - `repositories` may depend on:
   - SQLAlchemy
@@ -149,6 +152,8 @@ Services are responsible for:
 - translating repository outcomes into domain/application exceptions
 
 Explicit rule: services must not depend on SQLAlchemy exceptions. Database-specific exceptions must be translated before they cross into the service layer, typically inside repositories or through repository-specific infrastructure exceptions.
+
+Explicit rule: HTTP request/response schemas in `app.schemas.api` belong to the delivery layer. If a use case maps directly to a persisted entity, the service contract may accept or return the ORM model. If it needs a shape that does not map cleanly to a single entity, define an application-owned schema in `app.schemas.application.*` and let routers translate between HTTP schemas and service contracts.
 
 ### Repositories own persistence concerns
 

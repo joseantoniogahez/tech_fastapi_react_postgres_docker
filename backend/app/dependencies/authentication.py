@@ -5,7 +5,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 from app.exceptions.services import ForbiddenException
 from app.models.user import User
-from app.schemas.auth import Credentials
+from app.schemas.api.auth import Credentials
 
 from .services import AuthServiceDependency
 
