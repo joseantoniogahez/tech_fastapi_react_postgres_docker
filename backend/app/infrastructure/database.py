@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from enum import Enum
+from threading import RLock
 from typing import Callable
 
 from pydantic import ValidationError
@@ -10,7 +13,7 @@ from app.const.settings import DatabaseSettings
 
 
 class CustomDatabaseException(Exception):
-    """Raised when database configuration is invalid."""
+    pass
 
 
 class DatabaseConnectionType(str, Enum):
@@ -106,13 +109,113 @@ class DatabaseManager:
 
     @staticmethod
     def build_session_factory(database_url: URL) -> async_sessionmaker[AsyncSession]:
-        engine = database_manager.build_engine(database_url)
+        engine = DatabaseManager.build_engine(database_url)
         return async_sessionmaker(bind=engine, expire_on_commit=False)
 
 
-database_manager = DatabaseManager()
+class DatabaseRuntime:
+    def __init__(self, manager: DatabaseManager) -> None:
+        self._manager = manager
+        self._database_url: URL | None = None
+        self._session_factory: async_sessionmaker[AsyncSession] | None = None
+        self._lock = RLock()
+
+    def get_database_url(
+        self,
+        db_connection_type: DatabaseConnectionType = DatabaseConnectionType.AUTO,
+    ) -> URL:
+        if db_connection_type != DatabaseConnectionType.AUTO:
+            return self._manager.build_database_url(db_connection_type)
+
+        if self._database_url is not None:
+            return self._database_url
+
+        with self._lock:
+            if self._database_url is None:
+                self._database_url = self._manager.build_database_url()
+            return self._database_url
+
+    def get_session_factory(
+        self,
+        db_connection_type: DatabaseConnectionType = DatabaseConnectionType.AUTO,
+    ) -> async_sessionmaker[AsyncSession]:
+        if db_connection_type != DatabaseConnectionType.AUTO:
+            database_url = self._manager.build_database_url(db_connection_type)
+            return self._manager.build_session_factory(database_url)
+
+        if self._session_factory is not None:
+            return self._session_factory
+
+        with self._lock:
+            if self._session_factory is None:
+                self._session_factory = self._manager.build_session_factory(self.get_database_url())
+            return self._session_factory
+
+    def reset(self) -> None:
+        with self._lock:
+            self._database_url = None
+            self._session_factory = None
 
 
-DATABASE_URL = database_manager.build_database_url()
-AsyncSessionDatabase = database_manager.build_session_factory(DATABASE_URL)
 Base = declarative_base()
+database_manager = DatabaseManager()
+database_runtime = DatabaseRuntime(database_manager)
+
+
+def get_database_url(
+    db_connection_type: DatabaseConnectionType = DatabaseConnectionType.AUTO,
+) -> URL:
+    return database_runtime.get_database_url(db_connection_type)
+
+
+def get_async_session_factory(
+    db_connection_type: DatabaseConnectionType = DatabaseConnectionType.AUTO,
+) -> async_sessionmaker[AsyncSession]:
+    return database_runtime.get_session_factory(db_connection_type)
+
+
+def reset_database_runtime() -> None:
+    database_runtime.reset()
+
+
+def __getattr__(name: str) -> object:
+    if name == "DATABASE_URL":
+        return get_database_url()
+    if name == "AsyncSessionDatabase":
+        return get_async_session_factory()
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def __dir__() -> list[str]:
+    return sorted(
+        {
+            "AsyncSessionDatabase",
+            "Base",
+            "CustomDatabaseException",
+            "DATABASE_URL",
+            "DatabaseConnectionType",
+            "DatabaseManager",
+            "DatabaseRuntime",
+            "DatabaseSettings",
+            "database_manager",
+            "database_runtime",
+            "get_async_session_factory",
+            "get_database_url",
+            "reset_database_runtime",
+        }
+    )
+
+
+__all__ = [
+    "Base",
+    "CustomDatabaseException",
+    "DatabaseConnectionType",
+    "DatabaseManager",
+    "DatabaseRuntime",
+    "DatabaseSettings",
+    "database_manager",
+    "database_runtime",
+    "get_async_session_factory",
+    "get_database_url",
+    "reset_database_runtime",
+]

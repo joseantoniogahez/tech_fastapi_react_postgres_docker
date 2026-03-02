@@ -1,7 +1,7 @@
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.database import Base
+from app.infrastructure.database import Base
 
 
 class UserRole(Base):

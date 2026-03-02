@@ -9,7 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.authorization import PERMISSION_SPECS, PermissionScope
-from app.database import AsyncSessionDatabase
+from app.infrastructure.database import get_async_session_factory
 from app.models.permission import Permission
 from app.models.role import Role
 from app.models.role_permission import RolePermission
@@ -245,7 +245,7 @@ def main() -> int:
     try:
         report = asyncio.run(
             bootstrap_rbac(
-                AsyncSessionDatabase,
+                get_async_session_factory(),
                 admin_username=args.admin_username,
                 admin_password=args.admin_password,
             )

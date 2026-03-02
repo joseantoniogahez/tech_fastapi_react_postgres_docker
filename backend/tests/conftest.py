@@ -8,8 +8,8 @@ from argon2 import PasswordHasher
 from starlette.testclient import TestClient
 
 from app.authorization import PERMISSION_SPECS
-from app.database import Base
 from app.dependencies.db import get_db_session
+from app.infrastructure.database import Base
 from app.main import app
 from app.models.author import Author
 from app.models.book import Book

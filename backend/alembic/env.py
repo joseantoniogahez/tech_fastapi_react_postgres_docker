@@ -5,7 +5,7 @@ from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from app.database import DATABASE_URL, Base
+from app.infrastructure.database import Base, get_database_url
 from app.models.author import Author
 from app.models.book import Book
 from app.models.permission import Permission
@@ -26,8 +26,9 @@ target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:
+    database_url = get_database_url()
     context.configure(
-        url=DATABASE_URL,
+        url=database_url,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
@@ -38,8 +39,9 @@ def run_migrations_offline() -> None:
 
 
 async def run_migrations_online() -> None:
+    database_url = get_database_url()
     connectable = create_async_engine(
-        url=DATABASE_URL,
+        url=database_url,
         poolclass=pool.NullPool,
         future=True,
     )

@@ -9,7 +9,7 @@ from fastapi.routing import APIRoute
 from pydantic import ValidationError
 
 from app.const.settings import ApiSettings, AuthSettings
-from app.dependencies.db import get_db_session
+from app.dependencies.db import AsyncSessionDatabase, get_db_session, get_unit_of_work
 from app.factory import app_lifespan, configure_logging, validate_auth_settings
 from app.main import app
 from app.routers import ROUTER_MODULES
@@ -170,6 +170,18 @@ def test_get_db_session_yields_session_from_async_session_database() -> None:
     assert events == ["enter", "exit"]
 
 
+def test_async_session_database_calls_lazy_factory() -> None:
+    expected_session_context = object()
+    factory = MagicMock(return_value=expected_session_context)
+
+    with patch("app.dependencies.db.get_async_session_factory", return_value=factory) as get_factory:
+        result = AsyncSessionDatabase()
+
+    assert result is expected_session_context
+    get_factory.assert_called_once_with()
+    factory.assert_called_once_with()
+
+
 def test_get_db_session_rolls_back_when_exception_is_raised_after_yield() -> None:
     events: list[str] = []
     session = MagicMock()
@@ -203,6 +215,20 @@ def test_get_registered_routers_supports_fully_qualified_module_names() -> None:
 
     assert len(routers) == 1
     assert isinstance(routers[0], APIRouter)
+
+
+def test_get_unit_of_work_returns_repository_unit_of_work() -> None:
+    session = object()
+    expected_uow = object()
+
+    async def run_test() -> None:
+        with patch("app.dependencies.db.UnitOfWork", return_value=expected_uow) as unit_of_work:
+            result = await get_unit_of_work(session)  # type: ignore[arg-type]
+
+        assert result is expected_uow
+        unit_of_work.assert_called_once_with(session=session)
+
+    asyncio.run(run_test())
 
 
 def test_load_router_raises_for_invalid_router_export() -> None:

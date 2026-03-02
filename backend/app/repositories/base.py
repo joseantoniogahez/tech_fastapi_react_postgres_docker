@@ -5,8 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 
 from app.common.pagination import DEFAULT_LIST_LIMIT, DEFAULT_SORT, MAX_LIST_LIMIT
-from app.database import Base
 from app.exceptions.repositories import RepositoryException
+from app.infrastructure.database import Base
 
 ModelType = TypeVar("ModelType", bound=Base)
 IdType = int

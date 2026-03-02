@@ -5,7 +5,7 @@ import pytest
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import Base
+from app.infrastructure.database import Base
 from app.models.permission import Permission
 from app.models.role import Role
 from app.models.role_permission import RolePermission
