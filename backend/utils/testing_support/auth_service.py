@@ -4,7 +4,9 @@ from unittest.mock import AsyncMock, MagicMock
 from app.const.settings import AuthSettings
 from app.models.user import User
 from app.services.auth import AuthService
+from app.services.password_service import PasswordServicePort
 from app.services.permission_evaluator import PermissionEvaluatorPort
+from app.services.token_service import TokenServicePort
 
 
 def assert_unit_of_work_scope_committed(unit_of_work: object) -> None:
@@ -37,6 +39,8 @@ def build_service(
     repository: MagicMock | None = None,
     *,
     permission_evaluator: PermissionEvaluatorPort | None = None,
+    token_service: TokenServicePort | None = None,
+    password_service: PasswordServicePort | None = None,
 ) -> tuple[AuthService, MagicMock]:
     repo = repository or _build_repository_mock()
     unit_of_work = _build_unit_of_work_mock()
@@ -51,6 +55,8 @@ def build_service(
             unit_of_work=unit_of_work,
             auth_settings=settings,
             permission_evaluator=permission_evaluator,
+            token_service=token_service,
+            password_service=password_service,
         ),
         repo,
     )
@@ -68,7 +74,7 @@ def build_user(
     return User(
         id=user_id,
         username=username,
-        hashed_password=service._hash_password(password),
+        hashed_password=service.password_service.hash_password(password),
         disabled=disabled,
         tenant_id=tenant_id,
     )

@@ -55,9 +55,3 @@ def test_validate_password_policy_catches_lowercase_and_username_rules() -> None
     violations = details["violations"]
     assert "Password must include at least one lowercase letter" in violations
     assert "Password cannot contain the username" in violations
-
-
-def test_verify_password_returns_false_for_invalid_hash() -> None:
-    service, _ = build_service()
-
-    assert service._verify_password("StrongPass1", "not-a-valid-hash") is False

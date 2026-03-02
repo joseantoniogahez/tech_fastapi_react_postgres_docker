@@ -56,7 +56,9 @@ def test_login_returns_bearer_token_for_authenticated_user() -> None:
     repository.get_by_username.return_value = build_user(service)
 
     async def run_test() -> None:
-        with patch.object(service, "encode_access_token", return_value="encoded-token") as encode_access_token:
+        with patch.object(
+            service.token_service, "encode_access_token", return_value="encoded-token"
+        ) as encode_access_token:
             token = await service.login(credentials)
 
         assert token.access_token == "encoded-token"
@@ -111,7 +113,9 @@ def test_register_creates_user_and_returns_authenticated_user() -> None:
         assert created_kwargs["username"] == "john"
         assert created_kwargs["disabled"] is False
         assert created_kwargs["hashed_password"] != registration.password
-        assert service._verify_password(registration.password, created_kwargs["hashed_password"]) is True
+        assert (
+            service.password_service.verify_password(registration.password, created_kwargs["hashed_password"]) is True
+        )
 
     asyncio.run(run_test())
 

@@ -85,7 +85,7 @@ def test_build_password_change_validates_current_and_new_password() -> None:
         "john",
     )
     assert "hashed_password" in changes
-    assert service._verify_password("AnotherPass1", changes["hashed_password"]) is True
+    assert service.password_service.verify_password("AnotherPass1", changes["hashed_password"]) is True
 
 
 def test_persist_user_changes_maps_integrity_error_for_username_change() -> None:
@@ -151,6 +151,6 @@ def test_update_current_user_persists_username_and_password_changes() -> None:
         assert_unit_of_work_scope_committed(service.unit_of_work)
         update_kwargs = repository.update.await_args.kwargs
         assert update_kwargs["username"] == "new.user"
-        assert service._verify_password("AnotherPass1", update_kwargs["hashed_password"]) is True
+        assert service.password_service.verify_password("AnotherPass1", update_kwargs["hashed_password"]) is True
 
     asyncio.run(run_test())

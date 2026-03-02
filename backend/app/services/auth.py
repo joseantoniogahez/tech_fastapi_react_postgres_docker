@@ -1,18 +1,12 @@
-from datetime import datetime, timedelta, timezone
 from typing import Any, Protocol
 
-import jwt
-from argon2 import PasswordHasher
-from argon2.exceptions import InvalidHashError, VerificationError, VerifyMismatchError
-from jwt import InvalidTokenError
-from pydantic import ValidationError
 from sqlalchemy.exc import IntegrityError
 
 from app.const.permission import PermissionScope
 from app.const.settings import AuthSettings
 from app.exceptions.services import ConflictException, ForbiddenException, InvalidInputException, UnauthorizedException
 from app.models.user import User
-from app.schemas.auth import AuthenticatedUser, Credentials, RegisterUser, Token, TokenPayload, UpdateCurrentUser
+from app.schemas.auth import AuthenticatedUser, Credentials, RegisterUser, Token, UpdateCurrentUser
 from app.security.policies import (
     USERNAME_ALLOWED_DESCRIPTION,
     PasswordPolicyError,
@@ -23,7 +17,9 @@ from app.security.policies import (
     validate_password_policy,
 )
 from app.services import UnitOfWorkPort
+from app.services.password_service import Argon2PasswordService, PasswordServicePort
 from app.services.permission_evaluator import PermissionEvaluator, PermissionEvaluatorPort
+from app.services.token_service import JwtTokenService, TokenServicePort
 
 
 class AuthRepositoryPort(Protocol):
@@ -68,15 +64,15 @@ class AuthService:
         unit_of_work: UnitOfWorkPort,
         auth_settings: AuthSettings | None = None,
         permission_evaluator: PermissionEvaluatorPort | None = None,
+        token_service: TokenServicePort | None = None,
+        password_service: PasswordServicePort | None = None,
     ):
         settings = auth_settings or AuthSettings()
         self.auth_repository = auth_repository
         self.unit_of_work = unit_of_work
         self.permission_evaluator = permission_evaluator or PermissionEvaluator()
-        self.password_hasher = PasswordHasher()
-        self.secret_key = settings.JWT_SECRET_KEY
-        self.algorithm = settings.JWT_ALGORITHM
-        self.access_token_expire_minutes = settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES
+        self.token_service = token_service or JwtTokenService(settings)
+        self.password_service = password_service or Argon2PasswordService()
 
     def _normalize_username(self, username: str) -> str:
         try:
@@ -101,32 +97,10 @@ class AuthService:
                 details={"violations": format_password_policy_messages(exc.violations)},
             ) from exc
 
-    def _hash_password(self, plain_password: str) -> str:
-        return self.password_hasher.hash(plain_password)
-
-    def _verify_password(self, plain_password: str, hashed_password: str) -> bool:
-        try:
-            return self.password_hasher.verify(hashed_password, plain_password)
-        except (VerifyMismatchError, VerificationError, InvalidHashError):
-            return False
-
-    def encode_access_token(self, subject: str, expires_delta: timedelta | None = None) -> str:
-        expire_delta = expires_delta or timedelta(minutes=self.access_token_expire_minutes)
-        expire_at = datetime.now(timezone.utc) + expire_delta
-        payload = {"sub": subject, "exp": expire_at}
-        return jwt.encode(payload, self.secret_key, algorithm=self.algorithm)
-
-    def decode_access_token(self, token: str) -> TokenPayload | None:
-        try:
-            payload = jwt.decode(token, self.secret_key, algorithms=[self.algorithm])
-            return TokenPayload.model_validate(payload)
-        except (InvalidTokenError, ValidationError):
-            return None
-
     async def _authenticate_or_raise(self, credentials: Credentials) -> User:
         username = self._normalize_username(credentials.username)
         user = await self.auth_repository.get_by_username(username)
-        if user is None or not self._verify_password(credentials.password, user.hashed_password):
+        if user is None or not self.password_service.verify_password(credentials.password, user.hashed_password):
             raise UnauthorizedException(message="Invalid username or password")
 
         if user.disabled:
@@ -136,7 +110,7 @@ class AuthService:
 
     async def login(self, credentials: Credentials) -> Token:
         user = await self._authenticate_or_raise(credentials)
-        access_token = self.encode_access_token(subject=user.username)
+        access_token = self.token_service.encode_access_token(subject=user.username)
         return Token(access_token=access_token)
 
     async def register(self, registration: RegisterUser) -> AuthenticatedUser:
@@ -153,7 +127,7 @@ class AuthService:
 
                 user = await self.auth_repository.create(
                     username=username,
-                    hashed_password=self._hash_password(registration.password),
+                    hashed_password=self.password_service.hash_password(registration.password),
                     disabled=False,
                 )
         except IntegrityError as exc:
@@ -203,14 +177,14 @@ class AuthService:
             return {}
 
         assert update_data.current_password is not None
-        if not self._verify_password(update_data.current_password, current_user.hashed_password):
+        if not self.password_service.verify_password(update_data.current_password, current_user.hashed_password):
             raise UnauthorizedException(message="Current password is invalid")
 
-        if self._verify_password(update_data.new_password, current_user.hashed_password):
+        if self.password_service.verify_password(update_data.new_password, current_user.hashed_password):
             raise InvalidInputException(message="New password must be different from current password")
 
         self._validate_password_policy(update_data.new_password, normalized_username)
-        return {"hashed_password": self._hash_password(update_data.new_password)}
+        return {"hashed_password": self.password_service.hash_password(update_data.new_password)}
 
     async def _persist_user_changes(self, current_user: User, changes: dict[str, str]) -> User:
         try:
@@ -237,7 +211,7 @@ class AuthService:
         return AuthenticatedUser.model_validate(updated_user)
 
     async def get_user_from_token(self, token: str) -> User:
-        payload = self.decode_access_token(token)
+        payload = self.token_service.decode_access_token(token)
         if payload is None:
             raise UnauthorizedException(message="Could not validate credentials")
 
