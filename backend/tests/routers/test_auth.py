@@ -1,3 +1,4 @@
+import hashlib
 from datetime import UTC, datetime, timedelta
 from http import HTTPStatus
 from typing import Any
@@ -11,8 +12,17 @@ from app.const.settings import AuthSettings
 
 def _build_access_token(username: str) -> str:
     settings = AuthSettings()
-    expire_at = datetime.now(UTC) + timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES)
-    payload = {"sub": username, "exp": expire_at}
+    issued_at = datetime.now(UTC)
+    expire_at = issued_at + timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES)
+    payload = {
+        "sub": username,
+        "iss": settings.JWT_ISSUER,
+        "aud": settings.JWT_AUDIENCE,
+        "iat": int(issued_at.timestamp()),
+        "exp": int(expire_at.timestamp()),
+        "jti": f"test-{username}",
+        "rbac_version": hashlib.sha256(b"").hexdigest(),
+    }
     return jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
 

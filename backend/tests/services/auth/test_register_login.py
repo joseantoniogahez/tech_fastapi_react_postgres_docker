@@ -63,7 +63,11 @@ def test_login_returns_bearer_token_for_authenticated_user() -> None:
 
         assert token.access_token == "encoded-token"
         assert token.token_type == "bearer"
-        encode_access_token.assert_called_once_with(subject="john")
+        repository.get_rbac_version.assert_awaited_once_with(1)
+        encode_access_token.assert_called_once_with(
+            subject="john",
+            rbac_version="0" * 64,
+        )
 
     asyncio.run(run_test())
 

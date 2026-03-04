@@ -1,3 +1,4 @@
+import hashlib
 from typing import Any
 
 from sqlalchemy import select
@@ -50,6 +51,28 @@ class AuthRepository(BaseRepository[User]):
                     details={"username": username},
                 ) from exc
             raise RepositoryInternalError() from exc
+
+    async def get_rbac_version(self, user_id: int) -> str:
+        query = (
+            select(RolePermission.permission_id, RolePermission.scope)
+            .join(UserRole, RolePermission.role_id == UserRole.role_id)
+            .where(UserRole.user_id == user_id)
+        )
+        result = await self.session.execute(query)
+
+        effective_scopes: dict[str, str] = {}
+        for permission_id, scope in result.all():
+            if scope not in PERMISSION_SCOPE_RANK:
+                continue
+
+            current_scope = effective_scopes.get(permission_id)
+            if current_scope is None or PERMISSION_SCOPE_RANK[scope] > PERMISSION_SCOPE_RANK[current_scope]:
+                effective_scopes[permission_id] = scope
+
+        serialized_scopes = "|".join(
+            f"{permission_id}:{effective_scopes[permission_id]}" for permission_id in sorted(effective_scopes)
+        )
+        return hashlib.sha256(serialized_scopes.encode("utf-8")).hexdigest()
 
     async def get_user_permission_scope(self, user_id: int, permission_id: str) -> str | None:
         query = (

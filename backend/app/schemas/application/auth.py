@@ -26,4 +26,9 @@ class AccessTokenResult(ApplicationSchema):
 
 class AccessTokenPayload(ApplicationSchema):
     sub: str = Field(min_length=1, max_length=255)
+    iss: str = Field(min_length=1, max_length=255)
+    aud: str = Field(min_length=1, max_length=255)
+    iat: int
     exp: int
+    jti: str = Field(min_length=1, max_length=255)
+    rbac_version: str = Field(min_length=64, max_length=64)

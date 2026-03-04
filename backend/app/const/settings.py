@@ -21,16 +21,20 @@ class AuthSettings(BaseSettings):
         "local-dev-jwt-secret",
     }
     _PRODUCTION_ENV_VALUES: ClassVar[set[str]] = {"prod", "production", "staging"}
-    _JWT_REQUIRED_ENV_VARS: ClassVar[tuple[str, str, str]] = (
+    _JWT_REQUIRED_ENV_VARS: ClassVar[tuple[str, ...]] = (
         "JWT_SECRET_KEY",
         "JWT_ALGORITHM",
         "JWT_ACCESS_TOKEN_EXPIRE_MINUTES",
+        "JWT_ISSUER",
+        "JWT_AUDIENCE",
     )
 
     APP_ENV: str = "local"
     JWT_SECRET_KEY: str = "local-dev-jwt-secret"
     JWT_ALGORITHM: str = "HS256"
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(30, gt=0)
+    JWT_ISSUER: str = "tech-fastapi-react-postgres-docker"
+    JWT_AUDIENCE: str = "tech-fastapi-react-postgres-docker-api"
 
     @field_validator("APP_ENV")
     @classmethod
@@ -54,6 +58,14 @@ class AuthSettings(BaseSettings):
         normalized = value.strip()
         if not normalized:
             raise ValueError("JWT_ALGORITHM cannot be empty.")
+        return normalized
+
+    @field_validator("JWT_ISSUER", "JWT_AUDIENCE")
+    @classmethod
+    def validate_jwt_identity_claim(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("JWT issuer and audience cannot be empty.")
         return normalized
 
     @classmethod

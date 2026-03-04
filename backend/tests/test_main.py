@@ -32,6 +32,8 @@ def test_validate_auth_settings_allows_defaults_outside_production(monkeypatch: 
     monkeypatch.delenv("JWT_SECRET_KEY", raising=False)
     monkeypatch.delenv("JWT_ALGORITHM", raising=False)
     monkeypatch.delenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", raising=False)
+    monkeypatch.delenv("JWT_ISSUER", raising=False)
+    monkeypatch.delenv("JWT_AUDIENCE", raising=False)
 
     validate_auth_settings()
 
@@ -43,6 +45,8 @@ def test_validate_auth_settings_raises_when_jwt_secret_is_missing_in_production(
     monkeypatch.delenv("JWT_SECRET_KEY", raising=False)
     monkeypatch.setenv("JWT_ALGORITHM", "HS256")
     monkeypatch.setenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "30")
+    monkeypatch.setenv("JWT_ISSUER", "unit-test-issuer")
+    monkeypatch.setenv("JWT_AUDIENCE", "unit-test-audience")
 
     with pytest.raises(RuntimeError) as exc_info:
         validate_auth_settings()
@@ -57,6 +61,8 @@ def test_validate_auth_settings_raises_when_jwt_secret_is_insecure_in_production
     monkeypatch.setenv("JWT_SECRET_KEY", "local-dev-jwt-secret")
     monkeypatch.setenv("JWT_ALGORITHM", "HS256")
     monkeypatch.setenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "30")
+    monkeypatch.setenv("JWT_ISSUER", "unit-test-issuer")
+    monkeypatch.setenv("JWT_AUDIENCE", "unit-test-audience")
 
     with pytest.raises(RuntimeError) as exc_info:
         validate_auth_settings()
@@ -71,6 +77,8 @@ def test_validate_auth_settings_allows_secure_values_in_production(
     monkeypatch.setenv("JWT_SECRET_KEY", "production-secure-secret")
     monkeypatch.setenv("JWT_ALGORITHM", "HS256")
     monkeypatch.setenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "30")
+    monkeypatch.setenv("JWT_ISSUER", "unit-test-issuer")
+    monkeypatch.setenv("JWT_AUDIENCE", "unit-test-audience")
 
     validate_auth_settings()
 
@@ -89,6 +97,12 @@ def test_auth_settings_rejects_blank_jwt_secret_key() -> None:
 def test_auth_settings_rejects_blank_jwt_algorithm() -> None:
     with pytest.raises(ValidationError):
         AuthSettings(JWT_ALGORITHM="   ")
+
+
+@pytest.mark.parametrize("field_name", ["JWT_ISSUER", "JWT_AUDIENCE"])
+def test_auth_settings_rejects_blank_jwt_identity_claim(field_name: str) -> None:
+    with pytest.raises(ValidationError):
+        AuthSettings(**{field_name: "   "})
 
 
 def test_app_lifespan_logs_startup_and_shutdown() -> None:

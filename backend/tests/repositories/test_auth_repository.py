@@ -1,5 +1,6 @@
 import asyncio
-from unittest.mock import AsyncMock, patch
+import hashlib
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from sqlalchemy.exc import IntegrityError
@@ -24,6 +25,28 @@ def test_auth_repository_user_has_permission_delegates_to_scope_lookup() -> None
             user_id=3,
             permission_id="books:update",
         )
+
+    asyncio.run(run_test())
+
+
+def test_auth_repository_get_rbac_version_returns_stable_digest_for_effective_permissions() -> None:
+    session = build_session_mock()
+    repository = AuthRepository(session=session)
+    result = MagicMock()
+    result.all.return_value = [
+        ("books:update", "own"),
+        ("books:update", "any"),
+        ("authors:read", "tenant"),
+        ("ignored", "invalid"),
+    ]
+    session.execute.return_value = result
+
+    async def run_test() -> None:
+        rbac_version = await repository.get_rbac_version(user_id=7)
+
+        expected = hashlib.sha256(b"authors:read:tenant|books:update:any").hexdigest()
+        assert rbac_version == expected
+        session.execute.assert_awaited_once()
 
     asyncio.run(run_test())
 

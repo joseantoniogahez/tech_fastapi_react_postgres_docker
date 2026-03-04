@@ -29,6 +29,8 @@ class AuthRepositoryPort(Protocol):
 
     async def update(self, entity: User, **changes: Any) -> User: ...
 
+    async def get_rbac_version(self, user_id: int) -> str: ...
+
     async def get_user_permission_scope(self, user_id: int, permission_id: str) -> str | None: ...
 
     async def user_has_permission(self, user_id: int, permission_id: str) -> bool: ...
@@ -108,7 +110,11 @@ class AuthService:
 
     async def login(self, credentials: LoginCommand) -> AccessTokenResult:
         user = await self._authenticate_or_raise(credentials)
-        access_token = self.token_service.encode_access_token(subject=user.username)
+        rbac_version = await self.auth_repository.get_rbac_version(user.id)
+        access_token = self.token_service.encode_access_token(
+            subject=user.username,
+            rbac_version=rbac_version,
+        )
         return AccessTokenResult(access_token=access_token)
 
     async def register(self, registration: RegisterUserCommand) -> User:
@@ -201,6 +207,10 @@ class AuthService:
 
         user = await self.auth_repository.get_by_username(payload.sub)
         if user is None:
+            raise UnauthorizedError(message="Could not validate credentials")
+
+        current_rbac_version = await self.auth_repository.get_rbac_version(user.id)
+        if payload.rbac_version != current_rbac_version:
             raise UnauthorizedError(message="Could not validate credentials")
 
         return user

@@ -23,6 +23,9 @@ def _build_repository_mock() -> MagicMock:
     repository.username_exists = AsyncMock(return_value=False)
     repository.create = AsyncMock()
     repository.update = AsyncMock()
+    repository.get_rbac_version = AsyncMock(
+        return_value="0" * 64,
+    )
     repository.get_user_permission_scope = AsyncMock(return_value=None)
     repository.user_has_permission = AsyncMock()
     return repository
@@ -48,6 +51,8 @@ def build_service(
         JWT_SECRET_KEY="unit-test-secret",
         JWT_ALGORITHM="HS256",
         JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30,
+        JWT_ISSUER="unit-test-issuer",
+        JWT_AUDIENCE="unit-test-audience",
     )
     return (
         AuthService(

@@ -27,6 +27,29 @@ This command:
 1. Exchange credentials for a bearer token with `POST /token`.
 1. Call protected endpoints with `Authorization: Bearer <access_token>`.
 
+Access tokens now include:
+
+- standard claims `sub`, `iss`, `aud`, `iat`, `exp`, and `jti`,
+- a custom `rbac_version` claim derived from the caller's current effective permissions.
+
+In plain terms:
+
+- `iss` tells who created the token.
+- `aud` tells which API the token is meant for.
+- `iat` tells when the token was issued.
+- `jti` gives that specific token its own unique id.
+
+`iss` and `aud` are checked when the token is decoded, so the API does not accept a token created for a different issuer or audience.
+
+`rbac_version` is how the API handles early token invalidation after RBAC changes.
+
+- At login time, the backend calculates a stable hash of the user's current effective permissions.
+- That hash is stored inside the token as `rbac_version`.
+- On each authenticated request, the backend calculates the current hash again.
+- If the stored value and the current value do not match, the token is rejected.
+
+This means a token can become invalid before `exp` when the user's roles or permissions change. In practice, if an admin removes or changes a user's access, older tokens stop working and the user must log in again.
+
 ## Scoped Authorization
 
 Permission checks support scopes:
@@ -59,6 +82,8 @@ curl -X POST http://localhost:8000/token \
   "token_type": "bearer"
 }
 ```
+
+The JWT payload contains `sub`, `iss`, `aud`, `iat`, `exp`, `jti`, and `rbac_version`, even though the API only returns the encoded bearer token string to clients.
 
 Invalid credentials (`401 Unauthorized`):
 
