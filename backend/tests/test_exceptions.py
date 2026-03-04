@@ -10,14 +10,14 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.requests import Request
 
-from app.exceptions.domain import DomainErrorType, DomainException, ErrorLayer
+from app.exceptions.domain import DomainError, DomainErrorType, ErrorLayer
 from app.exceptions.repositories import (
-    RepositoryConflictException,
-    RepositoryException,
-    RepositoryInternalErrorException,
+    RepositoryConflictError,
+    RepositoryError,
+    RepositoryInternalError,
 )
-from app.exceptions.routers import RouterException
-from app.exceptions.services import UnauthorizedException
+from app.exceptions.routers import RouterError
+from app.exceptions.services import UnauthorizedError
 from app.exceptions.setup.handlers import (
     build_error_payload,
     configure_exception_handlers,
@@ -51,10 +51,10 @@ def _payload(response: JSONResponse) -> dict[str, Any]:
 
 
 def test_repository_and_router_exception_set_expected_layer() -> None:
-    repository_exc = RepositoryException(message="Repo failure")
-    repository_conflict_exc = RepositoryConflictException(message="Repo conflict")
-    repository_internal_exc = RepositoryInternalErrorException()
-    router_exc = RouterException(DomainErrorType.NOT_FOUND, "Route failure")
+    repository_exc = RepositoryError(message="Repo failure")
+    repository_conflict_exc = RepositoryConflictError(message="Repo conflict")
+    repository_internal_exc = RepositoryInternalError()
+    router_exc = RouterError(DomainErrorType.NOT_FOUND, "Route failure")
 
     assert repository_exc.layer == ErrorLayer.REPOSITORY
     assert repository_exc.code == DomainErrorType.INTERNAL_ERROR.value
@@ -67,7 +67,7 @@ def test_repository_and_router_exception_set_expected_layer() -> None:
 
 
 def test_unauthorized_exception_merges_headers() -> None:
-    exc = UnauthorizedException(headers={"X-Reason": "expired"})
+    exc = UnauthorizedError(headers={"X-Reason": "expired"})
     assert exc.headers == {
         "WWW-Authenticate": "Bearer",
         "X-Reason": "expired",
@@ -176,7 +176,7 @@ def test_configure_exception_handlers_registers_all_handlers() -> None:
     app = FastAPI()
     configure_exception_handlers(app)
 
-    assert app.exception_handlers[DomainException] is domain_exception_handler
+    assert app.exception_handlers[DomainError] is domain_exception_handler
     assert app.exception_handlers[RequestValidationError] is request_validation_exception_handler
     assert app.exception_handlers[StarletteHTTPException] is http_exception_handler
     assert app.exception_handlers[Exception] is unhandled_exception_handler

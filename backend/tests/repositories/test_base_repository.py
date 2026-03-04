@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from app.exceptions.repositories import RepositoryException
+from app.exceptions.repositories import RepositoryError
 from app.models.author import Author
 from app.repositories.base import BaseRepository
 from utils.testing_support.repositories import build_session_mock
@@ -18,7 +18,7 @@ def test_get_column_returns_model_column() -> None:
 def test_get_column_raises_when_column_is_missing() -> None:
     repository = BaseRepository(session=build_session_mock(), model=Author)
 
-    with pytest.raises(RepositoryException) as exc_info:
+    with pytest.raises(RepositoryError) as exc_info:
         repository._get_column("missing")
 
     assert "Column 'missing' does not exist on 'Author'" in str(exc_info.value)
@@ -47,7 +47,7 @@ def test_build_query_applies_descending_sort_with_stable_tiebreaker() -> None:
 def test_build_query_raises_when_sort_field_is_empty() -> None:
     repository = BaseRepository(session=build_session_mock(), model=Author)
 
-    with pytest.raises(RepositoryException) as exc_info:
+    with pytest.raises(RepositoryError) as exc_info:
         repository._build_query(sort="-")
 
     assert "Sort field cannot be empty" in str(exc_info.value)
@@ -143,7 +143,7 @@ def test_list_raises_when_offset_is_negative() -> None:
     repository = BaseRepository(session=session, model=Author)
 
     async def run_test() -> None:
-        with pytest.raises(RepositoryException) as exc_info:
+        with pytest.raises(RepositoryError) as exc_info:
             await repository.list(offset=-1)
 
         assert "Offset must be greater than or equal to 0" in str(exc_info.value)
@@ -157,7 +157,7 @@ def test_list_raises_when_limit_is_less_than_one() -> None:
     repository = BaseRepository(session=session, model=Author)
 
     async def run_test() -> None:
-        with pytest.raises(RepositoryException) as exc_info:
+        with pytest.raises(RepositoryError) as exc_info:
             await repository.list(limit=0)
 
         assert "Limit must be greater than or equal to 1" in str(exc_info.value)
@@ -192,7 +192,7 @@ def test_update_raises_when_field_is_invalid() -> None:
     entity = Author(name="Alice")
 
     async def run_test() -> None:
-        with pytest.raises(RepositoryException) as exc_info:
+        with pytest.raises(RepositoryError) as exc_info:
             await repository.update(entity, missing="value")
 
         assert "Column 'missing' does not exist on 'Author'" in str(exc_info.value)

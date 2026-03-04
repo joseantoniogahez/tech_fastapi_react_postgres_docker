@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Protocol
 
 import jwt
@@ -24,7 +24,7 @@ class JwtTokenService:
 
     def encode_access_token(self, subject: str, expires_delta: timedelta | None = None) -> str:
         expire_delta = expires_delta or timedelta(minutes=self.access_token_expire_minutes)
-        expire_at = datetime.now(timezone.utc) + expire_delta
+        expire_at = datetime.now(UTC) + expire_delta
         payload = {"sub": subject, "exp": expire_at}
         return jwt.encode(payload, self.secret_key, algorithm=self.algorithm)
 

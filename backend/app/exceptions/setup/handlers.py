@@ -6,8 +6,8 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.exceptions.domain import DomainErrorType, DomainException
-from app.exceptions.services import InternalErrorException, InvalidInputException
+from app.exceptions.domain import DomainError, DomainErrorType
+from app.exceptions.services import InternalError, InvalidInputError
 
 ERROR_HTTP_STATUS_MAP: dict[DomainErrorType, int] = {
     DomainErrorType.INVALID_INPUT: status.HTTP_400_BAD_REQUEST,
@@ -52,7 +52,7 @@ def map_status_to_error_type(status_code: int) -> DomainErrorType:
 
 
 async def domain_exception_handler(_: Request, exc: Exception) -> JSONResponse:
-    domain_exc = cast(DomainException, exc)
+    domain_exc = cast(DomainError, exc)
     status_code = ERROR_HTTP_STATUS_MAP.get(domain_exc.error_type, status.HTTP_500_INTERNAL_SERVER_ERROR)
     payload = build_error_payload(
         detail=domain_exc.detail,
@@ -65,7 +65,7 @@ async def domain_exception_handler(_: Request, exc: Exception) -> JSONResponse:
 
 async def request_validation_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     validation_exc = cast(RequestValidationError, exc)
-    domain_exc = InvalidInputException(message="Request validation error", details=validation_exc.errors())
+    domain_exc = InvalidInputError(message="Request validation error", details=validation_exc.errors())
     return await domain_exception_handler(request, domain_exc)
 
 
@@ -89,11 +89,11 @@ async def http_exception_handler(_: Request, exc: Exception) -> JSONResponse:
 
 async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     logger.exception("Unhandled exception captured by global handler", exc_info=exc)
-    return await domain_exception_handler(request, InternalErrorException())
+    return await domain_exception_handler(request, InternalError())
 
 
 def configure_exception_handlers(app: FastAPI) -> None:
-    app.add_exception_handler(DomainException, domain_exception_handler)
+    app.add_exception_handler(DomainError, domain_exception_handler)
     app.add_exception_handler(RequestValidationError, request_validation_exception_handler)
     app.add_exception_handler(StarletteHTTPException, http_exception_handler)
     app.add_exception_handler(Exception, unhandled_exception_handler)

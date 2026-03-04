@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 import pytest
 
-from app.exceptions.services import UnauthorizedException
+from app.exceptions.services import UnauthorizedError
 from app.schemas.application.auth import AccessTokenPayload
 from utils.testing_support.auth_service import build_service, build_user
 
@@ -12,9 +12,11 @@ def test_get_user_from_token_raises_for_invalid_payload() -> None:
     service, repository = build_service()
 
     async def run_test() -> None:
-        with patch.object(service.token_service, "decode_access_token", return_value=None):
-            with pytest.raises(UnauthorizedException) as exc_info:
-                await service.get_user_from_token("bad-token")
+        with (
+            patch.object(service.token_service, "decode_access_token", return_value=None),
+            pytest.raises(UnauthorizedError) as exc_info,
+        ):
+            await service.get_user_from_token("bad-token")
 
         assert "Could not validate credentials" in str(exc_info.value)
         repository.get_by_username.assert_not_awaited()
@@ -28,9 +30,11 @@ def test_get_user_from_token_raises_when_user_does_not_exist() -> None:
     repository.get_by_username.return_value = None
 
     async def run_test() -> None:
-        with patch.object(service.token_service, "decode_access_token", return_value=payload):
-            with pytest.raises(UnauthorizedException):
-                await service.get_user_from_token("valid-token")
+        with (
+            patch.object(service.token_service, "decode_access_token", return_value=payload),
+            pytest.raises(UnauthorizedError),
+        ):
+            await service.get_user_from_token("valid-token")
 
         repository.get_by_username.assert_awaited_once_with("john")
 

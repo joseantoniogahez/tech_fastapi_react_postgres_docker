@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import jwt
 
@@ -28,7 +28,7 @@ def test_encode_and_decode_access_token_round_trip() -> None:
 
 def test_decode_access_token_returns_none_for_payload_validation_error() -> None:
     token_service = _build_token_service()
-    exp = datetime.now(timezone.utc) + timedelta(minutes=5)
+    exp = datetime.now(UTC) + timedelta(minutes=5)
     token = jwt.encode({"exp": exp}, token_service.secret_key, algorithm=token_service.algorithm)
 
     payload = token_service.decode_access_token(token)

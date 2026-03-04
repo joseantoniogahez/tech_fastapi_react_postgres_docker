@@ -40,9 +40,8 @@ def test_unit_of_work_commits_once_for_nested_successful_scopes() -> None:
     unit_of_work = UnitOfWork(session=session)
 
     async def run_test() -> None:
-        async with unit_of_work:
-            async with unit_of_work:
-                pass
+        async with unit_of_work, unit_of_work:
+            pass
 
         session.commit.assert_awaited_once()
         session.rollback.assert_not_awaited()

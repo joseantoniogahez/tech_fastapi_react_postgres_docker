@@ -1,7 +1,8 @@
+from collections.abc import Mapping
 from enum import Enum
-from typing import Any, Mapping
+from typing import Any
 
-from app import ExceptionBase
+from app import AppError
 
 
 class ErrorLayer(str, Enum):
@@ -20,7 +21,7 @@ class DomainErrorType(str, Enum):
     INTERNAL_ERROR = "internal_error"
 
 
-class DomainException(ExceptionBase):
+class DomainError(AppError):
     def __init__(
         self,
         error_type: DomainErrorType,

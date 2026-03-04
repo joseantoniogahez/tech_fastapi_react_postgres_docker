@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from app.authorization import normalize_permission_scope
-from app.exceptions.services import ConflictException, InvalidInputException, NotFoundException
+from app.exceptions.services import ConflictError, InvalidInputError, NotFoundError
 from app.models.permission import Permission
 from app.models.role import Role
 from app.models.user import User
@@ -38,13 +38,13 @@ class RBACEntityLookup:
     async def get_role_or_raise(self, role_id: int) -> Role:
         role = await self._rbac_repository.get_role(role_id)
         if role is None:
-            raise NotFoundException(message=f"Role {role_id} not found", details={"id": role_id})
+            raise NotFoundError(message=f"Role {role_id} not found", details={"id": role_id})
         return role
 
     async def get_permission_or_raise(self, permission_id: str) -> Permission:
         permission = await self._rbac_repository.get_permission(permission_id)
         if permission is None:
-            raise NotFoundException(
+            raise NotFoundError(
                 message=f"Permission {permission_id} not found",
                 details={"permission_id": permission_id},
             )
@@ -53,7 +53,7 @@ class RBACEntityLookup:
     async def get_user_or_raise(self, user_id: int) -> User:
         user = await self._rbac_repository.get_user(user_id)
         if user is None:
-            raise NotFoundException(message=f"User {user_id} not found", details={"id": user_id})
+            raise NotFoundError(message=f"User {user_id} not found", details={"id": user_id})
         return user
 
 
@@ -102,7 +102,7 @@ class RBACRoleOperations:
         normalized_name = normalize_role_name(role_data.name)
         async with self._unit_of_work:
             if await self._rbac_repository.role_name_exists(normalized_name):
-                raise ConflictException(
+                raise ConflictError(
                     message="Role name already exists",
                     details={"name": normalized_name},
                 )
@@ -118,7 +118,7 @@ class RBACRoleOperations:
                 normalized_name,
                 exclude_role_id=role.id,
             ):
-                raise ConflictException(
+                raise ConflictError(
                     message="Role name already exists",
                     details={"name": normalized_name},
                 )
@@ -141,7 +141,7 @@ class RBACRoleOperations:
         try:
             normalized_scope = normalize_permission_scope(assignment.scope)
         except ValueError as exc:
-            raise InvalidInputException(message=str(exc)) from exc
+            raise InvalidInputError(message=str(exc)) from exc
 
         async with self._unit_of_work:
             role = await self._entity_lookup.get_role_or_raise(role_id)

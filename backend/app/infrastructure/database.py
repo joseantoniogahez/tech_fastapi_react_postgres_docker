@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from enum import Enum
 from threading import RLock
-from typing import Callable
 
 from pydantic import ValidationError
 from sqlalchemy.engine import URL
@@ -12,7 +12,7 @@ from sqlalchemy.orm import declarative_base
 from app.const.settings import DatabaseSettings
 
 
-class CustomDatabaseException(Exception):
+class DatabaseConfigError(Exception):
     pass
 
 
@@ -51,14 +51,14 @@ class DatabaseManager:
     ) -> None:
         for field_name in field_names:
             if self._is_missing(getattr(db_settings, field_name)):
-                raise CustomDatabaseException(f"Missing {field_name} variable")
+                raise DatabaseConfigError(f"Missing {field_name} variable")
 
     def load_settings(self) -> DatabaseSettings:
         loader = self._settings_loader or DatabaseSettings
         try:
             return loader()
         except ValidationError as exc:
-            raise CustomDatabaseException("Could not load DB settings from environment variables.") from exc
+            raise DatabaseConfigError("Could not load DB settings from environment variables.") from exc
 
     def resolve_connection_type(
         self,
@@ -101,7 +101,7 @@ class DatabaseManager:
         if resolved_connection_type == DatabaseConnectionType.FILE:
             return self.build_file_database_url(db_settings)
 
-        raise CustomDatabaseException(f"Unsupported DB connection type: {resolved_connection_type}")
+        raise DatabaseConfigError(f"Unsupported DB connection type: {resolved_connection_type}")
 
     @staticmethod
     def build_engine(database_url: URL) -> AsyncEngine:
@@ -191,7 +191,7 @@ def __dir__() -> list[str]:
         {
             "AsyncSessionDatabase",
             "Base",
-            "CustomDatabaseException",
+            "DatabaseConfigError",
             "DATABASE_URL",
             "DatabaseConnectionType",
             "DatabaseManager",
@@ -204,18 +204,3 @@ def __dir__() -> list[str]:
             "reset_database_runtime",
         }
     )
-
-
-__all__ = [
-    "Base",
-    "CustomDatabaseException",
-    "DatabaseConnectionType",
-    "DatabaseManager",
-    "DatabaseRuntime",
-    "DatabaseSettings",
-    "database_manager",
-    "database_runtime",
-    "get_async_session_factory",
-    "get_database_url",
-    "reset_database_runtime",
-]

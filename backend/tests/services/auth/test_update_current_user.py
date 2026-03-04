@@ -2,8 +2,8 @@ import asyncio
 
 import pytest
 
-from app.exceptions.repositories import RepositoryConflictException, RepositoryInternalErrorException
-from app.exceptions.services import ConflictException, InvalidInputException, UnauthorizedException
+from app.exceptions.repositories import RepositoryConflictError, RepositoryInternalError
+from app.exceptions.services import ConflictError, InvalidInputError, UnauthorizedError
 from app.schemas.application.auth import UpdateCurrentUserCommand
 from utils.testing_support.auth_service import assert_unit_of_work_scope_committed, build_service, build_user
 
@@ -11,15 +11,15 @@ from utils.testing_support.auth_service import assert_unit_of_work_scope_committ
 def test_validate_update_request_enforces_required_combinations() -> None:
     service, _ = build_service()
 
-    with pytest.raises(InvalidInputException) as missing_new_password:
+    with pytest.raises(InvalidInputError) as missing_new_password:
         service._validate_update_request(UpdateCurrentUserCommand(current_password="CurrentPass1"))
     assert "new_password is required" in str(missing_new_password.value)
 
-    with pytest.raises(InvalidInputException) as missing_current_password:
+    with pytest.raises(InvalidInputError) as missing_current_password:
         service._validate_update_request(UpdateCurrentUserCommand(new_password="NewPass123"))
     assert "current_password is required" in str(missing_current_password.value)
 
-    with pytest.raises(InvalidInputException) as empty_update:
+    with pytest.raises(InvalidInputError) as empty_update:
         service._validate_update_request(UpdateCurrentUserCommand())
     assert "At least one field must be provided" in str(empty_update.value)
 
@@ -47,7 +47,7 @@ def test_build_username_change_raises_conflict_for_taken_username() -> None:
     repository.username_exists.return_value = True
 
     async def run_test() -> None:
-        with pytest.raises(ConflictException) as exc_info:
+        with pytest.raises(ConflictError) as exc_info:
             await service._build_username_change(current_user, "new-user")
 
         assert "Username already exists" in str(exc_info.value)
@@ -63,7 +63,7 @@ def test_build_password_change_validates_current_and_new_password() -> None:
 
     assert service._build_password_change(current_user, UpdateCurrentUserCommand(username="john"), "john") == {}
 
-    with pytest.raises(UnauthorizedException) as invalid_current:
+    with pytest.raises(UnauthorizedError) as invalid_current:
         service._build_password_change(
             current_user,
             UpdateCurrentUserCommand(current_password="WrongPass1", new_password="AnotherPass1"),
@@ -71,7 +71,7 @@ def test_build_password_change_validates_current_and_new_password() -> None:
         )
     assert "Current password is invalid" in str(invalid_current.value)
 
-    with pytest.raises(InvalidInputException) as same_password:
+    with pytest.raises(InvalidInputError) as same_password:
         service._build_password_change(
             current_user,
             UpdateCurrentUserCommand(current_password="StrongPass1", new_password="StrongPass1"),
@@ -91,13 +91,13 @@ def test_build_password_change_validates_current_and_new_password() -> None:
 def test_persist_user_changes_propagates_repository_conflict_for_username_change() -> None:
     service, repository = build_service()
     current_user = build_user(service)
-    repository.update.side_effect = RepositoryConflictException(
+    repository.update.side_effect = RepositoryConflictError(
         message="Username already exists",
         details={"username": "new-user"},
     )
 
     async def run_test() -> None:
-        with pytest.raises(RepositoryConflictException) as exc_info:
+        with pytest.raises(RepositoryConflictError) as exc_info:
             await service._persist_user_changes(current_user, {"username": "new-user"})
 
         assert "Username already exists" in str(exc_info.value)
@@ -109,10 +109,10 @@ def test_persist_user_changes_propagates_repository_conflict_for_username_change
 def test_persist_user_changes_propagates_repository_internal_error() -> None:
     service, repository = build_service()
     current_user = build_user(service)
-    repository.update.side_effect = RepositoryInternalErrorException()
+    repository.update.side_effect = RepositoryInternalError()
 
     async def run_test() -> None:
-        with pytest.raises(RepositoryInternalErrorException) as exc_info:
+        with pytest.raises(RepositoryInternalError) as exc_info:
             await service._persist_user_changes(current_user, {"hashed_password": "hash"})
 
         assert "Internal server error" in str(exc_info.value)
@@ -126,7 +126,7 @@ def test_update_current_user_raises_when_no_changes_are_detected() -> None:
     update_data = UpdateCurrentUserCommand(username="  JOHN ")
 
     async def run_test() -> None:
-        with pytest.raises(InvalidInputException) as exc_info:
+        with pytest.raises(InvalidInputError) as exc_info:
             await service.update_current_user(current_user, update_data)
 
         assert "No changes detected" in str(exc_info.value)

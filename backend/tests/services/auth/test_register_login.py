@@ -3,8 +3,8 @@ from unittest.mock import patch
 
 import pytest
 
-from app.exceptions.repositories import RepositoryConflictException
-from app.exceptions.services import ConflictException, ForbiddenException, UnauthorizedException
+from app.exceptions.repositories import RepositoryConflictError
+from app.exceptions.services import ConflictError, ForbiddenError, UnauthorizedError
 from app.schemas.application.auth import LoginCommand, RegisterUserCommand
 from utils.testing_support.auth_service import assert_unit_of_work_scope_committed, build_service, build_user
 
@@ -15,7 +15,7 @@ def test_authenticate_or_raise_raises_unauthorized_when_user_not_found() -> None
     repository.get_by_username.return_value = None
 
     async def run_test() -> None:
-        with pytest.raises(UnauthorizedException) as exc_info:
+        with pytest.raises(UnauthorizedError) as exc_info:
             await service._authenticate_or_raise(credentials)
 
         assert "Invalid username or password" in str(exc_info.value)
@@ -30,7 +30,7 @@ def test_authenticate_or_raise_raises_unauthorized_when_password_is_invalid() ->
     repository.get_by_username.return_value = build_user(service, password="StrongPass1")
 
     async def run_test() -> None:
-        with pytest.raises(UnauthorizedException):
+        with pytest.raises(UnauthorizedError):
             await service._authenticate_or_raise(credentials)
 
     asyncio.run(run_test())
@@ -42,7 +42,7 @@ def test_authenticate_or_raise_raises_forbidden_for_disabled_user() -> None:
     repository.get_by_username.return_value = build_user(service, disabled=True)
 
     async def run_test() -> None:
-        with pytest.raises(ForbiddenException) as exc_info:
+        with pytest.raises(ForbiddenError) as exc_info:
             await service._authenticate_or_raise(credentials)
 
         assert "Inactive user" in str(exc_info.value)
@@ -74,7 +74,7 @@ def test_register_raises_conflict_when_username_already_exists() -> None:
     registration = RegisterUserCommand(username=" John ", password="StrongPass1")
 
     async def run_test() -> None:
-        with pytest.raises(ConflictException) as exc_info:
+        with pytest.raises(ConflictError) as exc_info:
             await service.register(registration)
 
         assert "Username already exists" in str(exc_info.value)
@@ -123,13 +123,13 @@ def test_register_creates_user_and_returns_authenticated_user() -> None:
 def test_register_propagates_repository_conflict_from_create() -> None:
     service, repository = build_service()
     registration = RegisterUserCommand(username="john", password="StrongPass1")
-    repository.create.side_effect = RepositoryConflictException(
+    repository.create.side_effect = RepositoryConflictError(
         message="Username already exists",
         details={"username": "john"},
     )
 
     async def run_test() -> None:
-        with pytest.raises(RepositoryConflictException) as exc_info:
+        with pytest.raises(RepositoryConflictError) as exc_info:
             await service.register(registration)
 
         assert "Username already exists" in str(exc_info.value)

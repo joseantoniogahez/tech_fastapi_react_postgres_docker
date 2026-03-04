@@ -46,9 +46,9 @@ def test_author_get_or_create_by_name_reraises_integrity_error_when_author_stays
         with (
             patch.object(repository, "get_by_name", get_by_name_mock),
             patch.object(repository, "create", create_mock),
+            pytest.raises(IntegrityError),
         ):
-            with pytest.raises(IntegrityError):
-                await repository.get_or_create_by_name(name="Octavia Butler")
+            await repository.get_or_create_by_name(name="Octavia Butler")
 
         session.begin_nested.assert_called_once_with()
         create_mock.assert_awaited_once_with(name="Octavia Butler")

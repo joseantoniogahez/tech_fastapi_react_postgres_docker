@@ -3,7 +3,7 @@ from typing import Protocol
 
 
 class UnitOfWorkPort(Protocol):
-    async def __aenter__(self) -> "UnitOfWorkPort": ...
+    async def __aenter__(self) -> UnitOfWorkPort: ...
 
     async def __aexit__(
         self,

@@ -1,9 +1,10 @@
-from typing import Any, Mapping
+from collections.abc import Mapping
+from typing import Any
 
-from .domain import DomainErrorType, DomainException, ErrorLayer
+from .domain import DomainError, DomainErrorType, ErrorLayer
 
 
-class RouterException(DomainException):
+class RouterError(DomainError):
     def __init__(
         self,
         error_type: DomainErrorType,

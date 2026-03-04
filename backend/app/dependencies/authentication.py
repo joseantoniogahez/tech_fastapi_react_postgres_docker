@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
-from app.exceptions.services import ForbiddenException
+from app.exceptions.services import ForbiddenError
 from app.models.user import User
 from app.schemas.api.auth import LoginCredentialsRequest
 
@@ -32,7 +32,7 @@ CurrentUserDependency = Annotated[User, Depends(get_current_user)]
 
 async def get_current_active_user(current_user: CurrentUserDependency) -> User:
     if current_user.disabled:
-        raise ForbiddenException(message="Inactive user")
+        raise ForbiddenError(message="Inactive user")
     return current_user
 
 

@@ -77,7 +77,7 @@ async def create_book(
 
 ```python
 from app.openapi.books import BookIdPath, UpdateBookPayload
-from app.exceptions.services import NotFoundException
+from app.exceptions.services import NotFoundError
 from app.schemas.application.book import BookMutationCommand
 
 @router.put("/{book_id}", response_model=BookResponse, **UPDATE_BOOK_DOC)
@@ -89,7 +89,7 @@ async def update_book(
 ) -> BookResponse:
     book = await book_service.update(book_id, BookMutationCommand.from_api(book_data))
     if book is None:
-        raise NotFoundException(message=f"Book {book_id} not found", details={"book_id": book_id})
+        raise NotFoundError(message=f"Book {book_id} not found", details={"book_id": book_id})
     return BookResponse.model_validate(book)
 ```
 

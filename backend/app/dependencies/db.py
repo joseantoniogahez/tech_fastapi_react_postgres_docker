@@ -1,4 +1,5 @@
-from typing import Annotated, AsyncGenerator
+from collections.abc import AsyncGenerator
+from typing import Annotated
 
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,12 +9,12 @@ from app.repositories.uow import UnitOfWork
 from app.services import UnitOfWorkPort
 
 
-def AsyncSessionDatabase() -> AsyncSession:
+def create_async_session() -> AsyncSession:
     return get_async_session_factory()()
 
 
-async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
-    async with AsyncSessionDatabase() as session:
+async def get_db_session() -> AsyncGenerator[AsyncSession]:
+    async with create_async_session() as session:
         try:
             yield session
         except Exception:

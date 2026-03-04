@@ -1,5 +1,3 @@
-from typing import Optional
-
 from pydantic import ConfigDict, Field
 
 from app.const.book import BookStatus
@@ -16,7 +14,7 @@ class BookBase(ApiSchema):
 
 
 class CreateBookRequest(BookBase):
-    author_id: Optional[int] = None
+    author_id: int | None = None
     author_name: str = Field(min_length=1, max_length=255)
 
 

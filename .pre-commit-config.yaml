@@ -1,25 +1,57 @@
+# Keep the config compatible with a modern pre-commit baseline.
+minimum_pre_commit_version: 3.0.0
+
+# Reuse the repository Python version for Python-based hooks.
 default_language_version:
   python: python3.14
 
+# Install both commit-time and push-time hooks from this config.
+default_install_hook_types:
+  - pre-commit
+  - pre-push
+
+# Ignore generated caches and local build artifacts.
+exclude: |
+  (?x)(
+    (^|/)\.mypy_cache/|
+    (^|/)\.pytest_cache/|
+    (^|/)\.ruff_cache/|
+    (^|/)__pycache__/|
+    (^|/)\.venv/|
+    (^|/)node_modules/|
+    (^|/)\.next/|
+    (^|/)\.swc/|
+    (^|/)htmlcov/|
+    (^|/)\.coverage$
+  )
+
 repos:
+  # Fast repository-wide file hygiene.
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
       - id: check-added-large-files
+      - id: check-ast
       - id: check-builtin-literals
       - id: check-case-conflict
+      - id: check-docstring-first
+        files: ^backend/.*\.py$
       - id: check-executables-have-shebangs
       - id: check-json
       - id: check-merge-conflict
+      - id: debug-statements
+      - id: detect-private-key
       - id: check-toml
       - id: check-yaml
       - id: end-of-file-fixer
       - id: mixed-line-ending
       - id: name-tests-test
         args: [--pytest-test-first]
+        files: ^backend/tests/.*\.py$
       - id: requirements-txt-fixer
       - id: trailing-whitespace
 
+  # Lightweight Python source-pattern checks.
   - repo: https://github.com/pre-commit/pygrep-hooks
     rev: v1.10.0
     hooks:
@@ -28,11 +60,72 @@ repos:
       - id: python-no-eval
       - id: text-unicode-replacement-char
 
-  - repo: https://github.com/PyCQA/autoflake
-    rev: v2.3.3
+  # Secret scanning with generated files excluded.
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
     hooks:
-      - id: autoflake
+      - id: detect-secrets
+        args: [--baseline, .secrets.baseline]
+        exclude: ^(books-app/package-lock\.json|backend/alembic/versions/.*\.py|\.secrets\.baseline)$
 
+  # Fast spelling checks on source and docs, with generated artifacts excluded.
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.4.1
+    hooks:
+      - id: codespell
+        args: [--ignore-words=.codespell-ignore-words.txt]
+        exclude: ^(books-app/package-lock\.json|\.secrets\.baseline)$
+
+  # Frontend autofix with the existing books-app ESLint setup.
+  - repo: local
+    hooks:
+      # Pin the hadolint container tag explicitly; the upstream docker_image hook defaults to latest.
+      - id: hadolint-docker
+        name: hadolint dockerfiles
+        entry: ghcr.io/hadolint/hadolint:v2.14.0 hadolint
+        language: docker_image
+        files: ^(backend|books-app)/Dockerfile$
+      - id: books-app-eslint-fix
+        name: books-app eslint --fix
+        entry: npm --prefix books-app run lint -- --fix --no-warn-ignored
+        language: system
+        pass_filenames: false
+        files: ^books-app/.*\.(js|jsx|ts|tsx|mjs|cjs)$
+        exclude: ^books-app/next-env\.d\.ts$
+      # Heavier frontend confidence checks run on pre-push. Full test suites stay in CI.
+      - id: books-app-typecheck
+        name: books-app typecheck
+        entry: npm --prefix books-app run typecheck
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+        files: ^books-app/(src/.*\.(ts|tsx)|next-env\.d\.ts|next\.config\.ts|tailwind\.config\.ts|tsconfig\.json|package(?:-lock)?\.json)$
+      - id: compose-base-config
+        name: docker compose config (base)
+        entry: docker compose -f compose.yaml config -q
+        language: system
+        pass_filenames: false
+        files: ^compose\.yaml$
+      - id: compose-override-config
+        name: docker compose config (override)
+        entry: docker compose -f compose.yaml -f compose.override.yaml config -q
+        language: system
+        pass_filenames: false
+        files: ^(compose\.yaml|compose\.override\.yaml)$
+      - id: compose-test-config
+        name: docker compose config (test)
+        entry: docker compose -f compose.yaml -f compose.test.yaml config -q
+        language: system
+        pass_filenames: false
+        files: ^(compose\.yaml|compose\.test\.yaml)$
+      - id: compose-prod-config
+        name: docker compose config (prod)
+        entry: docker compose -f compose.yaml -f compose.prod.yaml config -q
+        language: system
+        pass_filenames: false
+        files: ^(compose\.yaml|compose\.prod\.yaml)$
+
+  # Markdown formatting and linting.
   - repo: https://github.com/executablebooks/mdformat
     rev: 1.0.0
     hooks:
@@ -42,36 +135,50 @@ repos:
         files: \.md$
 
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.47.0
+    rev: v0.48.0
     hooks:
       - id: markdownlint
         files: \.md$
         args: [--disable, MD013]
 
-  - repo: https://github.com/pre-commit/mirrors-isort
-    rev: v5.10.1
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.11
     hooks:
-      - id: isort
+      - id: ruff-check
+        args: [--fix]
+        files: ^backend/.*\.py$
+      - id: ruff-format
+        files: ^backend/.*\.py$
 
-  - repo: https://github.com/psf/black
-    rev: 26.1.0
+  # Optional security linting runs on pre-push with noisy password heuristics disabled.
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.8.3
     hooks:
-      - id: black
+      - id: bandit
+        stages: [pre-push]
+        pass_filenames: false
+        files: ^backend/(app|utils)/.*\.py$
+        args:
+          - -q
+          - -r
+          - backend/app
+          - backend/utils
+          - -x
+          - backend/utils/testing_support
+          - -s
+          - B105,B106,B107
 
-  - repo: https://github.com/PyCQA/flake8
-    rev: 7.3.0
-    hooks:
-      - id: flake8
-        additional_dependencies:
-          - pep8-naming
-          - flake8-pyproject
-
+  # Heavy Python type checking runs before push, not on every commit.
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.19.1
     hooks:
       - id: mypy
+        stages: [pre-push]
+        pass_filenames: false
+        args: [backend]
         additional_dependencies:
           - alembic==1.18.4
+          - argon2-cffi==25.1.0
           - asyncpg==0.31.0
           - fastapi==0.129.0
           - pydantic==2.12.5

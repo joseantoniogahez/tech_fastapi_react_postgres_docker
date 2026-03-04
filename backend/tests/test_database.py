@@ -6,7 +6,7 @@ from pydantic import BaseModel, ValidationError
 from app.const.settings import DatabaseSettings
 from app.infrastructure import database as database_module
 from app.infrastructure.database import (
-    CustomDatabaseException,
+    DatabaseConfigError,
     DatabaseConnectionType,
     DatabaseManager,
     DatabaseRuntime,
@@ -56,12 +56,14 @@ def _get_validation_error() -> ValidationError:
     return exc_info.value
 
 
-def test_build_database_url_raises_custom_exception_when_settings_fail() -> None:
+def test_build_database_url_raises_database_config_error_when_settings_fail() -> None:
     validation_error = _get_validation_error()
 
-    with patch("app.infrastructure.database.DatabaseSettings", side_effect=validation_error):
-        with pytest.raises(CustomDatabaseException) as exc_info:
-            database_manager.build_database_url()
+    with (
+        patch("app.infrastructure.database.DatabaseSettings", side_effect=validation_error),
+        pytest.raises(DatabaseConfigError) as exc_info,
+    ):
+        database_manager.build_database_url()
 
     assert "Could not load DB settings from environment variables." in str(exc_info.value)
 
@@ -75,7 +77,7 @@ def test_build_network_database_url_raises_on_missing_required_fields() -> None:
         DB_NAME="books",
     )
 
-    with pytest.raises(CustomDatabaseException) as exc_info:
+    with pytest.raises(DatabaseConfigError) as exc_info:
         database_manager.build_network_database_url(settings)
 
     assert "Missing DB_USER variable" in str(exc_info.value)
@@ -115,7 +117,7 @@ def test_build_database_url_raises_on_unsupported_connection_type() -> None:
     settings = DatabaseSettings()
     manager = DatabaseManager(settings_loader=lambda: settings)
 
-    with pytest.raises(CustomDatabaseException) as exc_info:
+    with pytest.raises(DatabaseConfigError) as exc_info:
         manager.build_database_url("unsupported")  # type: ignore[arg-type]
 
     assert "Unsupported DB connection type: unsupported" in str(exc_info.value)

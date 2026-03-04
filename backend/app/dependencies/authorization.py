@@ -1,10 +1,11 @@
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from typing import Annotated, Awaitable, Callable
+from typing import Annotated
 
 from fastapi import Depends
 
 from app.authorization import PermissionScope, normalize_permission_scope
-from app.exceptions.services import ForbiddenException
+from app.exceptions.services import ForbiddenError
 from app.models.user import User
 
 from .authentication import CurrentActiveUserDependency
@@ -74,7 +75,7 @@ def require_permission(
             user_tenant_id=current_user.tenant_id,
         )
         if not has_permission:
-            raise ForbiddenException(
+            raise ForbiddenError(
                 message=f"Missing required permission: {permission_id}",
                 details={"permission_id": permission_id},
             )

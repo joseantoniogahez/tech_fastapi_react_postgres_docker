@@ -81,7 +81,6 @@ Use `build_error_response(...)` from `app/openapi/common.py` to enforce:
 ## Adding docs for a new endpoint
 
 1. Add documentation constants in the domain file under `app/openapi/`.
-1. Export the constant(s) via `__all__`.
 1. Import and apply them in the router decorator with `**CONSTANT`.
 1. Add or update body/query/path examples as needed.
 1. Run router tests to ensure behavior remains unchanged.

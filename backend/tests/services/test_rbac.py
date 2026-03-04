@@ -3,8 +3,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from app.exceptions.repositories import RepositoryConflictException
-from app.exceptions.services import InvalidInputException
+from app.exceptions.repositories import RepositoryConflictError
+from app.exceptions.services import InvalidInputError
 from app.models.role import Role
 from app.schemas.application.rbac import CreateRoleCommand, UpdateRoleCommand
 from app.services.rbac import RBACService
@@ -45,7 +45,7 @@ def _build_service() -> tuple[RBACService, MagicMock, MagicMock]:
 
 
 def test_normalize_role_name_raises_for_blank_value() -> None:
-    with pytest.raises(InvalidInputException) as exc_info:
+    with pytest.raises(InvalidInputError) as exc_info:
         normalize_role_name("   ")
 
     assert "Role name is required" in str(exc_info.value)
@@ -67,13 +67,13 @@ def test_list_roles_returns_empty_without_fetching_permissions() -> None:
 
 def test_create_role_propagates_repository_conflict() -> None:
     service, repository, _ = _build_service()
-    repository.create_role.side_effect = RepositoryConflictException(
+    repository.create_role.side_effect = RepositoryConflictError(
         message="Role name already exists",
         details={"name": "ops_role"},
     )
 
     async def run_test() -> None:
-        with pytest.raises(RepositoryConflictException) as exc_info:
+        with pytest.raises(RepositoryConflictError) as exc_info:
             await service.create_role(CreateRoleCommand(name="ops_role"))
 
         assert "Role name already exists" in str(exc_info.value)
@@ -86,13 +86,13 @@ def test_create_role_propagates_repository_conflict() -> None:
 def test_update_role_propagates_repository_conflict() -> None:
     service, repository, _ = _build_service()
     repository.get_role.return_value = Role(id=7, name="ops_role")
-    repository.update_role.side_effect = RepositoryConflictException(
+    repository.update_role.side_effect = RepositoryConflictError(
         message="Role name already exists",
         details={"name": "ops_role_v2"},
     )
 
     async def run_test() -> None:
-        with pytest.raises(RepositoryConflictException) as exc_info:
+        with pytest.raises(RepositoryConflictError) as exc_info:
             await service.update_role(7, UpdateRoleCommand(name="ops_role_v2"))
 
         assert "Role name already exists" in str(exc_info.value)

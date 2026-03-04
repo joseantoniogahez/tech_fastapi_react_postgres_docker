@@ -1,6 +1,6 @@
 import logging
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import AsyncIterator, Optional
 
 from fastapi import FastAPI
 from pydantic import ValidationError
@@ -43,7 +43,7 @@ async def app_lifespan(app: FastAPI) -> AsyncIterator[None]:
     logger.info("Backend shutdown.")
 
 
-def create_app(settings: Optional[ApiSettings] = None) -> FastAPI:
+def create_app(settings: ApiSettings | None = None) -> FastAPI:
     api_settings = settings or ApiSettings()
     configure_logging(api_settings)
 

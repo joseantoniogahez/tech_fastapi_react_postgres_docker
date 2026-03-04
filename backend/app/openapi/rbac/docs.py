@@ -87,8 +87,7 @@ GET_ROLES_DOC: dict[str, Any] = {
 GET_PERMISSIONS_DOC: dict[str, Any] = {
     "summary": "List permissions",
     "description": (
-        "List the permission catalog available for role assignment. "
-        f"Requires `{PermissionId.ROLE_PERMISSION_MANAGE}`."
+        f"List the permission catalog available for role assignment. Requires `{PermissionId.ROLE_PERMISSION_MANAGE}`."
     ),
     "response_description": "Permission catalog ordered by ID.",
     "responses": {

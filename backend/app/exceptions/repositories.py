@@ -1,9 +1,10 @@
-from typing import Any, Mapping
+from collections.abc import Mapping
+from typing import Any
 
-from .domain import DomainErrorType, DomainException, ErrorLayer
+from .domain import DomainError, DomainErrorType, ErrorLayer
 
 
-class RepositoryException(DomainException):
+class RepositoryError(DomainError):
     def __init__(
         self,
         message: str = "Repository error",
@@ -21,7 +22,7 @@ class RepositoryException(DomainException):
         )
 
 
-class RepositoryConflictException(RepositoryException):
+class RepositoryConflictError(RepositoryError):
     def __init__(self, message: str = "Conflict", *, details: Any | None = None):
         super().__init__(
             message=message,
@@ -30,7 +31,7 @@ class RepositoryConflictException(RepositoryException):
         )
 
 
-class RepositoryInternalErrorException(RepositoryException):
+class RepositoryInternalError(RepositoryError):
     def __init__(self, message: str = "Internal server error", *, details: Any | None = None):
         super().__init__(
             message=message,

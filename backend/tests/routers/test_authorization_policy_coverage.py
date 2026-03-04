@@ -1,7 +1,7 @@
 import re
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Iterable
 
 from fastapi.dependencies.models import Dependant
 from fastapi.routing import APIRoute
@@ -110,8 +110,8 @@ def _extract_required_scope_from_dependency_callable(dependency_call: Callable[.
 
 def _collect_route_permission_ids(route: APIRoute) -> set[str]:
     permission_ids: set[str] = set()
-    for dependant in _iter_dependants(route.dependant):
-        dependency_call = dependant.call
+    for dependent in _iter_dependants(route.dependant):
+        dependency_call = dependent.call
         if dependency_call is None:
             continue
         permission_id = _extract_permission_id_from_dependency_callable(dependency_call)
@@ -122,8 +122,8 @@ def _collect_route_permission_ids(route: APIRoute) -> set[str]:
 
 def _collect_route_permission_scopes(route: APIRoute) -> set[str]:
     required_scopes: set[str] = set()
-    for dependant in _iter_dependants(route.dependant):
-        dependency_call = dependant.call
+    for dependent in _iter_dependants(route.dependant):
+        dependency_call = dependent.call
         if dependency_call is None:
             continue
         required_scope = _extract_required_scope_from_dependency_callable(dependency_call)
@@ -138,10 +138,7 @@ def _is_application_router_route(route: APIRoute) -> bool:
 
 
 def _route_has_dependency_callable(route: APIRoute, dependency_callable: Callable[..., object]) -> bool:
-    for dependant in _iter_dependants(route.dependant):
-        if dependant.call is dependency_callable:
-            return True
-    return False
+    return any(dependent.call is dependency_callable for dependent in _iter_dependants(route.dependant))
 
 
 def _collect_protected_endpoints_from_routes() -> dict[EndpointKey, ProtectedEndpointPolicyRow]:
@@ -300,9 +297,9 @@ def _parse_read_access_policy_section(path: Path, *, heading: str) -> dict[Endpo
         access_level = row_match.group("access_level")
         permission_cell = row_match.group("permission_cell")
         permission_id = permission_cell.removeprefix("`").removesuffix("`") if permission_cell != "No" else None
-        assert (
-            access_level in READ_ACCESS_LEVELS
-        ), f"Invalid documented access level '{access_level}' for endpoint {_format_endpoint(endpoint)} in {path}"
+        assert access_level in READ_ACCESS_LEVELS, (
+            f"Invalid documented access level '{access_level}' for endpoint {_format_endpoint(endpoint)} in {path}"
+        )
 
         endpoint_row = ReadAccessPolicyRow(access_level=access_level, permission_id=permission_id)
         previous_row = endpoint_rows.get(endpoint)

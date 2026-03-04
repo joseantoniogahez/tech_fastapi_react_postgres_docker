@@ -9,7 +9,7 @@ from fastapi.routing import APIRoute
 from pydantic import ValidationError
 
 from app.const.settings import ApiSettings, AuthSettings
-from app.dependencies.db import AsyncSessionDatabase, get_db_session, get_unit_of_work
+from app.dependencies.db import create_async_session, get_db_session, get_unit_of_work
 from app.factory import app_lifespan, configure_logging, validate_auth_settings
 from app.main import app
 from app.routers import ROUTER_MODULES
@@ -143,7 +143,7 @@ def test_configure_cors_adds_cors_middleware_when_origins_are_provided() -> None
     )
 
 
-def test_get_db_session_yields_session_from_async_session_database() -> None:
+def test_get_db_session_yields_session_from_create_async_session() -> None:
     events: list[str] = []
     expected_session = object()
 
@@ -156,7 +156,7 @@ def test_get_db_session_yields_session_from_async_session_database() -> None:
             events.append("exit")
 
     async def run_test() -> None:
-        with patch("app.dependencies.db.AsyncSessionDatabase", return_value=_SessionContextManager()) as factory:
+        with patch("app.dependencies.db.create_async_session", return_value=_SessionContextManager()) as factory:
             generator = get_db_session()
             session = await anext(generator)
             assert session is expected_session
@@ -170,12 +170,12 @@ def test_get_db_session_yields_session_from_async_session_database() -> None:
     assert events == ["enter", "exit"]
 
 
-def test_async_session_database_calls_lazy_factory() -> None:
+def test_create_async_session_calls_lazy_factory() -> None:
     expected_session_context = object()
     factory = MagicMock(return_value=expected_session_context)
 
     with patch("app.dependencies.db.get_async_session_factory", return_value=factory) as get_factory:
-        result = AsyncSessionDatabase()
+        result = create_async_session()
 
     assert result is expected_session_context
     get_factory.assert_called_once_with()
@@ -196,7 +196,7 @@ def test_get_db_session_rolls_back_when_exception_is_raised_after_yield() -> Non
             events.append("exit")
 
     async def run_test() -> None:
-        with patch("app.dependencies.db.AsyncSessionDatabase", return_value=_SessionContextManager()):
+        with patch("app.dependencies.db.create_async_session", return_value=_SessionContextManager()):
             generator = get_db_session()
             yielded_session = await anext(generator)
             assert yielded_session is session
@@ -234,9 +234,11 @@ def test_get_unit_of_work_returns_repository_unit_of_work() -> None:
 def test_load_router_raises_for_invalid_router_export() -> None:
     invalid_module = SimpleNamespace(router="not-an-api-router")
 
-    with patch("app.setup.routers.import_module", return_value=invalid_module):
-        with pytest.raises(RuntimeError) as exc_info:
-            _load_router("invalid_module")
+    with (
+        patch("app.setup.routers.import_module", return_value=invalid_module),
+        pytest.raises(RuntimeError) as exc_info,
+    ):
+        _load_router("invalid_module")
 
     assert "app.routers.invalid_module" in str(exc_info.value)
     assert "APIRouter" in str(exc_info.value)

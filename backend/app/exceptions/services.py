@@ -1,9 +1,10 @@
-from typing import Any, Mapping
+from collections.abc import Mapping
+from typing import Any
 
-from .domain import DomainErrorType, DomainException, ErrorLayer
+from .domain import DomainError, DomainErrorType, ErrorLayer
 
 
-class ServiceException(DomainException):
+class ServiceError(DomainError):
     def __init__(
         self,
         error_type: DomainErrorType,
@@ -21,12 +22,12 @@ class ServiceException(DomainException):
         )
 
 
-class InvalidInputException(ServiceException):
+class InvalidInputError(ServiceError):
     def __init__(self, message: str = "Invalid input", *, details: Any | None = None):
         super().__init__(DomainErrorType.INVALID_INPUT, message, details=details)
 
 
-class UnauthorizedException(ServiceException):
+class UnauthorizedError(ServiceError):
     def __init__(
         self,
         message: str = "Unauthorized",
@@ -40,21 +41,21 @@ class UnauthorizedException(ServiceException):
         super().__init__(DomainErrorType.UNAUTHORIZED, message, details=details, headers=auth_headers)
 
 
-class ForbiddenException(ServiceException):
+class ForbiddenError(ServiceError):
     def __init__(self, message: str = "Forbidden", *, details: Any | None = None):
         super().__init__(DomainErrorType.FORBIDDEN, message, details=details)
 
 
-class NotFoundException(ServiceException):
+class NotFoundError(ServiceError):
     def __init__(self, message: str = "Not found", *, details: Any | None = None):
         super().__init__(DomainErrorType.NOT_FOUND, message, details=details)
 
 
-class ConflictException(ServiceException):
+class ConflictError(ServiceError):
     def __init__(self, message: str = "Conflict", *, details: Any | None = None):
         super().__init__(DomainErrorType.CONFLICT, message, details=details)
 
 
-class InternalErrorException(ServiceException):
+class InternalError(ServiceError):
     def __init__(self, message: str = "Internal server error", *, details: Any | None = None):
         super().__init__(DomainErrorType.INTERNAL_ERROR, message, details=details)

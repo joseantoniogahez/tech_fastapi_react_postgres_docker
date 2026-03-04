@@ -1,4 +1,4 @@
-from app.exceptions.services import InvalidInputException
+from app.exceptions.services import InvalidInputError
 from app.models.permission import Permission
 from app.models.role import Role
 from app.models.role_permission import RolePermission
@@ -8,7 +8,7 @@ from app.schemas.application.rbac import PermissionResult, RolePermissionResult,
 def normalize_role_name(name: str) -> str:
     normalized_name = name.strip().lower()
     if not normalized_name:
-        raise InvalidInputException(message="Role name is required")
+        raise InvalidInputError(message="Role name is required")
     return normalized_name
 
 

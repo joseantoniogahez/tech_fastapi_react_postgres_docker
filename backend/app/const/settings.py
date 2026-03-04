@@ -1,5 +1,5 @@
 import os
-from typing import ClassVar, Optional
+from typing import ClassVar
 
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings
@@ -62,7 +62,7 @@ class AuthSettings(BaseSettings):
         return value is None or not value.strip()
 
     @model_validator(mode="after")
-    def validate_production_jwt_requirements(self) -> "AuthSettings":
+    def validate_production_jwt_requirements(self) -> AuthSettings:
         if self.APP_ENV not in self._PRODUCTION_ENV_VALUES:
             return self
 
@@ -79,8 +79,8 @@ class AuthSettings(BaseSettings):
 
 class DatabaseSettings(BaseSettings):
     DB_TYPE: str = "sqlite+aiosqlite"
-    DB_USER: Optional[str] = None
-    DB_PASSWORD: Optional[str] = None
-    DB_HOST: Optional[str] = None
-    DB_PORT: Optional[int] = None
+    DB_USER: str | None = None
+    DB_PASSWORD: str | None = None
+    DB_HOST: str | None = None
+    DB_PORT: int | None = None
     DB_NAME: str = "library.db"

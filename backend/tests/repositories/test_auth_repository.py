@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from sqlalchemy.exc import IntegrityError
 
-from app.exceptions.repositories import RepositoryConflictException, RepositoryInternalErrorException
+from app.exceptions.repositories import RepositoryConflictError, RepositoryInternalError
 from app.models.user import User
 from app.repositories.auth import AuthRepository
 from utils.testing_support.repositories import build_session_mock
@@ -34,7 +34,7 @@ def test_auth_repository_create_translates_integrity_error_to_repository_conflic
     repository = AuthRepository(session=session)
 
     async def run_test() -> None:
-        with pytest.raises(RepositoryConflictException) as exc_info:
+        with pytest.raises(RepositoryConflictError) as exc_info:
             await repository.create(
                 username="john",
                 hashed_password="hash",
@@ -54,7 +54,7 @@ def test_auth_repository_create_translates_non_username_integrity_error_to_repos
     repository = AuthRepository(session=session)
 
     async def run_test() -> None:
-        with pytest.raises(RepositoryInternalErrorException) as exc_info:
+        with pytest.raises(RepositoryInternalError) as exc_info:
             await repository.create(
                 username=None,
                 hashed_password="hash",
@@ -75,7 +75,7 @@ def test_auth_repository_update_translates_username_integrity_error_to_repositor
     repository = AuthRepository(session=session)
 
     async def run_test() -> None:
-        with pytest.raises(RepositoryConflictException) as exc_info:
+        with pytest.raises(RepositoryConflictError) as exc_info:
             await repository.update(user, username="new-user")
 
         assert "Username already exists" in str(exc_info.value)
@@ -93,7 +93,7 @@ def test_auth_repository_update_translates_other_integrity_errors_to_repository_
     repository = AuthRepository(session=session)
 
     async def run_test() -> None:
-        with pytest.raises(RepositoryInternalErrorException) as exc_info:
+        with pytest.raises(RepositoryInternalError) as exc_info:
             await repository.update(user, hashed_password="new-hash")
 
         assert "Internal server error" in str(exc_info.value)

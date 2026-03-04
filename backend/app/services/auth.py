@@ -2,7 +2,7 @@ from typing import Any, Protocol
 
 from app.authorization import PermissionScope
 from app.const.settings import AuthSettings
-from app.exceptions.services import ConflictException, ForbiddenException, InvalidInputException, UnauthorizedException
+from app.exceptions.services import ConflictError, ForbiddenError, InvalidInputError, UnauthorizedError
 from app.models.user import User
 from app.schemas.application.auth import AccessTokenResult, LoginCommand, RegisterUserCommand, UpdateCurrentUserCommand
 from app.security.policies import (
@@ -77,9 +77,9 @@ class AuthService:
             return normalize_username(username)
         except UsernamePolicyError as exc:
             if exc.code is UsernamePolicyErrorCode.REQUIRED:
-                raise InvalidInputException(message="Username is required") from exc
+                raise InvalidInputError(message="Username is required") from exc
 
-            raise InvalidInputException(
+            raise InvalidInputError(
                 message="Username has invalid format",
                 details={
                     "allowed": USERNAME_ALLOWED_DESCRIPTION,
@@ -90,7 +90,7 @@ class AuthService:
         try:
             validate_password_policy(password, username)
         except PasswordPolicyError as exc:
-            raise InvalidInputException(
+            raise InvalidInputError(
                 message="Password does not meet policy",
                 details={"violations": format_password_policy_messages(exc.violations)},
             ) from exc
@@ -99,10 +99,10 @@ class AuthService:
         username = self._normalize_username(credentials.username)
         user = await self.auth_repository.get_by_username(username)
         if user is None or not self.password_service.verify_password(credentials.password, user.hashed_password):
-            raise UnauthorizedException(message="Invalid username or password")
+            raise UnauthorizedError(message="Invalid username or password")
 
         if user.disabled:
-            raise ForbiddenException(message="Inactive user")
+            raise ForbiddenError(message="Inactive user")
 
         return user
 
@@ -117,7 +117,7 @@ class AuthService:
 
         async with self.unit_of_work:
             if await self.auth_repository.username_exists(username):
-                raise ConflictException(
+                raise ConflictError(
                     message="Username already exists",
                     details={"username": username},
                 )
@@ -132,13 +132,13 @@ class AuthService:
 
     def _validate_update_request(self, update_data: UpdateCurrentUserCommand) -> None:
         if update_data.current_password and update_data.new_password is None:
-            raise InvalidInputException(message="new_password is required when current_password is provided")
+            raise InvalidInputError(message="new_password is required when current_password is provided")
 
         if update_data.new_password and update_data.current_password is None:
-            raise InvalidInputException(message="current_password is required to update password")
+            raise InvalidInputError(message="current_password is required to update password")
 
         if update_data.username is None and update_data.new_password is None:
-            raise InvalidInputException(message="At least one field must be provided to update the user")
+            raise InvalidInputError(message="At least one field must be provided to update the user")
 
     async def _build_username_change(self, current_user: User, username: str | None) -> tuple[str, dict[str, str]]:
         if username is None:
@@ -152,7 +152,7 @@ class AuthService:
             normalized_username,
             exclude_user_id=current_user.id,
         ):
-            raise ConflictException(
+            raise ConflictError(
                 message="Username already exists",
                 details={"username": normalized_username},
             )
@@ -170,10 +170,10 @@ class AuthService:
 
         assert update_data.current_password is not None
         if not self.password_service.verify_password(update_data.current_password, current_user.hashed_password):
-            raise UnauthorizedException(message="Current password is invalid")
+            raise UnauthorizedError(message="Current password is invalid")
 
         if self.password_service.verify_password(update_data.new_password, current_user.hashed_password):
-            raise InvalidInputException(message="New password must be different from current password")
+            raise InvalidInputError(message="New password must be different from current password")
 
         self._validate_password_policy(update_data.new_password, normalized_username)
         return {"hashed_password": self.password_service.hash_password(update_data.new_password)}
@@ -189,7 +189,7 @@ class AuthService:
 
             changes = {**username_change, **password_change}
             if not changes:
-                raise InvalidInputException(message="No changes detected")
+                raise InvalidInputError(message="No changes detected")
 
             updated_user = await self._persist_user_changes(current_user, changes)
         return updated_user
@@ -197,11 +197,11 @@ class AuthService:
     async def get_user_from_token(self, token: str) -> User:
         payload = self.token_service.decode_access_token(token)
         if payload is None:
-            raise UnauthorizedException(message="Could not validate credentials")
+            raise UnauthorizedError(message="Could not validate credentials")
 
         user = await self.auth_repository.get_by_username(payload.sub)
         if user is None:
-            raise UnauthorizedException(message="Could not validate credentials")
+            raise UnauthorizedError(message="Could not validate credentials")
 
         return user
 

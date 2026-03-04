@@ -1,4 +1,4 @@
-from typing import Annotated, Any, Optional
+from typing import Annotated, Any
 
 from fastapi import Body, Path, Query
 
@@ -42,7 +42,7 @@ UPDATE_BOOK_BODY_EXAMPLES: dict[str, Any] = {
 }
 
 AuthorIdQuery = Annotated[
-    Optional[int],
+    int | None,
     Query(
         ge=1,
         description="Filter the list by author ID.",

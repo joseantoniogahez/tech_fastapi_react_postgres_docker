@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict
@@ -13,7 +13,7 @@ from app.models.user import User
 
 
 def _timestamp_columns(model: type) -> tuple[Any, Any]:
-    table: Any = getattr(model, "__table__")
+    table: Any = model.__table__
     return table.c.created_at, table.c.updated_at
 
 
@@ -42,7 +42,7 @@ class _TimestampPayload(BaseModel):
 
 
 def test_timestamp_serialization_keeps_utc_offset() -> None:
-    timestamp = datetime(2026, 2, 25, 10, 0, 0, tzinfo=timezone.utc)
+    timestamp = datetime(2026, 2, 25, 10, 0, 0, tzinfo=UTC)
     author = Author(name="Test Author", created_at=timestamp, updated_at=timestamp)
 
     payload = _TimestampPayload.model_validate(author).model_dump(mode="json")

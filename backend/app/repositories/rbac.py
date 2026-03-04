@@ -2,7 +2,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.exceptions.repositories import RepositoryConflictException
+from app.exceptions.repositories import RepositoryConflictError
 from app.models.permission import Permission
 from app.models.role import Role
 from app.models.role_permission import RolePermission
@@ -53,7 +53,7 @@ class RBACRepository(BaseRepository[Role]):
         try:
             return await self.create(name=name)
         except IntegrityError as exc:
-            raise RepositoryConflictException(
+            raise RepositoryConflictError(
                 message="Role name already exists",
                 details={"name": name},
             ) from exc
@@ -62,7 +62,7 @@ class RBACRepository(BaseRepository[Role]):
         try:
             return await self.update(role, name=name)
         except IntegrityError as exc:
-            raise RepositoryConflictException(
+            raise RepositoryConflictError(
                 message="Role name already exists",
                 details={"name": name},
             ) from exc

@@ -122,6 +122,13 @@ docker compose -f compose.yaml -f compose.prod.yaml up --build -d
 
 The repository uses a root virtual environment for shared tooling and hooks.
 
+Local `pre-commit` hooks depend on more than the root Python environment:
+
+- Python 3.14.3 for Python-based hooks
+- Node.js 22+ and npm 11+ for `books-app` ESLint and typecheck hooks
+- Docker Desktop (or Docker Engine + Compose plugin) for `hadolint` and `docker compose config` hooks
+- A local `.env` copied from `.env_examples`, because the compose validation hooks resolve environment variables from it
+
 Create and activate:
 
 ```bash
@@ -140,8 +147,11 @@ Install tooling:
 ```bash
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
-pre-commit install --install-hooks
+npm --prefix books-app install
+pre-commit install --install-hooks --hook-type pre-commit --hook-type pre-push
 ```
+
+Before running hooks, make sure Docker is running so the local Docker-based hooks can start successfully.
 
 Run repository hooks:
 
@@ -149,5 +159,25 @@ Run repository hooks:
 pre-commit run --all-files
 ```
 
+Run heavier pre-push hooks locally:
+
+```bash
+pre-commit run --all-files --hook-stage pre-push
+```
+
 If a dependency version used by the `mypy` hook changes in `backend/requirements.txt` or `backend/tests/requirements.txt`,
 update the matching version in `.pre-commit-config.yaml`.
+
+Maintain hook versions with a pinned update flow:
+
+```bash
+pre-commit autoupdate
+pre-commit run --all-files
+pre-commit run --all-files --hook-stage pre-push
+```
+
+Review the diff before committing:
+
+- Keep every hook `rev` pinned to an explicit version.
+- Keep Docker image hooks pinned to explicit tags (for example `ghcr.io/hadolint/hadolint:v2.14.0`), never implicit `latest`.
+- If a hook upgrade changes generated files like `.secrets.baseline`, stage the regenerated file in the same change.

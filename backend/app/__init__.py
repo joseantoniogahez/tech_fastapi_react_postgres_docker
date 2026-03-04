@@ -1,2 +1,2 @@
-class ExceptionBase(Exception):
+class AppError(Exception):
     pass

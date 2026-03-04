@@ -1,5 +1,3 @@
-from typing import List
-
 from fastapi import APIRouter
 
 from app.common.pagination import DEFAULT_LIST_LIMIT
@@ -14,13 +12,13 @@ router = APIRouter(
 )
 
 
-@router.get("/", response_model=List[AuthorResponse], **GET_AUTHORS_DOC)
+@router.get("/", response_model=list[AuthorResponse], **GET_AUTHORS_DOC)
 async def get_authors(
     author_service: AuthorServiceDependency,
     _read_access: PublicReadAccessDependency,
     offset: OffsetQuery = 0,
     limit: LimitQuery = DEFAULT_LIST_LIMIT,
     sort: AuthorSortQuery = "name",
-) -> List[AuthorResponse]:
+) -> list[AuthorResponse]:
     authors = await author_service.get_all(offset=offset, limit=limit, sort=sort)
     return [AuthorResponse.model_validate(author) for author in authors]

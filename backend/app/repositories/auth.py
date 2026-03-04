@@ -5,7 +5,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.authorization import PERMISSION_SCOPE_RANK
-from app.exceptions.repositories import RepositoryConflictException, RepositoryInternalErrorException
+from app.exceptions.repositories import RepositoryConflictError, RepositoryInternalError
 from app.models.role_permission import RolePermission
 from app.models.user import User
 from app.models.user_role import UserRole
@@ -33,11 +33,11 @@ class AuthRepository(BaseRepository[User]):
         except IntegrityError as exc:
             username = kwargs.get("username")
             if isinstance(username, str):
-                raise RepositoryConflictException(
+                raise RepositoryConflictError(
                     message="Username already exists",
                     details={"username": username},
                 ) from exc
-            raise RepositoryInternalErrorException() from exc
+            raise RepositoryInternalError() from exc
 
     async def update(self, entity: User, **changes: Any) -> User:
         try:
@@ -45,11 +45,11 @@ class AuthRepository(BaseRepository[User]):
         except IntegrityError as exc:
             username = changes.get("username")
             if isinstance(username, str):
-                raise RepositoryConflictException(
+                raise RepositoryConflictError(
                     message="Username already exists",
                     details={"username": username},
                 ) from exc
-            raise RepositoryInternalErrorException() from exc
+            raise RepositoryInternalError() from exc
 
     async def get_user_permission_scope(self, user_id: int, permission_id: str) -> str | None:
         query = (

@@ -1,12 +1,10 @@
-from typing import List
-
 from fastapi import APIRouter
 
 from app.common.pagination import DEFAULT_LIST_LIMIT
 from app.dependencies.authorization import PublicReadAccessDependency
 from app.dependencies.authorization_books import BookCreateAuth, BookDeleteAuth, BookUpdateAuth
 from app.dependencies.services import BookServiceDependency
-from app.exceptions.services import NotFoundException
+from app.exceptions.services import NotFoundError
 from app.openapi.books import (
     CREATE_BOOK_DOC,
     DELETE_BOOK_DOC,
@@ -31,7 +29,7 @@ router = APIRouter(
 )
 
 
-@router.get("/", response_model=List[BookResponse], **GET_BOOKS_DOC)
+@router.get("/", response_model=list[BookResponse], **GET_BOOKS_DOC)
 async def get_books(
     book_service: BookServiceDependency,
     _read_access: PublicReadAccessDependency,
@@ -39,16 +37,16 @@ async def get_books(
     offset: OffsetQuery = 0,
     limit: LimitQuery = DEFAULT_LIST_LIMIT,
     sort: BookSortQuery = "id",
-) -> List[BookResponse]:
+) -> list[BookResponse]:
     books = await book_service.get_all(author_id=author_id, offset=offset, limit=limit, sort=sort)
     return [BookResponse.model_validate(book) for book in books]
 
 
-@router.get("/published", response_model=List[BookResponse], **GET_PUBLISHED_BOOKS_DOC)
+@router.get("/published", response_model=list[BookResponse], **GET_PUBLISHED_BOOKS_DOC)
 async def get_published_books(
     book_service: BookServiceDependency,
     _read_access: PublicReadAccessDependency,
-) -> List[BookResponse]:
+) -> list[BookResponse]:
     books = await book_service.get_published()
     return [BookResponse.model_validate(book) for book in books]
 
@@ -61,7 +59,7 @@ async def get_book(
 ) -> BookResponse:
     book = await book_service.get(book_id)
     if book is None:
-        raise NotFoundException(message=f"Book {book_id} not found", details={"book_id": book_id})
+        raise NotFoundError(message=f"Book {book_id} not found", details={"book_id": book_id})
     return BookResponse.model_validate(book)
 
 
@@ -84,7 +82,7 @@ async def update_book(
 ) -> BookResponse:
     book = await book_service.update(book_id, BookMutationCommand.from_api(book_data))
     if book is None:
-        raise NotFoundException(message=f"Book {book_id} not found", details={"book_id": book_id})
+        raise NotFoundError(message=f"Book {book_id} not found", details={"book_id": book_id})
     return BookResponse.model_validate(book)
 
 

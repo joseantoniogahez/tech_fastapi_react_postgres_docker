@@ -1,6 +1,8 @@
+import contextlib
 import os
 import pathlib
-from typing import Any, AsyncGenerator, Dict, List
+from collections.abc import AsyncGenerator
+from typing import Any
 
 from sqlalchemy.engine import URL
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -19,16 +21,15 @@ class MockDatabase:
         self.engine = create_async_engine(url=test_database_url, echo=echo)
         self.Session = async_sessionmaker(bind=self.engine, expire_on_commit=False)
 
-    async def setup(self, Base: DeclarativeMeta) -> None:
+    async def setup(self, base: DeclarativeMeta) -> None:
         async with self.engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
+            await conn.run_sync(base.metadata.create_all)
 
-    async def load_rows(self, Model: Any, data: List[Dict[str, Any]]) -> None:
-        async with self.Session() as session:
-            async with session.begin():
-                session.add_all([Model(**row) for row in data])
+    async def load_rows(self, model: Any, data: list[dict[str, Any]]) -> None:
+        async with self.Session() as session, session.begin():
+            session.add_all([model(**row) for row in data])
 
-    async def get_db_session(self) -> AsyncGenerator[AsyncSession, None]:
+    async def get_db_session(self) -> AsyncGenerator[AsyncSession]:
         async with self.Session() as session:
             yield session
 
@@ -43,7 +44,5 @@ class MockDatabase:
         self.delete_sqlite()
 
     def __del__(self) -> None:
-        try:
+        with contextlib.suppress(OSError):
             self.delete_sqlite()
-        except OSError:
-            pass

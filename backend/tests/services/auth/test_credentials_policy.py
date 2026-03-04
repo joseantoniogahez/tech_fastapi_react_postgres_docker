@@ -2,7 +2,7 @@ from typing import cast
 
 import pytest
 
-from app.exceptions.services import InvalidInputException
+from app.exceptions.services import InvalidInputError
 from utils.testing_support.auth_service import build_service
 
 
@@ -17,7 +17,7 @@ def test_normalize_username_trims_and_lowercases() -> None:
 def test_normalize_username_raises_for_blank_value() -> None:
     service, _ = build_service()
 
-    with pytest.raises(InvalidInputException) as exc_info:
+    with pytest.raises(InvalidInputError) as exc_info:
         service._normalize_username("   ")
 
     assert "Username is required" in str(exc_info.value)
@@ -26,7 +26,7 @@ def test_normalize_username_raises_for_blank_value() -> None:
 def test_normalize_username_raises_for_invalid_format() -> None:
     service, _ = build_service()
 
-    with pytest.raises(InvalidInputException) as exc_info:
+    with pytest.raises(InvalidInputError) as exc_info:
         service._normalize_username("john doe")
 
     assert "Username has invalid format" in str(exc_info.value)
@@ -35,7 +35,7 @@ def test_normalize_username_raises_for_invalid_format() -> None:
 def test_validate_password_policy_raises_with_all_violations() -> None:
     service, _ = build_service()
 
-    with pytest.raises(InvalidInputException) as exc_info:
+    with pytest.raises(InvalidInputError) as exc_info:
         service._validate_password_policy("short", "john")
 
     details = cast(dict[str, list[str]], exc_info.value.details)
@@ -48,7 +48,7 @@ def test_validate_password_policy_raises_with_all_violations() -> None:
 def test_validate_password_policy_catches_lowercase_and_username_rules() -> None:
     service, _ = build_service()
 
-    with pytest.raises(InvalidInputException) as exc_info:
+    with pytest.raises(InvalidInputError) as exc_info:
         service._validate_password_policy("JOHN1234", "john")
 
     details = cast(dict[str, list[str]], exc_info.value.details)

@@ -1,7 +1,8 @@
 import asyncio
 import pathlib
 import tempfile
-from typing import Any, AsyncGenerator, Dict, Generator, List
+from collections.abc import AsyncGenerator, Generator
+from typing import Any
 
 import pytest
 from argon2 import PasswordHasher
@@ -28,17 +29,17 @@ def path() -> str:
 
 
 @pytest.fixture(scope="module")
-def mock_authors(path: str) -> List[Dict[str, Any]]:
+def mock_authors(path: str) -> list[dict[str, Any]]:
     return get_fixture_data(path, "authors")
 
 
 @pytest.fixture(scope="module")
-def mock_books(path: str) -> List[Dict[str, Any]]:
+def mock_books(path: str) -> list[dict[str, Any]]:
     return get_fixture_data(path, "books")
 
 
 @pytest.fixture(scope="module")
-def mock_users() -> List[Dict[str, Any]]:
+def mock_users() -> list[dict[str, Any]]:
     password_hasher = PasswordHasher()
     return [
         {
@@ -63,7 +64,7 @@ def mock_users() -> List[Dict[str, Any]]:
 
 
 @pytest.fixture(scope="module")
-def mock_roles() -> List[Dict[str, Any]]:
+def mock_roles() -> list[dict[str, Any]]:
     return [
         {"id": 1, "name": "admin_role"},
         {"id": 2, "name": "reader_role"},
@@ -71,12 +72,12 @@ def mock_roles() -> List[Dict[str, Any]]:
 
 
 @pytest.fixture(scope="module")
-def mock_permissions() -> List[Dict[str, Any]]:
+def mock_permissions() -> list[dict[str, Any]]:
     return [{"id": permission_id, "name": permission_name} for permission_id, permission_name in PERMISSION_SPECS]
 
 
 @pytest.fixture(scope="module")
-def mock_user_roles() -> List[Dict[str, Any]]:
+def mock_user_roles() -> list[dict[str, Any]]:
     return [
         {"user_id": 1, "role_id": 1},
         {"user_id": 3, "role_id": 2},
@@ -84,20 +85,20 @@ def mock_user_roles() -> List[Dict[str, Any]]:
 
 
 @pytest.fixture(scope="module")
-def mock_role_permissions() -> List[Dict[str, Any]]:
+def mock_role_permissions() -> list[dict[str, Any]]:
     return [{"role_id": 1, "permission_id": permission_id} for permission_id, _ in PERMISSION_SPECS]
 
 
 @pytest.fixture(scope="module")
 def mock_data(
-    mock_authors: List[Dict[str, Any]],
-    mock_books: List[Dict[str, Any]],
-    mock_users: List[Dict[str, Any]],
-    mock_roles: List[Dict[str, Any]],
-    mock_permissions: List[Dict[str, Any]],
-    mock_user_roles: List[Dict[str, Any]],
-    mock_role_permissions: List[Dict[str, Any]],
-) -> List[Dict[str, Any]]:
+    mock_authors: list[dict[str, Any]],
+    mock_books: list[dict[str, Any]],
+    mock_users: list[dict[str, Any]],
+    mock_roles: list[dict[str, Any]],
+    mock_permissions: list[dict[str, Any]],
+    mock_user_roles: list[dict[str, Any]],
+    mock_role_permissions: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
     return [
         {"class": User, "json": mock_users},
         {"class": Role, "json": mock_roles},
@@ -110,7 +111,7 @@ def mock_data(
 
 
 @pytest.fixture(scope="module")
-def mock_database(path: str, mock_data: List[Dict[str, Any]]) -> Generator[MockDatabase, None, None]:
+def mock_database(path: str, mock_data: list[dict[str, Any]]) -> Generator[MockDatabase]:
     with tempfile.TemporaryDirectory(prefix="backend-tests-db-") as db_tmp_dir:
         mock_db = MockDatabase(path=db_tmp_dir, echo=False)
         asyncio.run(mock_db.setup(Base))
@@ -124,8 +125,8 @@ def mock_database(path: str, mock_data: List[Dict[str, Any]]) -> Generator[MockD
 @pytest.fixture
 def mock_client(
     mock_database: MockDatabase,
-) -> Generator[TestClient, None, None]:
-    async def override_db_session() -> AsyncGenerator[Any, None]:
+) -> Generator[TestClient]:
+    async def override_db_session() -> AsyncGenerator[Any]:
         async with mock_database.Session() as session:
             yield session
 

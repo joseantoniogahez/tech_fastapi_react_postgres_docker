@@ -182,22 +182,21 @@ async def bootstrap_rbac(
     normalized_admin_username = _normalize_username(admin_username)
     password_hasher = PasswordHasher()
 
-    async with session_factory() as session:
-        async with session.begin():
-            _, permissions_created, permissions_updated = await _sync_permissions(session)
-            roles_by_name, roles_created = await _sync_roles(session)
-            role_permissions_created = await _sync_role_permissions(session, roles_by_name)
-            admin_user, admin_user_created = await _ensure_admin_user(
-                session,
-                admin_username=normalized_admin_username,
-                admin_password=admin_password,
-                password_hasher=password_hasher,
-            )
-            admin_role_assigned = await _ensure_admin_role_assignment(
-                session,
-                user_id=admin_user.id,
-                admin_role_id=roles_by_name["admin_role"].id,
-            )
+    async with session_factory() as session, session.begin():
+        _, permissions_created, permissions_updated = await _sync_permissions(session)
+        roles_by_name, roles_created = await _sync_roles(session)
+        role_permissions_created = await _sync_role_permissions(session, roles_by_name)
+        admin_user, admin_user_created = await _ensure_admin_user(
+            session,
+            admin_username=normalized_admin_username,
+            admin_password=admin_password,
+            password_hasher=password_hasher,
+        )
+        admin_role_assigned = await _ensure_admin_role_assignment(
+            session,
+            user_id=admin_user.id,
+            admin_role_id=roles_by_name["admin_role"].id,
+        )
 
     return BootstrapReport(
         permissions_created=permissions_created,

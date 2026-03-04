@@ -1,33 +1,33 @@
-from typing import Any, Generic, Mapping, Optional, Type, TypeVar
+from collections.abc import Mapping
+from typing import Any
 
 from sqlalchemy import Select, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 
 from app.common.pagination import DEFAULT_LIST_LIMIT, DEFAULT_SORT, MAX_LIST_LIMIT
-from app.exceptions.repositories import RepositoryException
+from app.exceptions.repositories import RepositoryError
 from app.infrastructure.database import Base
 
-ModelType = TypeVar("ModelType", bound=Base)
 IdType = int
 
 
-class BaseRepository(Generic[ModelType]):
-    def __init__(self, session: AsyncSession, model: Type[ModelType]):
+class BaseRepository[ModelType: Base]:
+    def __init__(self, session: AsyncSession, model: type[ModelType]):
         self.session = session
         self.model = model
 
     def _get_column(self, column_name: str) -> InstrumentedAttribute[Any]:
         column = getattr(self.model, column_name, None)
         if column is None:
-            raise RepositoryException(f"Column '{column_name}' does not exist on '{self.model.__name__}'")
+            raise RepositoryError(f"Column '{column_name}' does not exist on '{self.model.__name__}'")
         return column
 
     def _build_sort_order(self, sort: str) -> tuple[Any, ...]:
         descending = sort.startswith("-")
         column_name = sort[1:] if descending else sort
         if not column_name:
-            raise RepositoryException("Sort field cannot be empty")
+            raise RepositoryError("Sort field cannot be empty")
 
         column = self._get_column(column_name)
         primary_order = column.desc() if descending else column.asc()
@@ -40,8 +40,8 @@ class BaseRepository(Generic[ModelType]):
     def _build_query(
         self,
         *,
-        filters: Optional[Mapping[str, Any]] = None,
-        sort: Optional[str] = None,
+        filters: Mapping[str, Any] | None = None,
+        sort: str | None = None,
     ) -> Select[tuple[ModelType]]:
         query = select(self.model)
         if filters:
@@ -61,10 +61,10 @@ class BaseRepository(Generic[ModelType]):
         await self.session.refresh(entity)
         return entity
 
-    async def get(self, entity_id: IdType) -> Optional[ModelType]:
+    async def get(self, entity_id: IdType) -> ModelType | None:
         return await self.session.get(self.model, entity_id)
 
-    async def get_one_by(self, filters: Mapping[str, Any]) -> Optional[ModelType]:
+    async def get_one_by(self, filters: Mapping[str, Any]) -> ModelType | None:
         query = self._build_query(filters=filters)
         result = await self.session.execute(query)
         return result.scalar_one_or_none()
@@ -72,15 +72,15 @@ class BaseRepository(Generic[ModelType]):
     async def list(
         self,
         *,
-        filters: Optional[Mapping[str, Any]] = None,
+        filters: Mapping[str, Any] | None = None,
         offset: int = 0,
         limit: int = DEFAULT_LIST_LIMIT,
         sort: str = DEFAULT_SORT,
     ) -> list[ModelType]:
         if offset < 0:
-            raise RepositoryException("Offset must be greater than or equal to 0")
+            raise RepositoryError("Offset must be greater than or equal to 0")
         if limit < 1:
-            raise RepositoryException("Limit must be greater than or equal to 1")
+            raise RepositoryError("Limit must be greater than or equal to 1")
 
         query = self._build_query(filters=filters, sort=sort).offset(offset).limit(min(limit, MAX_LIST_LIMIT))
 

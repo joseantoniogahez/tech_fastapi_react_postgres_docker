@@ -3,7 +3,7 @@ import asyncio
 import pytest
 from sqlalchemy.exc import IntegrityError
 
-from app.exceptions.repositories import RepositoryConflictException
+from app.exceptions.repositories import RepositoryConflictError
 from app.models.role import Role
 from app.models.role_permission import RolePermission
 from app.models.user_role import UserRole
@@ -120,7 +120,7 @@ def test_rbac_repository_create_role_translates_integrity_error_to_repository_co
     repository = RBACRepository(session=session)
 
     async def run_test() -> None:
-        with pytest.raises(RepositoryConflictException) as exc_info:
+        with pytest.raises(RepositoryConflictError) as exc_info:
             await repository.create_role(name="ops_role")
 
         assert "Role name already exists" in str(exc_info.value)
@@ -138,7 +138,7 @@ def test_rbac_repository_update_role_translates_integrity_error_to_repository_co
     repository = RBACRepository(session=session)
 
     async def run_test() -> None:
-        with pytest.raises(RepositoryConflictException) as exc_info:
+        with pytest.raises(RepositoryConflictError) as exc_info:
             await repository.update_role(role, name="ops_role_v2")
 
         assert "Role name already exists" in str(exc_info.value)

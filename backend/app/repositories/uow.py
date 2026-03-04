@@ -9,7 +9,7 @@ class UnitOfWork:
         self._scope_depth = 0
         self._rollback_only = False
 
-    async def __aenter__(self) -> "UnitOfWork":
+    async def __aenter__(self) -> UnitOfWork:
         self._scope_depth += 1
         return self
 
