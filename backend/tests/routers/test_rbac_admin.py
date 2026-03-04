@@ -8,6 +8,7 @@ from app.authorization import PERMISSION_SPECS, PermissionId
 from app.models.role import Role
 from app.models.role_permission import RolePermission
 from app.models.user_role import UserRole
+from utils.testing_support.api_assertions import assert_error_response
 from utils.testing_support.database import MockDatabase
 
 
@@ -93,12 +94,13 @@ def test_reader_cannot_list_roles_without_roles_manage_permission(mock_client: T
     )
 
     assert response.status_code == HTTPStatus.FORBIDDEN
-    assert response.json() == {
-        "detail": f"Missing required permission: {PermissionId.ROLE_MANAGE}",
-        "status": HTTPStatus.FORBIDDEN,
-        "code": "forbidden",
-        "meta": {"permission_id": PermissionId.ROLE_MANAGE},
-    }
+    assert_error_response(
+        response,
+        detail=f"Missing required permission: {PermissionId.ROLE_MANAGE}",
+        status_code=HTTPStatus.FORBIDDEN,
+        code="forbidden",
+        meta={"permission_id": PermissionId.ROLE_MANAGE},
+    )
 
 
 def test_reader_cannot_manage_role_permissions_without_permission(mock_client: TestClient) -> None:
@@ -109,12 +111,13 @@ def test_reader_cannot_manage_role_permissions_without_permission(mock_client: T
     )
 
     assert response.status_code == HTTPStatus.FORBIDDEN
-    assert response.json() == {
-        "detail": f"Missing required permission: {PermissionId.ROLE_PERMISSION_MANAGE}",
-        "status": HTTPStatus.FORBIDDEN,
-        "code": "forbidden",
-        "meta": {"permission_id": PermissionId.ROLE_PERMISSION_MANAGE},
-    }
+    assert_error_response(
+        response,
+        detail=f"Missing required permission: {PermissionId.ROLE_PERMISSION_MANAGE}",
+        status_code=HTTPStatus.FORBIDDEN,
+        code="forbidden",
+        meta={"permission_id": PermissionId.ROLE_PERMISSION_MANAGE},
+    )
 
 
 def test_reader_cannot_manage_user_role_assignments_without_permission(
@@ -126,12 +129,13 @@ def test_reader_cannot_manage_user_role_assignments_without_permission(
     )
 
     assert response.status_code == HTTPStatus.FORBIDDEN
-    assert response.json() == {
-        "detail": f"Missing required permission: {PermissionId.USER_ROLE_MANAGE}",
-        "status": HTTPStatus.FORBIDDEN,
-        "code": "forbidden",
-        "meta": {"permission_id": PermissionId.USER_ROLE_MANAGE},
-    }
+    assert_error_response(
+        response,
+        detail=f"Missing required permission: {PermissionId.USER_ROLE_MANAGE}",
+        status_code=HTTPStatus.FORBIDDEN,
+        code="forbidden",
+        meta={"permission_id": PermissionId.USER_ROLE_MANAGE},
+    )
 
 
 def test_admin_can_create_and_rename_role(mock_client: TestClient) -> None:
@@ -164,12 +168,13 @@ def test_admin_cannot_create_duplicate_role_name(mock_client: TestClient) -> Non
     )
 
     assert response.status_code == HTTPStatus.CONFLICT
-    assert response.json() == {
-        "detail": "Role name already exists",
-        "status": HTTPStatus.CONFLICT,
-        "code": "conflict",
-        "meta": {"name": "admin_role"},
-    }
+    assert_error_response(
+        response,
+        detail="Role name already exists",
+        status_code=HTTPStatus.CONFLICT,
+        code="conflict",
+        meta={"name": "admin_role"},
+    )
 
 
 def test_admin_cannot_rename_role_to_existing_name(mock_client: TestClient) -> None:
@@ -188,12 +193,13 @@ def test_admin_cannot_rename_role_to_existing_name(mock_client: TestClient) -> N
     )
 
     assert response.status_code == HTTPStatus.CONFLICT
-    assert response.json() == {
-        "detail": "Role name already exists",
-        "status": HTTPStatus.CONFLICT,
-        "code": "conflict",
-        "meta": {"name": "admin_role"},
-    }
+    assert_error_response(
+        response,
+        detail="Role name already exists",
+        status_code=HTTPStatus.CONFLICT,
+        code="conflict",
+        meta={"name": "admin_role"},
+    )
 
 
 def test_admin_can_assign_and_remove_role_permission(
@@ -295,11 +301,12 @@ def test_assign_role_permission_rejects_invalid_scope(mock_client: TestClient) -
     )
 
     assert response.status_code == HTTPStatus.BAD_REQUEST
-    assert response.json() == {
-        "detail": "Invalid permission scope 'regional'. Expected one of ['any', 'own', 'tenant'].",
-        "status": HTTPStatus.BAD_REQUEST,
-        "code": "invalid_input",
-    }
+    assert_error_response(
+        response,
+        detail="Invalid permission scope 'regional'. Expected one of ['any', 'own', 'tenant'].",
+        status_code=HTTPStatus.BAD_REQUEST,
+        code="invalid_input",
+    )
 
 
 def test_assign_role_permission_returns_not_found_for_unknown_permission(
@@ -312,12 +319,13 @@ def test_assign_role_permission_returns_not_found_for_unknown_permission(
     )
 
     assert response.status_code == HTTPStatus.NOT_FOUND
-    assert response.json() == {
-        "detail": "Permission books:read not found",
-        "status": HTTPStatus.NOT_FOUND,
-        "code": "not_found",
-        "meta": {"permission_id": "books:read"},
-    }
+    assert_error_response(
+        response,
+        detail="Permission books:read not found",
+        status_code=HTTPStatus.NOT_FOUND,
+        code="not_found",
+        meta={"permission_id": "books:read"},
+    )
 
 
 def test_remove_missing_role_permission_is_noop(mock_client: TestClient) -> None:
@@ -391,12 +399,13 @@ def test_assign_user_role_returns_not_found_for_unknown_user(mock_client: TestCl
     )
 
     assert response.status_code == HTTPStatus.NOT_FOUND
-    assert response.json() == {
-        "detail": "User 999 not found",
-        "status": HTTPStatus.NOT_FOUND,
-        "code": "not_found",
-        "meta": {"id": 999},
-    }
+    assert_error_response(
+        response,
+        detail="User 999 not found",
+        status_code=HTTPStatus.NOT_FOUND,
+        code="not_found",
+        meta={"id": 999},
+    )
 
 
 def test_remove_missing_user_role_is_noop(mock_client: TestClient) -> None:
@@ -417,12 +426,13 @@ def test_update_role_returns_not_found_for_missing_role(mock_client: TestClient)
     )
 
     assert response.status_code == HTTPStatus.NOT_FOUND
-    assert response.json() == {
-        "detail": "Role 999 not found",
-        "status": HTTPStatus.NOT_FOUND,
-        "code": "not_found",
-        "meta": {"id": 999},
-    }
+    assert_error_response(
+        response,
+        detail="Role 999 not found",
+        status_code=HTTPStatus.NOT_FOUND,
+        code="not_found",
+        meta={"id": 999},
+    )
 
 
 def test_admin_can_delete_role_and_related_assignments(

@@ -3,6 +3,7 @@ from http import HTTPStatus
 from starlette.testclient import TestClient
 
 from app.authorization import PermissionId
+from utils.testing_support.api_assertions import assert_error_response
 
 
 def _auth_headers(mock_client: TestClient, username: str, password: str) -> dict[str, str]:
@@ -40,12 +41,13 @@ def test_reader_cannot_create_book(mock_client: TestClient) -> None:
     )
 
     assert response.status_code == HTTPStatus.FORBIDDEN
-    assert response.json() == {
-        "detail": f"Missing required permission: {PermissionId.BOOK_CREATE}",
-        "status": HTTPStatus.FORBIDDEN,
-        "code": "forbidden",
-        "meta": {"permission_id": PermissionId.BOOK_CREATE},
-    }
+    assert_error_response(
+        response,
+        detail=f"Missing required permission: {PermissionId.BOOK_CREATE}",
+        status_code=HTTPStatus.FORBIDDEN,
+        code="forbidden",
+        meta={"permission_id": PermissionId.BOOK_CREATE},
+    )
 
 
 def test_reader_cannot_delete_book(mock_client: TestClient) -> None:
@@ -55,9 +57,10 @@ def test_reader_cannot_delete_book(mock_client: TestClient) -> None:
     )
 
     assert response.status_code == HTTPStatus.FORBIDDEN
-    assert response.json() == {
-        "detail": f"Missing required permission: {PermissionId.BOOK_DELETE}",
-        "status": HTTPStatus.FORBIDDEN,
-        "code": "forbidden",
-        "meta": {"permission_id": PermissionId.BOOK_DELETE},
-    }
+    assert_error_response(
+        response,
+        detail=f"Missing required permission: {PermissionId.BOOK_DELETE}",
+        status_code=HTTPStatus.FORBIDDEN,
+        code="forbidden",
+        meta={"permission_id": PermissionId.BOOK_DELETE},
+    )

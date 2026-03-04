@@ -1,16 +1,20 @@
 import asyncio
+import logging
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import pytest
-from fastapi import APIRouter, FastAPI
+from fastapi import APIRouter, FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.routing import APIRoute
 from pydantic import ValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.testclient import TestClient
 
 from app.const.settings import ApiSettings, AuthSettings
 from app.dependencies.db import create_async_session, get_db_session, get_unit_of_work
-from app.factory import app_lifespan, configure_logging, validate_auth_settings
+from app.exceptions.setup.handlers import REQUEST_ID_HEADER, configure_exception_handlers
+from app.factory import app_lifespan, configure_logging, configure_request_context_middleware, validate_auth_settings
 from app.main import app
 from app.routers import ROUTER_MODULES
 from app.setup.cors import configure_cors
@@ -121,6 +125,114 @@ def test_app_lifespan_logs_startup_and_shutdown() -> None:
             call("Backend shutdown."),
         ]
     )
+
+
+def test_request_context_middleware_generates_request_id_and_logs_success() -> None:
+    logger = MagicMock()
+    with patch("app.factory.logging.getLogger", return_value=logger):
+        test_app = FastAPI()
+        configure_request_context_middleware(test_app)
+
+    @test_app.get("/ping")
+    async def ping() -> dict[str, str]:
+        return {"status": "ok"}
+
+    with TestClient(test_app) as client:
+        response = client.get("/ping")
+
+    assert response.status_code == 200
+    request_id = response.headers[REQUEST_ID_HEADER]
+    assert request_id
+
+    log_call = logger.log.call_args
+    assert log_call is not None
+    assert log_call.args[0] == logging.INFO
+    assert (
+        log_call.args[1]
+        == "event=api_request_completed request_id=%s method=%s path=%s status_code=%s duration_ms=%.2f"
+    )
+    assert log_call.args[2] == request_id
+    assert log_call.args[3] == "GET"
+    assert log_call.args[4] == "/ping"
+    assert log_call.args[5] == 200
+    assert log_call.args[6] >= 0
+
+
+def test_request_context_middleware_reuses_incoming_request_id_for_errors() -> None:
+    logger = MagicMock()
+    with patch("app.factory.logging.getLogger", return_value=logger):
+        test_app = FastAPI()
+        configure_request_context_middleware(test_app)
+    configure_exception_handlers(test_app)
+
+    @test_app.get("/boom")
+    async def boom() -> None:
+        raise StarletteHTTPException(status_code=404, detail="Missing")
+
+    with TestClient(test_app) as client:
+        response = client.get("/boom", headers={REQUEST_ID_HEADER: "req-123"})
+
+    assert response.status_code == 404
+    assert response.headers[REQUEST_ID_HEADER] == "req-123"
+    assert response.json()["request_id"] == "req-123"
+
+    log_call = logger.log.call_args
+    assert log_call is not None
+    assert log_call.args[0] == logging.WARNING
+    assert log_call.args[2] == "req-123"
+    assert log_call.args[3] == "GET"
+    assert log_call.args[4] == "/boom"
+    assert log_call.args[5] == 404
+
+
+def test_request_context_middleware_logs_server_errors_at_error_level() -> None:
+    logger = MagicMock()
+    with patch("app.factory.logging.getLogger", return_value=logger):
+        test_app = FastAPI()
+        configure_request_context_middleware(test_app)
+    configure_exception_handlers(test_app)
+
+    @test_app.get("/crash")
+    async def crash() -> None:
+        raise RuntimeError("boom")
+
+    with TestClient(test_app, raise_server_exceptions=False) as client:
+        response = client.get("/crash")
+
+    assert response.status_code == 500
+    request_id = response.headers[REQUEST_ID_HEADER]
+    assert response.json()["request_id"] == request_id
+
+    log_call = logger.log.call_args
+    assert log_call is not None
+    assert log_call.args[0] == logging.ERROR
+    assert log_call.args[2] == request_id
+    assert log_call.args[3] == "GET"
+    assert log_call.args[4] == "/crash"
+    assert log_call.args[5] == 500
+
+
+def test_request_context_middleware_logs_explicit_500_responses_at_error_level() -> None:
+    logger = MagicMock()
+    with patch("app.factory.logging.getLogger", return_value=logger):
+        test_app = FastAPI()
+        configure_request_context_middleware(test_app)
+
+    @test_app.get("/status-500")
+    async def status_500() -> Response:
+        return Response(status_code=500)
+
+    with TestClient(test_app) as client:
+        response = client.get("/status-500")
+
+    assert response.status_code == 500
+
+    log_call = logger.log.call_args
+    assert log_call is not None
+    assert log_call.args[0] == logging.ERROR
+    assert log_call.args[3] == "GET"
+    assert log_call.args[4] == "/status-500"
+    assert log_call.args[5] == 500
 
 
 def test_get_registered_routers_loads_catalog_modules() -> None:

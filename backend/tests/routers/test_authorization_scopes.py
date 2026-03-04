@@ -11,8 +11,10 @@ from app.dependencies.authentication import get_current_active_user
 from app.dependencies.authorization import PermissionResourceContext, require_permission
 from app.dependencies.services import get_auth_service
 from app.exceptions.setup.handlers import configure_exception_handlers
+from app.factory import configure_request_context_middleware
 from app.models.user import User
 from app.services.auth import AuthService
+from utils.testing_support.api_assertions import assert_error_response
 
 
 def _build_scoped_auth_service(granted_scope: str | None) -> AuthService:
@@ -37,6 +39,7 @@ def _build_scoped_auth_service(granted_scope: str | None) -> AuthService:
 
 def _build_scoped_test_app() -> FastAPI:
     app = FastAPI()
+    configure_request_context_middleware(app)
     configure_exception_handlers(app)
 
     async def owner_context(target_user_id: int) -> PermissionResourceContext:
@@ -130,12 +133,13 @@ def test_scoped_authorization_denies_own_scope_for_other_owner() -> None:
     response = _request_with_scope("/scope/own/11", granted_scope=PermissionScope.OWN)
 
     assert response.status_code == HTTPStatus.FORBIDDEN
-    assert response.json() == {
-        "detail": f"Missing required permission: {PermissionId.BOOK_UPDATE}",
-        "status": HTTPStatus.FORBIDDEN,
-        "code": "forbidden",
-        "meta": {"permission_id": PermissionId.BOOK_UPDATE},
-    }
+    assert_error_response(
+        response,
+        detail=f"Missing required permission: {PermissionId.BOOK_UPDATE}",
+        status_code=HTTPStatus.FORBIDDEN,
+        code="forbidden",
+        meta={"permission_id": PermissionId.BOOK_UPDATE},
+    )
 
 
 def test_scoped_authorization_allows_tenant_scope_for_matching_tenant() -> None:
@@ -149,12 +153,13 @@ def test_scoped_authorization_denies_tenant_scope_for_mismatched_tenant() -> Non
     response = _request_with_scope("/scope/tenant/8", granted_scope=PermissionScope.TENANT)
 
     assert response.status_code == HTTPStatus.FORBIDDEN
-    assert response.json() == {
-        "detail": f"Missing required permission: {PermissionId.BOOK_UPDATE}",
-        "status": HTTPStatus.FORBIDDEN,
-        "code": "forbidden",
-        "meta": {"permission_id": PermissionId.BOOK_UPDATE},
-    }
+    assert_error_response(
+        response,
+        detail=f"Missing required permission: {PermissionId.BOOK_UPDATE}",
+        status_code=HTTPStatus.FORBIDDEN,
+        code="forbidden",
+        meta={"permission_id": PermissionId.BOOK_UPDATE},
+    )
 
 
 def test_scoped_authorization_allows_any_scope_for_global_admin() -> None:
@@ -168,9 +173,10 @@ def test_scoped_authorization_denies_non_global_scope_when_any_is_required() -> 
     response = _request_with_scope("/scope/any", granted_scope=PermissionScope.TENANT)
 
     assert response.status_code == HTTPStatus.FORBIDDEN
-    assert response.json() == {
-        "detail": f"Missing required permission: {PermissionId.BOOK_UPDATE}",
-        "status": HTTPStatus.FORBIDDEN,
-        "code": "forbidden",
-        "meta": {"permission_id": PermissionId.BOOK_UPDATE},
-    }
+    assert_error_response(
+        response,
+        detail=f"Missing required permission: {PermissionId.BOOK_UPDATE}",
+        status_code=HTTPStatus.FORBIDDEN,
+        code="forbidden",
+        meta={"permission_id": PermissionId.BOOK_UPDATE},
+    )

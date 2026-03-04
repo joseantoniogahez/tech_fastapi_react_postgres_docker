@@ -1,12 +1,14 @@
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from time import perf_counter
+from uuid import uuid4
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 from pydantic import ValidationError
 
 from app.const.settings import ApiSettings, AuthSettings
-from app.exceptions.setup.handlers import configure_exception_handlers
+from app.exceptions.setup.handlers import REQUEST_ID_HEADER, configure_exception_handlers
 from app.setup.cors import configure_cors
 from app.setup.routers import configure_routers
 
@@ -34,6 +36,51 @@ def validate_auth_settings() -> None:
         ) from exc
 
 
+def configure_request_context_middleware(app: FastAPI) -> None:
+    logger = logging.getLogger("app.http")
+
+    @app.middleware("http")
+    async def request_context_middleware(request: Request, call_next) -> Response:
+        request_id = request.headers.get(REQUEST_ID_HEADER, "").strip() or uuid4().hex
+        request.state.request_id = request_id
+
+        started_at = perf_counter()
+        try:
+            response = await call_next(request)
+        except Exception:
+            duration_ms = (perf_counter() - started_at) * 1000
+            logger.log(
+                logging.ERROR,
+                "event=api_request_completed request_id=%s method=%s path=%s status_code=%s duration_ms=%.2f",
+                request_id,
+                request.method,
+                request.url.path,
+                500,
+                duration_ms,
+            )
+            raise
+        duration_ms = (perf_counter() - started_at) * 1000
+
+        response.headers.setdefault(REQUEST_ID_HEADER, request_id)
+
+        log_level = logging.INFO
+        if response.status_code >= 500:
+            log_level = logging.ERROR
+        elif response.status_code >= 400:
+            log_level = logging.WARNING
+
+        logger.log(
+            log_level,
+            "event=api_request_completed request_id=%s method=%s path=%s status_code=%s duration_ms=%.2f",
+            request_id,
+            request.method,
+            request.url.path,
+            response.status_code,
+            duration_ms,
+        )
+        return response
+
+
 @asynccontextmanager
 async def app_lifespan(app: FastAPI) -> AsyncIterator[None]:
     logger = logging.getLogger("app.lifecycle")
@@ -48,6 +95,7 @@ def create_app(settings: ApiSettings | None = None) -> FastAPI:
     configure_logging(api_settings)
 
     app = FastAPI(root_path=api_settings.API_PATH, lifespan=app_lifespan)
+    configure_request_context_middleware(app)
     configure_cors(app, api_settings)
     configure_exception_handlers(app)
     configure_routers(app)

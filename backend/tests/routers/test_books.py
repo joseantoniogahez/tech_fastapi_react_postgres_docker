@@ -3,6 +3,7 @@ from http import HTTPStatus
 from starlette.testclient import TestClient
 
 from app.common.pagination import MAX_LIST_LIMIT
+from utils.testing_support.api_assertions import assert_error_response
 
 
 def _auth_headers(mock_client: TestClient, username: str = "admin", password: str = "admin123") -> dict[str, str]:
@@ -94,12 +95,13 @@ def test_get_book_by_id(mock_client: TestClient):
 def test_get_book_by_id_not_found(mock_client: TestClient):
     response = mock_client.get("/books/999")
     assert response.status_code == HTTPStatus.NOT_FOUND
-    assert response.json() == {
-        "detail": "Book 999 not found",
-        "status": HTTPStatus.NOT_FOUND,
-        "code": "not_found",
-        "meta": {"book_id": 999},
-    }
+    assert_error_response(
+        response,
+        detail="Book 999 not found",
+        status_code=HTTPStatus.NOT_FOUND,
+        code="not_found",
+        meta={"book_id": 999},
+    )
 
 
 def test_create_book(mock_client: TestClient):
@@ -158,12 +160,13 @@ def test_update_book_not_found(mock_client: TestClient):
 
     response = mock_client.put("/books/999", json=book_data, headers=_auth_headers(mock_client))
     assert response.status_code == HTTPStatus.NOT_FOUND
-    assert response.json() == {
-        "detail": "Book 999 not found",
-        "status": HTTPStatus.NOT_FOUND,
-        "code": "not_found",
-        "meta": {"book_id": 999},
-    }
+    assert_error_response(
+        response,
+        detail="Book 999 not found",
+        status_code=HTTPStatus.NOT_FOUND,
+        code="not_found",
+        meta={"book_id": 999},
+    )
 
 
 def test_delete_book(mock_client: TestClient):

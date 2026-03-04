@@ -11,26 +11,24 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.requests import Request
 
 from app.exceptions.domain import DomainError, DomainErrorType, ErrorLayer
-from app.exceptions.repositories import (
-    RepositoryConflictError,
-    RepositoryError,
-    RepositoryInternalError,
-)
+from app.exceptions.repositories import RepositoryConflictError, RepositoryError, RepositoryInternalError
 from app.exceptions.routers import RouterError
 from app.exceptions.services import UnauthorizedError
 from app.exceptions.setup.handlers import (
+    REQUEST_ID_HEADER,
     build_error_payload,
     configure_exception_handlers,
-    domain_exception_handler,
-    http_exception_handler,
+    domain_error_handler,
+    get_request_id,
+    http_error_handler,
     map_status_to_error_type,
-    request_validation_exception_handler,
-    unhandled_exception_handler,
+    request_validation_error_handler,
+    unhandled_error_handler,
 )
 
 
-def _request() -> Request:
-    return Request(
+def _request(request_id: str | None = None) -> Request:
+    request = Request(
         {
             "type": "http",
             "method": "GET",
@@ -43,6 +41,9 @@ def _request() -> Request:
             "server": ("testserver", 80),
         }
     )
+    if request_id is not None:
+        request.state.request_id = request_id
+    return request
 
 
 def _payload(response: JSONResponse) -> dict[str, Any]:
@@ -81,6 +82,7 @@ def test_build_error_payload_handles_optional_meta() -> None:
         status_code=400,
         code="invalid_input",
         meta={"field": "title"},
+        request_id="req-123",
     )
 
     assert no_meta == {"detail": "Invalid", "status": 400, "code": "invalid_input"}
@@ -89,7 +91,12 @@ def test_build_error_payload_handles_optional_meta() -> None:
         "status": 400,
         "code": "invalid_input",
         "meta": {"field": "title"},
+        "request_id": "req-123",
     }
+
+
+def test_get_request_id_returns_none_when_request_has_no_context() -> None:
+    assert get_request_id(_request()) is None
 
 
 @pytest.mark.parametrize(
@@ -119,26 +126,30 @@ def test_request_validation_exception_handler_returns_invalid_input() -> None:
         ]
     )
 
-    response = asyncio.run(request_validation_exception_handler(_request(), validation_exc))
+    response = asyncio.run(request_validation_error_handler(_request("req-123"), validation_exc))
     payload = _payload(response)
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert payload["detail"] == "Request validation error"
     assert payload["code"] == DomainErrorType.INVALID_INPUT.value
+    assert payload["request_id"] == "req-123"
     assert payload["meta"][0]["loc"] == ["body", "title"]
+    assert response.headers[REQUEST_ID_HEADER] == "req-123"
 
 
 def test_http_exception_handler_with_string_detail() -> None:
     exc = StarletteHTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Denied", headers={"X-Rule": "rbac"})
 
-    response = asyncio.run(http_exception_handler(_request(), exc))
+    response = asyncio.run(http_error_handler(_request("req-123"), exc))
 
     assert response.status_code == status.HTTP_403_FORBIDDEN
     assert response.headers["x-rule"] == "rbac"
+    assert response.headers[REQUEST_ID_HEADER] == "req-123"
     assert _payload(response) == {
         "detail": "Denied",
         "status": status.HTTP_403_FORBIDDEN,
         "code": DomainErrorType.FORBIDDEN.value,
+        "request_id": "req-123",
     }
 
 
@@ -148,27 +159,31 @@ def test_http_exception_handler_with_non_string_detail() -> None:
         detail=cast(Any, {"reason": "teapot"}),
     )
 
-    response = asyncio.run(http_exception_handler(_request(), exc))
+    response = asyncio.run(http_error_handler(_request("req-123"), exc))
 
     assert response.status_code == status.HTTP_418_IM_A_TEAPOT
+    assert response.headers[REQUEST_ID_HEADER] == "req-123"
     assert _payload(response) == {
         "detail": "HTTP error",
         "status": status.HTTP_418_IM_A_TEAPOT,
         "code": DomainErrorType.INTERNAL_ERROR.value,
         "meta": {"reason": "teapot"},
+        "request_id": "req-123",
     }
 
 
 def test_unhandled_exception_handler_logs_and_returns_internal_error() -> None:
     with patch("app.exceptions.setup.handlers.logger.exception") as logger_exception:
-        response = asyncio.run(unhandled_exception_handler(_request(), RuntimeError("boom")))
+        response = asyncio.run(unhandled_error_handler(_request("req-123"), RuntimeError("boom")))
 
     logger_exception.assert_called_once()
     assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+    assert response.headers[REQUEST_ID_HEADER] == "req-123"
     assert _payload(response) == {
         "detail": "Internal server error",
         "status": status.HTTP_500_INTERNAL_SERVER_ERROR,
         "code": DomainErrorType.INTERNAL_ERROR.value,
+        "request_id": "req-123",
     }
 
 
@@ -176,7 +191,7 @@ def test_configure_exception_handlers_registers_all_handlers() -> None:
     app = FastAPI()
     configure_exception_handlers(app)
 
-    assert app.exception_handlers[DomainError] is domain_exception_handler
-    assert app.exception_handlers[RequestValidationError] is request_validation_exception_handler
-    assert app.exception_handlers[StarletteHTTPException] is http_exception_handler
-    assert app.exception_handlers[Exception] is unhandled_exception_handler
+    assert app.exception_handlers[DomainError] is domain_error_handler
+    assert app.exception_handlers[RequestValidationError] is request_validation_error_handler
+    assert app.exception_handlers[StarletteHTTPException] is http_error_handler
+    assert app.exception_handlers[Exception] is unhandled_error_handler

@@ -8,6 +8,7 @@ import pytest
 from starlette.testclient import TestClient
 
 from app.const.settings import AuthSettings
+from utils.testing_support.api_assertions import assert_error_response
 
 
 def _build_access_token(username: str) -> str:
@@ -27,14 +28,13 @@ def _build_access_token(username: str) -> str:
 
 
 def _assert_error_payload(response: Any, error_type: str, message: str, details: Any | None = None) -> None:
-    payload: dict[str, Any] = {
-        "detail": message,
-        "status": response.status_code,
-        "code": error_type,
-    }
-    if details is not None:
-        payload["meta"] = details
-    assert response.json() == payload
+    assert_error_response(
+        response,
+        detail=message,
+        status_code=response.status_code,
+        code=error_type,
+        meta=details,
+    )
 
 
 def test_token_success(mock_client: TestClient) -> None:
