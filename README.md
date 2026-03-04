@@ -83,6 +83,18 @@ docker compose -f compose.test.yaml run --rm backend-test && docker compose -f c
 
 `compose.test.yaml` sets `name: books-tests`, so test resources stay isolated from local development.
 
+## GitHub Actions CI
+
+The repository includes a GitHub Actions workflow at `.github/workflows/ci.yaml` for push and pull request validation.
+
+It runs three independent quality gates:
+
+- `pre-commit`: runs repository hooks in CI for both `pre-commit` and `pre-push` stages (file hygiene, formatting, compose validation, security checks, and typed checks configured in `.pre-commit-config.yaml`)
+- `backend`: runs `pytest backend/tests` with coverage enabled and a minimum threshold of `100%`
+- `frontend`: runs frontend lint, typecheck, unit tests, and production build
+
+This keeps the template reusable with the same baseline checks enforced locally and in CI.
+
 ## Run Production Profile (Docker Compose)
 
 From repository root:
@@ -94,7 +106,7 @@ docker compose -f compose.yaml -f compose.prod.yaml up --build -d
 Production JWT note:
 
 - `compose.prod.yaml` sets `APP_ENV=prod`.
-- Define `JWT_SECRET_KEY`, `JWT_ALGORITHM`, and `JWT_ACCESS_TOKEN_EXPIRE_MINUTES` in `.env` before starting.
+- Define `JWT_SECRET_KEY`, `JWT_ALGORITHM`, `JWT_ACCESS_TOKEN_EXPIRE_MINUTES`, `JWT_ISSUER`, and `JWT_AUDIENCE` in `.env` before starting.
 
 Stop production stack:
 

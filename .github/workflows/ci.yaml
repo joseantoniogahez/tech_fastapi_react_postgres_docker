@@ -1,0 +1,116 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  pre-commit:
+    name: Pre-commit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - id: setup-python
+        name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            backend/requirements.txt
+            backend/tests/requirements.txt
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: books-app/package-lock.json
+
+      - name: Cache pre-commit environments
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('.pre-commit-config.yaml') }}
+
+      - name: Install Python tooling
+        run: python -m pip install --upgrade pip && python -m pip install -r requirements.txt
+
+      - name: Install frontend dependencies
+        run: npm ci --prefix books-app
+
+      - name: Prepare local environment file for compose validation hooks
+        run: cp .env_examples .env
+
+      - name: Run pre-commit hooks
+        run: pre-commit run --all-files --hook-stage pre-commit --show-diff-on-failure
+
+      - name: Run pre-push hooks
+        run: pre-commit run --all-files --hook-stage pre-push --show-diff-on-failure
+
+  backend:
+    name: Backend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            backend/requirements.txt
+            backend/tests/requirements.txt
+
+      - name: Install backend dependencies
+        run: python -m pip install --upgrade pip && python -m pip install -r requirements.txt
+
+      - name: Run backend tests with coverage gate
+        env:
+          PYTHONPATH: backend
+        run: >
+          python -m pytest backend/tests
+          --cov=app
+          --cov-report=term-missing:skip-covered
+          --cov-fail-under=100
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: books-app/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci --prefix books-app
+
+      - name: Lint frontend
+        run: npm --prefix books-app run lint
+
+      - name: Typecheck frontend
+        run: npm --prefix books-app run typecheck
+
+      - name: Test frontend
+        run: npm --prefix books-app run test -- --runInBand
+
+      - name: Build frontend
+        run: npm --prefix books-app run build
