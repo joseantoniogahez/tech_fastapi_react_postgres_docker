@@ -39,7 +39,7 @@ def _assert_error_payload(response: Any, error_type: str, message: str, details:
 
 def test_token_success(mock_client: TestClient) -> None:
     response = mock_client.post(
-        "/token",
+        "/v1/token",
         data={
             "username": "admin",
             "password": "admin123",
@@ -61,7 +61,7 @@ def test_token_success(mock_client: TestClient) -> None:
     ],
 )
 def test_token_invalid_credentials(mock_client: TestClient, credentials: dict[str, str]) -> None:
-    response = mock_client.post("/token", data=credentials)
+    response = mock_client.post("/v1/token", data=credentials)
 
     assert response.status_code == HTTPStatus.UNAUTHORIZED
     _assert_error_payload(response, "unauthorized", "Invalid username or password")
@@ -70,7 +70,7 @@ def test_token_invalid_credentials(mock_client: TestClient, credentials: dict[st
 
 def test_token_disabled_user(mock_client: TestClient) -> None:
     response = mock_client.post(
-        "/token",
+        "/v1/token",
         data={
             "username": "disabled_user",
             "password": "admin123",
@@ -83,7 +83,7 @@ def test_token_disabled_user(mock_client: TestClient) -> None:
 
 def test_get_current_active_user(mock_client: TestClient) -> None:
     token_response = mock_client.post(
-        "/token",
+        "/v1/token",
         data={
             "username": "admin",
             "password": "admin123",
@@ -91,7 +91,7 @@ def test_get_current_active_user(mock_client: TestClient) -> None:
     )
     access_token = token_response.json()["access_token"]
 
-    response = mock_client.get("/users/me", headers={"Authorization": f"Bearer {access_token}"})
+    response = mock_client.get("/v1/users/me", headers={"Authorization": f"Bearer {access_token}"})
 
     assert response.status_code == HTTPStatus.OK
     assert response.json() == {
@@ -102,7 +102,7 @@ def test_get_current_active_user(mock_client: TestClient) -> None:
 
 
 def test_get_current_active_user_with_invalid_token(mock_client: TestClient) -> None:
-    response = mock_client.get("/users/me", headers={"Authorization": "Bearer not-a-valid-token"})
+    response = mock_client.get("/v1/users/me", headers={"Authorization": "Bearer not-a-valid-token"})
 
     assert response.status_code == HTTPStatus.UNAUTHORIZED
     _assert_error_payload(response, "unauthorized", "Could not validate credentials")
@@ -112,7 +112,7 @@ def test_get_current_active_user_with_invalid_token(mock_client: TestClient) -> 
 def test_get_current_active_user_when_user_does_not_exist(mock_client: TestClient) -> None:
     token = _build_access_token("ghost-user")
 
-    response = mock_client.get("/users/me", headers={"Authorization": f"Bearer {token}"})
+    response = mock_client.get("/v1/users/me", headers={"Authorization": f"Bearer {token}"})
 
     assert response.status_code == HTTPStatus.UNAUTHORIZED
     _assert_error_payload(response, "unauthorized", "Could not validate credentials")
@@ -121,7 +121,7 @@ def test_get_current_active_user_when_user_does_not_exist(mock_client: TestClien
 
 def test_get_current_active_user_when_user_is_disabled(mock_client: TestClient) -> None:
     token = _build_access_token("disabled_user")
-    response = mock_client.get("/users/me", headers={"Authorization": f"Bearer {token}"})
+    response = mock_client.get("/v1/users/me", headers={"Authorization": f"Bearer {token}"})
 
     assert response.status_code == HTTPStatus.FORBIDDEN
     _assert_error_payload(response, "forbidden", "Inactive user")
@@ -129,7 +129,7 @@ def test_get_current_active_user_when_user_is_disabled(mock_client: TestClient) 
 
 def test_register_user_success(mock_client: TestClient) -> None:
     response = mock_client.post(
-        "/users/register",
+        "/v1/users/register",
         json={
             "username": " new_user ",
             "password": "StrongPass1",
@@ -143,7 +143,7 @@ def test_register_user_success(mock_client: TestClient) -> None:
     assert payload["disabled"] is False
 
     token_response = mock_client.post(
-        "/token",
+        "/v1/token",
         data={
             "username": "NEW_USER",
             "password": "StrongPass1",
@@ -154,7 +154,7 @@ def test_register_user_success(mock_client: TestClient) -> None:
 
 def test_register_user_invalid_username_format(mock_client: TestClient) -> None:
     response = mock_client.post(
-        "/users/register",
+        "/v1/users/register",
         json={
             "username": "invalid user!",
             "password": "StrongPass1",
@@ -172,7 +172,7 @@ def test_register_user_invalid_username_format(mock_client: TestClient) -> None:
 
 def test_register_user_username_conflict(mock_client: TestClient) -> None:
     response = mock_client.post(
-        "/users/register",
+        "/v1/users/register",
         json={
             "username": "admin",
             "password": "StrongPass1",
@@ -190,7 +190,7 @@ def test_register_user_username_conflict(mock_client: TestClient) -> None:
 
 def test_register_user_password_policy(mock_client: TestClient) -> None:
     response = mock_client.post(
-        "/users/register",
+        "/v1/users/register",
         json={
             "username": "policy_user",
             "password": "onlylowercase1",
@@ -220,7 +220,7 @@ def test_register_user_password_policy_additional_violations(
     expected_violations: list[str],
 ) -> None:
     response = mock_client.post(
-        "/users/register",
+        "/v1/users/register",
         json={
             "username": "policy_user",
             "password": password,
@@ -238,7 +238,7 @@ def test_register_user_password_policy_additional_violations(
 
 def test_update_current_user_username_and_password(mock_client: TestClient) -> None:
     register_response = mock_client.post(
-        "/users/register",
+        "/v1/users/register",
         json={
             "username": "profile_user",
             "password": "ProfilePass1",
@@ -248,7 +248,7 @@ def test_update_current_user_username_and_password(mock_client: TestClient) -> N
     user_id = register_response.json()["id"]
 
     login_response = mock_client.post(
-        "/token",
+        "/v1/token",
         data={
             "username": "profile_user",
             "password": "ProfilePass1",
@@ -258,7 +258,7 @@ def test_update_current_user_username_and_password(mock_client: TestClient) -> N
     headers = {"Authorization": f"Bearer {login_response.json()['access_token']}"}
 
     update_response = mock_client.patch(
-        "/users/me",
+        "/v1/users/me",
         headers=headers,
         json={
             "username": " profile_user_v2 ",
@@ -275,7 +275,7 @@ def test_update_current_user_username_and_password(mock_client: TestClient) -> N
     }
 
     old_login = mock_client.post(
-        "/token",
+        "/v1/token",
         data={
             "username": "profile_user",
             "password": "ProfilePass1",
@@ -284,7 +284,7 @@ def test_update_current_user_username_and_password(mock_client: TestClient) -> N
     assert old_login.status_code == HTTPStatus.UNAUTHORIZED
 
     new_login = mock_client.post(
-        "/token",
+        "/v1/token",
         data={
             "username": "PROFILE_USER_V2",
             "password": "ProfilePass2",
@@ -295,7 +295,7 @@ def test_update_current_user_username_and_password(mock_client: TestClient) -> N
 
 def test_update_current_user_requires_current_password(mock_client: TestClient) -> None:
     login_response = mock_client.post(
-        "/token",
+        "/v1/token",
         data={
             "username": "admin",
             "password": "admin123",
@@ -305,7 +305,7 @@ def test_update_current_user_requires_current_password(mock_client: TestClient) 
     headers = {"Authorization": f"Bearer {login_response.json()['access_token']}"}
 
     response = mock_client.patch(
-        "/users/me",
+        "/v1/users/me",
         headers=headers,
         json={"new_password": "AdminPass9"},
     )
@@ -316,7 +316,7 @@ def test_update_current_user_requires_current_password(mock_client: TestClient) 
 
 def test_update_current_user_requires_new_password(mock_client: TestClient) -> None:
     login_response = mock_client.post(
-        "/token",
+        "/v1/token",
         data={
             "username": "admin",
             "password": "admin123",
@@ -326,7 +326,7 @@ def test_update_current_user_requires_new_password(mock_client: TestClient) -> N
     headers = {"Authorization": f"Bearer {login_response.json()['access_token']}"}
 
     response = mock_client.patch(
-        "/users/me",
+        "/v1/users/me",
         headers=headers,
         json={"current_password": "admin123"},
     )
@@ -337,7 +337,7 @@ def test_update_current_user_requires_new_password(mock_client: TestClient) -> N
 
 def test_update_current_user_requires_at_least_one_field(mock_client: TestClient) -> None:
     login_response = mock_client.post(
-        "/token",
+        "/v1/token",
         data={
             "username": "admin",
             "password": "admin123",
@@ -347,7 +347,7 @@ def test_update_current_user_requires_at_least_one_field(mock_client: TestClient
     headers = {"Authorization": f"Bearer {login_response.json()['access_token']}"}
 
     response = mock_client.patch(
-        "/users/me",
+        "/v1/users/me",
         headers=headers,
         json={},
     )
@@ -358,7 +358,7 @@ def test_update_current_user_requires_at_least_one_field(mock_client: TestClient
 
 def test_update_current_user_same_username_has_no_changes(mock_client: TestClient) -> None:
     login_response = mock_client.post(
-        "/token",
+        "/v1/token",
         data={
             "username": "admin",
             "password": "admin123",
@@ -368,7 +368,7 @@ def test_update_current_user_same_username_has_no_changes(mock_client: TestClien
     headers = {"Authorization": f"Bearer {login_response.json()['access_token']}"}
 
     response = mock_client.patch(
-        "/users/me",
+        "/v1/users/me",
         headers=headers,
         json={"username": " ADMIN "},
     )
@@ -379,7 +379,7 @@ def test_update_current_user_same_username_has_no_changes(mock_client: TestClien
 
 def test_update_current_user_rejects_invalid_current_password(mock_client: TestClient) -> None:
     login_response = mock_client.post(
-        "/token",
+        "/v1/token",
         data={
             "username": "admin",
             "password": "admin123",
@@ -389,7 +389,7 @@ def test_update_current_user_rejects_invalid_current_password(mock_client: TestC
     headers = {"Authorization": f"Bearer {login_response.json()['access_token']}"}
 
     response = mock_client.patch(
-        "/users/me",
+        "/v1/users/me",
         headers=headers,
         json={
             "current_password": "wrong-password",
@@ -404,7 +404,7 @@ def test_update_current_user_rejects_invalid_current_password(mock_client: TestC
 
 def test_update_current_user_rejects_same_password(mock_client: TestClient) -> None:
     login_response = mock_client.post(
-        "/token",
+        "/v1/token",
         data={
             "username": "admin",
             "password": "admin123",
@@ -414,7 +414,7 @@ def test_update_current_user_rejects_same_password(mock_client: TestClient) -> N
     headers = {"Authorization": f"Bearer {login_response.json()['access_token']}"}
 
     response = mock_client.patch(
-        "/users/me",
+        "/v1/users/me",
         headers=headers,
         json={
             "current_password": "admin123",
@@ -428,7 +428,7 @@ def test_update_current_user_rejects_same_password(mock_client: TestClient) -> N
 
 def test_update_current_user_username_conflict(mock_client: TestClient) -> None:
     login_response = mock_client.post(
-        "/token",
+        "/v1/token",
         data={
             "username": "reader_user",
             "password": "reader123",
@@ -438,7 +438,7 @@ def test_update_current_user_username_conflict(mock_client: TestClient) -> None:
     headers = {"Authorization": f"Bearer {login_response.json()['access_token']}"}
 
     response = mock_client.patch(
-        "/users/me",
+        "/v1/users/me",
         headers=headers,
         json={"username": "admin"},
     )

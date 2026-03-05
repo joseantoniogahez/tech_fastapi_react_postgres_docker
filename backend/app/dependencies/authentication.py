@@ -9,7 +9,7 @@ from app.schemas.api.auth import LoginCredentialsRequest
 
 from .services import AuthServiceDependency
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/v1/token")
 BearerTokenDependency = Annotated[str, Depends(oauth2_scheme)]
 
 

@@ -7,14 +7,14 @@ from utils.testing_support.api_assertions import assert_error_response
 
 
 def _auth_headers(mock_client: TestClient, username: str = "admin", password: str = "admin123") -> dict[str, str]:
-    response = mock_client.post("/token", data={"username": username, "password": password})
+    response = mock_client.post("/v1/token", data={"username": username, "password": password})
     assert response.status_code == HTTPStatus.OK
     token = response.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}
 
 
 def test_get_books(mock_client: TestClient):
-    response = mock_client.get("/books")
+    response = mock_client.get("/v1/books")
     assert response.status_code == HTTPStatus.OK
 
     json_response = response.json()
@@ -31,7 +31,7 @@ def test_get_books(mock_client: TestClient):
 
 
 def test_get_books_by_author(mock_client: TestClient):
-    response = mock_client.get("/books?author_id=1")
+    response = mock_client.get("/v1/books?author_id=1")
     assert response.status_code == HTTPStatus.OK
 
     json_response = response.json()
@@ -46,11 +46,11 @@ def test_get_books_by_author(mock_client: TestClient):
 
 
 def test_get_books_supports_pagination_and_sort(mock_client: TestClient) -> None:
-    full_response = mock_client.get(f"/books?sort=-year&limit={MAX_LIST_LIMIT}")
+    full_response = mock_client.get(f"/v1/books?sort=-year&limit={MAX_LIST_LIMIT}")
     assert full_response.status_code == HTTPStatus.OK
     full_books = full_response.json()
 
-    paged_response = mock_client.get("/books?sort=-year&offset=1&limit=2")
+    paged_response = mock_client.get("/v1/books?sort=-year&offset=1&limit=2")
     assert paged_response.status_code == HTTPStatus.OK
     paged_books = paged_response.json()
 
@@ -59,19 +59,19 @@ def test_get_books_supports_pagination_and_sort(mock_client: TestClient) -> None
 
 
 def test_get_books_rejects_limit_over_max(mock_client: TestClient) -> None:
-    response = mock_client.get(f"/books?limit={MAX_LIST_LIMIT + 1}")
+    response = mock_client.get(f"/v1/books?limit={MAX_LIST_LIMIT + 1}")
     assert response.status_code == HTTPStatus.BAD_REQUEST
     assert response.json()["code"] == "invalid_input"
 
 
 def test_get_books_rejects_unknown_sort_field(mock_client: TestClient) -> None:
-    response = mock_client.get("/books?sort=author")
+    response = mock_client.get("/v1/books?sort=author")
     assert response.status_code == HTTPStatus.BAD_REQUEST
     assert response.json()["code"] == "invalid_input"
 
 
 def test_get_published_books(mock_client: TestClient):
-    response = mock_client.get("/books/published")
+    response = mock_client.get("/v1/books/published")
     assert response.status_code == HTTPStatus.OK
 
     json_response = response.json()
@@ -81,7 +81,7 @@ def test_get_published_books(mock_client: TestClient):
 
 
 def test_get_book_by_id(mock_client: TestClient):
-    response = mock_client.get("/books/1")
+    response = mock_client.get("/v1/books/1")
     assert response.status_code == HTTPStatus.OK
 
     json_response = response.json()
@@ -93,7 +93,7 @@ def test_get_book_by_id(mock_client: TestClient):
 
 
 def test_get_book_by_id_not_found(mock_client: TestClient):
-    response = mock_client.get("/books/999")
+    response = mock_client.get("/v1/books/999")
     assert response.status_code == HTTPStatus.NOT_FOUND
     assert_error_response(
         response,
@@ -113,7 +113,7 @@ def test_create_book(mock_client: TestClient):
         "author_name": "Isaac Asimov",
     }
 
-    response = mock_client.post("/books", json=book_data, headers=_auth_headers(mock_client))
+    response = mock_client.post("/v1/books", json=book_data, headers=_auth_headers(mock_client))
     assert response.status_code == HTTPStatus.CREATED
 
     json_response = response.json()
@@ -136,7 +136,7 @@ def test_update_book(mock_client: TestClient):
         "author_name": "Isaak Yúdovich Ozímov",
     }
 
-    response = mock_client.put("/books/1", json=book_data, headers=_auth_headers(mock_client))
+    response = mock_client.put("/v1/books/1", json=book_data, headers=_auth_headers(mock_client))
     assert response.status_code == HTTPStatus.OK
 
     json_response = response.json()
@@ -158,7 +158,7 @@ def test_update_book_not_found(mock_client: TestClient):
         "author_name": "Unknown Author",
     }
 
-    response = mock_client.put("/books/999", json=book_data, headers=_auth_headers(mock_client))
+    response = mock_client.put("/v1/books/999", json=book_data, headers=_auth_headers(mock_client))
     assert response.status_code == HTTPStatus.NOT_FOUND
     assert_error_response(
         response,
@@ -170,12 +170,12 @@ def test_update_book_not_found(mock_client: TestClient):
 
 
 def test_delete_book(mock_client: TestClient):
-    response = mock_client.delete("/books/1", headers=_auth_headers(mock_client))
+    response = mock_client.delete("/v1/books/1", headers=_auth_headers(mock_client))
     assert response.status_code == HTTPStatus.NO_CONTENT
     assert response.content == b""
 
 
 def test_delete_book_not_found_is_noop(mock_client: TestClient):
-    response = mock_client.delete("/books/999", headers=_auth_headers(mock_client))
+    response = mock_client.delete("/v1/books/999", headers=_auth_headers(mock_client))
     assert response.status_code == HTTPStatus.NO_CONTENT
     assert response.content == b""

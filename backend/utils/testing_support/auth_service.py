@@ -44,6 +44,7 @@ def build_service(
     permission_evaluator: PermissionEvaluatorPort | None = None,
     token_service: TokenServicePort | None = None,
     password_service: PasswordServicePort | None = None,
+    permission_scope_cache: dict[tuple[int, str], str | None] | None = None,
 ) -> tuple[AuthService, MagicMock]:
     repo = repository or _build_repository_mock()
     unit_of_work = _build_unit_of_work_mock()
@@ -62,6 +63,7 @@ def build_service(
             permission_evaluator=permission_evaluator,
             token_service=token_service,
             password_service=password_service,
+            permission_scope_cache=permission_scope_cache,
         ),
         repo,
     )

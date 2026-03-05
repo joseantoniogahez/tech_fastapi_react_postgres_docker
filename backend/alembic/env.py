@@ -10,6 +10,7 @@ from app.models.author import Author
 from app.models.book import Book
 from app.models.permission import Permission
 from app.models.role import Role
+from app.models.role_inheritance import RoleInheritance
 from app.models.role_permission import RolePermission
 from app.models.user import User
 from app.models.user_role import UserRole
@@ -20,7 +21,7 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 # Keep explicit model references so Alembic sees all tables in metadata.
-_MODEL_REGISTRY = (Author, Book, User, Role, Permission, UserRole, RolePermission)
+_MODEL_REGISTRY = (Author, Book, User, Role, Permission, UserRole, RolePermission, RoleInheritance)
 
 target_metadata = Base.metadata
 

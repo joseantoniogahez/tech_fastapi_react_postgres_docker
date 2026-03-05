@@ -57,7 +57,7 @@ Dependency providers are split by concern under `app/dependencies/`:
 
 ## 3) Endpoint examples
 
-### `POST /books/`
+### `POST /v1/books/`
 
 ```python
 from app.openapi.books import CreateBookPayload
@@ -73,7 +73,7 @@ async def create_book(
     return BookResponse.model_validate(book)
 ```
 
-### `PUT /books/{book_id}`
+### `PUT /v1/books/{book_id}`
 
 ```python
 from app.openapi.books import BookIdPath, UpdateBookPayload

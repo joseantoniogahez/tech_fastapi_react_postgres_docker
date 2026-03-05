@@ -1,8 +1,9 @@
+import logging
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Annotated
 
-from fastapi import Depends
+from fastapi import Depends, Request
 
 from app.authorization import PermissionScope, normalize_permission_scope
 from app.exceptions.services import ForbiddenError
@@ -10,6 +11,8 @@ from app.models.user import User
 
 from .authentication import CurrentActiveUserDependency
 from .services import AuthServiceDependency
+
+logger = logging.getLogger("app.authz")
 
 PermissionPolicyDependency = Callable[..., Awaitable[None]]
 AuthorizedUserPolicyDependency = Callable[..., Awaitable[User]]
@@ -53,6 +56,45 @@ async def build_current_tenant_permission_context(
     return PermissionResourceContext(tenant_id=current_user.tenant_id)
 
 
+def _get_route_template(request: Request) -> str:
+    route = request.scope.get("route")
+    route_path = getattr(route, "path", None)
+    if isinstance(route_path, str) and route_path:
+        return route_path
+    return request.url.path
+
+
+def _get_request_id(request: Request) -> str:
+    request_id = getattr(request.state, "request_id", None)
+    if isinstance(request_id, str) and request_id:
+        return request_id
+    return "-"
+
+
+def _log_authorization_decision(
+    *,
+    request: Request,
+    user_id: int,
+    permission_id: str,
+    required_scope: str,
+    decision: str,
+) -> None:
+    logger.info(
+        (
+            "event=api_authorization_decision request_id=%s user_id=%s permission_id=%s "
+            "required_scope=%s decision=%s method=%s path=%s route=%s"
+        ),
+        _get_request_id(request),
+        user_id,
+        permission_id,
+        required_scope,
+        decision,
+        request.method,
+        request.url.path,
+        _get_route_template(request),
+    )
+
+
 def require_permission(
     permission_id: str,
     *,
@@ -64,6 +106,7 @@ def require_permission(
     async def dependency(
         current_user: CurrentActiveUserDependency,
         auth_service: AuthServiceDependency,
+        request: Request,
         resource_context: Annotated[PermissionResourceContext, Depends(resource_context_dependency)],
     ) -> None:
         has_permission = await auth_service.user_has_permission(
@@ -73,6 +116,14 @@ def require_permission(
             resource_owner_id=resource_context.owner_user_id,
             resource_tenant_id=resource_context.tenant_id,
             user_tenant_id=current_user.tenant_id,
+        )
+        decision = "allow" if has_permission else "deny"
+        _log_authorization_decision(
+            request=request,
+            user_id=current_user.id,
+            permission_id=permission_id,
+            required_scope=normalized_required_scope,
+            decision=decision,
         )
         if not has_permission:
             raise ForbiddenError(

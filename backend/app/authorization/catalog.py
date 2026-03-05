@@ -35,21 +35,21 @@ class PermissionId:
 
 
 READ_ACCESS_POLICY_CATALOG: tuple[ReadAccessPolicyDefinition, ...] = (
-    ReadAccessPolicyDefinition(method="GET", path="/health", access_level=ReadAccessLevel.PUBLIC),
-    ReadAccessPolicyDefinition(method="GET", path="/users/me", access_level=ReadAccessLevel.AUTHENTICATED),
-    ReadAccessPolicyDefinition(method="GET", path="/authors/", access_level=ReadAccessLevel.PUBLIC),
-    ReadAccessPolicyDefinition(method="GET", path="/books/", access_level=ReadAccessLevel.PUBLIC),
-    ReadAccessPolicyDefinition(method="GET", path="/books/published", access_level=ReadAccessLevel.PUBLIC),
-    ReadAccessPolicyDefinition(method="GET", path="/books/{book_id}", access_level=ReadAccessLevel.PUBLIC),
+    ReadAccessPolicyDefinition(method="GET", path="/v1/health", access_level=ReadAccessLevel.PUBLIC),
+    ReadAccessPolicyDefinition(method="GET", path="/v1/users/me", access_level=ReadAccessLevel.AUTHENTICATED),
+    ReadAccessPolicyDefinition(method="GET", path="/v1/authors/", access_level=ReadAccessLevel.PUBLIC),
+    ReadAccessPolicyDefinition(method="GET", path="/v1/books/", access_level=ReadAccessLevel.PUBLIC),
+    ReadAccessPolicyDefinition(method="GET", path="/v1/books/published", access_level=ReadAccessLevel.PUBLIC),
+    ReadAccessPolicyDefinition(method="GET", path="/v1/books/{book_id}", access_level=ReadAccessLevel.PUBLIC),
     ReadAccessPolicyDefinition(
         method="GET",
-        path="/rbac/roles",
+        path="/v1/rbac/roles",
         access_level=ReadAccessLevel.PERMISSION,
         permission_id=PermissionId.ROLE_MANAGE,
     ),
     ReadAccessPolicyDefinition(
         method="GET",
-        path="/rbac/permissions",
+        path="/v1/rbac/permissions",
         access_level=ReadAccessLevel.PERMISSION,
         permission_id=PermissionId.ROLE_PERMISSION_MANAGE,
     ),

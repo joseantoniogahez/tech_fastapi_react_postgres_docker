@@ -72,7 +72,7 @@ class RBACRoleOperations:
     async def _build_role_response(self, role: Role) -> RoleResult:
         permissions = await self._rbac_repository.list_permissions()
         permission_names = build_permission_name_map(permissions)
-        role_permissions = await self._rbac_repository.list_role_permissions(role_ids=(role.id,))
+        role_permissions = await self._rbac_repository.list_effective_role_permissions(role_ids=(role.id,))
         return to_role_result(role, role_permissions, permission_names)
 
     async def list_roles(self) -> list[RoleResult]:
@@ -82,7 +82,9 @@ class RBACRoleOperations:
 
         permissions = await self._rbac_repository.list_permissions()
         permission_names = build_permission_name_map(permissions)
-        role_permissions = await self._rbac_repository.list_role_permissions(role_ids=tuple(role.id for role in roles))
+        role_permissions = await self._rbac_repository.list_effective_role_permissions(
+            role_ids=tuple(role.id for role in roles)
+        )
         permissions_by_role_id = group_role_permissions(role_permissions)
 
         return [
@@ -164,6 +166,66 @@ class RBACRoleOperations:
             await self._rbac_repository.delete_role_permission(
                 role_id=role.id,
                 permission_id=permission.id,
+            )
+
+    @staticmethod
+    def _role_reaches_target(
+        *,
+        parents_by_role_id: dict[int, tuple[int, ...]],
+        start_role_id: int,
+        target_role_id: int,
+    ) -> bool:
+        pending_role_ids = [start_role_id]
+        visited_role_ids: set[int] = set()
+        while pending_role_ids:
+            role_id = pending_role_ids.pop()
+            if role_id == target_role_id:
+                return True
+            if role_id in visited_role_ids:
+                continue
+            visited_role_ids.add(role_id)
+            pending_role_ids.extend(parents_by_role_id.get(role_id, ()))
+        return False
+
+    async def assign_role_inheritance(self, role_id: int, parent_role_id: int) -> None:
+        if role_id == parent_role_id:
+            raise InvalidInputError(message="Role cannot inherit from itself")
+
+        async with self._unit_of_work:
+            role = await self._entity_lookup.get_role_or_raise(role_id)
+            parent_role = await self._entity_lookup.get_role_or_raise(parent_role_id)
+            role_inheritances = await self._rbac_repository.list_role_inheritances()
+            existing_links = {(link.role_id, link.parent_role_id) for link in role_inheritances}
+            if (role.id, parent_role.id) in existing_links:
+                return
+
+            parents_by_role_id: dict[int, tuple[int, ...]] = {}
+            for role_inheritance in role_inheritances:
+                current_parents = parents_by_role_id.get(role_inheritance.role_id, ())
+                parents_by_role_id[role_inheritance.role_id] = current_parents + (role_inheritance.parent_role_id,)
+
+            if self._role_reaches_target(
+                parents_by_role_id=parents_by_role_id,
+                start_role_id=parent_role.id,
+                target_role_id=role.id,
+            ):
+                raise ConflictError(
+                    message="Role inheritance cycle detected",
+                    details={"role_id": role.id, "parent_role_id": parent_role.id},
+                )
+
+            await self._rbac_repository.assign_role_inheritance(
+                role_id=role.id,
+                parent_role_id=parent_role.id,
+            )
+
+    async def remove_role_inheritance(self, role_id: int, parent_role_id: int) -> None:
+        async with self._unit_of_work:
+            role = await self._entity_lookup.get_role_or_raise(role_id)
+            parent_role = await self._entity_lookup.get_role_or_raise(parent_role_id)
+            await self._rbac_repository.remove_role_inheritance(
+                role_id=role.id,
+                parent_role_id=parent_role.id,
             )
 
 

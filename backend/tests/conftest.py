@@ -17,6 +17,7 @@ from app.models.author import Author
 from app.models.book import Book
 from app.models.permission import Permission
 from app.models.role import Role
+from app.models.role_inheritance import RoleInheritance
 from app.models.role_permission import RolePermission
 from app.models.user import User
 from app.models.user_role import UserRole
@@ -111,6 +112,7 @@ def mock_data(
         {"class": Permission, "json": mock_permissions},
         {"class": UserRole, "json": mock_user_roles},
         {"class": RolePermission, "json": mock_role_permissions},
+        {"class": RoleInheritance, "json": []},
         {"class": Author, "json": mock_authors},
         {"class": Book, "json": mock_books},
     ]

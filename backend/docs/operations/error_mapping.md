@@ -22,6 +22,7 @@ Notes:
 - `401` responses include `WWW-Authenticate: Bearer`.
 - FastAPI request validation errors are converted to `400 invalid_input`.
 - API request completion logs include a consistent structured shape with `request_id`, `method`, `path`, `status_code`, and `duration_ms`.
+- Authorization decisions are logged as `event=api_authorization_decision` with `request_id`, `user_id`, `permission_id`, `required_scope`, `decision`, `method`, `path`, and `route`.
 
 Example of normalized validation error:
 

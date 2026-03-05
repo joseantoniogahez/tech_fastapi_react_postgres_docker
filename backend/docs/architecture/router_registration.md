@@ -8,6 +8,7 @@ Router module registration is centralized in `app/routers/__init__.py`:
 - `ROUTER_ATTRIBUTE`: required attribute name exposed by each module (`router`).
 
 `create_app` calls `configure_routers`, and `configure_routers` loads routers dynamically from that catalog.
+At registration time, the backend applies the API namespace prefix `/v1` to every router.
 
 ## Auto-registrable Router Convention
 
@@ -30,6 +31,7 @@ router = APIRouter(prefix="/publishers", tags=["publishers"])
 1. Add `"publisher"` to `ROUTER_MODULES` in `app/routers/__init__.py`.
 
 No changes are needed in `create_app` or `app/setup/routers.py`.
+The route is exposed as `/v1/publishers` because version prefixing is centralized in router setup.
 
 ## Related: OpenAPI docs split
 

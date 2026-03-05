@@ -27,6 +27,8 @@ from app.services.token_service import JwtTokenService, TokenServicePort
 
 from .profile_updates import AuthProfileUpdates
 
+PermissionScopeCache = dict[tuple[int, str], str | None]
+
 
 class AuthRepositoryPort(Protocol):
     async def get_by_username(self, username: str) -> User | None: ...
@@ -78,6 +80,7 @@ class AuthService:
         permission_evaluator: PermissionEvaluatorPort | None = None,
         token_service: TokenServicePort | None = None,
         password_service: PasswordServicePort | None = None,
+        permission_scope_cache: PermissionScopeCache | None = None,
     ):
         settings = auth_settings or AuthSettings()
         self.auth_repository = auth_repository
@@ -85,6 +88,7 @@ class AuthService:
         self.permission_evaluator = permission_evaluator or PermissionEvaluator()
         self.token_service = token_service or JwtTokenService(settings)
         self.password_service = password_service or Argon2PasswordService()
+        self.permission_scope_cache = permission_scope_cache
         self._profile_updates = AuthProfileUpdates(
             auth_repository=auth_repository,
             unit_of_work=unit_of_work,
@@ -195,6 +199,24 @@ class AuthService:
 
         return user
 
+    async def _get_granted_scope(self, *, user_id: int, permission_id: str) -> str | None:
+        if self.permission_scope_cache is None:
+            return await self.auth_repository.get_user_permission_scope(
+                user_id=user_id,
+                permission_id=permission_id,
+            )
+
+        cache_key = (user_id, permission_id)
+        if cache_key in self.permission_scope_cache:
+            return self.permission_scope_cache[cache_key]
+
+        granted_scope = await self.auth_repository.get_user_permission_scope(
+            user_id=user_id,
+            permission_id=permission_id,
+        )
+        self.permission_scope_cache[cache_key] = granted_scope
+        return granted_scope
+
     async def user_has_permission(
         self,
         user_id: int,
@@ -206,7 +228,7 @@ class AuthService:
         user_tenant_id: int | None = None,
     ) -> bool:
         normalized_required_scope = self.permission_evaluator.normalize_required_scope(required_scope)
-        granted_scope = await self.auth_repository.get_user_permission_scope(
+        granted_scope = await self._get_granted_scope(
             user_id=user_id,
             permission_id=permission_id,
         )

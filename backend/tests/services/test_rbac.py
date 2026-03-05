@@ -4,8 +4,9 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from app.exceptions.repositories import RepositoryConflictError
-from app.exceptions.services import InvalidInputError
+from app.exceptions.services import ConflictError, InvalidInputError
 from app.models.role import Role
+from app.models.role_inheritance import RoleInheritance
 from app.schemas.application.rbac import CreateRoleCommand, UpdateRoleCommand
 from app.services.rbac import RBACService
 from app.services.rbac.mappers import normalize_role_name
@@ -16,6 +17,8 @@ def _build_repository_mock() -> MagicMock:
     repository.list_roles = AsyncMock(return_value=[])
     repository.list_permissions = AsyncMock(return_value=[])
     repository.list_role_permissions = AsyncMock(return_value=[])
+    repository.list_role_inheritances = AsyncMock(return_value=[])
+    repository.list_effective_role_permissions = AsyncMock(return_value=[])
     repository.get_role = AsyncMock(return_value=None)
     repository.role_name_exists = AsyncMock(return_value=False)
     repository.create_role = AsyncMock()
@@ -27,6 +30,8 @@ def _build_repository_mock() -> MagicMock:
     repository.get_user = AsyncMock(return_value=None)
     repository.assign_user_role = AsyncMock()
     repository.remove_user_role = AsyncMock()
+    repository.assign_role_inheritance = AsyncMock()
+    repository.remove_role_inheritance = AsyncMock()
     return repository
 
 
@@ -60,7 +65,7 @@ def test_list_roles_returns_empty_without_fetching_permissions() -> None:
         assert roles == []
         repository.list_roles.assert_awaited_once_with()
         repository.list_permissions.assert_not_awaited()
-        repository.list_role_permissions.assert_not_awaited()
+        repository.list_effective_role_permissions.assert_not_awaited()
 
     asyncio.run(run_test())
 
@@ -79,6 +84,20 @@ def test_create_role_propagates_repository_conflict() -> None:
         assert "Role name already exists" in str(exc_info.value)
         assert exc_info.value.details == {"name": "ops_role"}
         repository.role_name_exists.assert_awaited_once_with("ops_role")
+
+    asyncio.run(run_test())
+
+
+def test_list_roles_uses_effective_permissions() -> None:
+    service, repository, _ = _build_service()
+    repository.list_roles.return_value = [Role(id=2, name="editor_role")]
+
+    async def run_test() -> None:
+        roles = await service.list_roles()
+
+        assert len(roles) == 1
+        repository.list_effective_role_permissions.assert_awaited_once_with(role_ids=(2,))
+        repository.list_role_permissions.assert_not_awaited()
 
     asyncio.run(run_test())
 
@@ -104,3 +123,67 @@ def test_update_role_propagates_repository_conflict() -> None:
         )
 
     asyncio.run(run_test())
+
+
+def test_assign_role_inheritance_rejects_self_inheritance() -> None:
+    service, repository, _ = _build_service()
+
+    async def run_test() -> None:
+        with pytest.raises(InvalidInputError, match="Role cannot inherit from itself"):
+            await service.assign_role_inheritance(4, 4)
+
+        repository.get_role.assert_not_awaited()
+        repository.assign_role_inheritance.assert_not_awaited()
+
+    asyncio.run(run_test())
+
+
+def test_assign_role_inheritance_rejects_cycle() -> None:
+    service, repository, _ = _build_service()
+    repository.get_role.side_effect = [
+        Role(id=2, name="child"),
+        Role(id=1, name="parent"),
+    ]
+    repository.list_role_inheritances.return_value = [RoleInheritance(role_id=1, parent_role_id=2)]
+
+    async def run_test() -> None:
+        with pytest.raises(ConflictError) as exc_info:
+            await service.assign_role_inheritance(2, 1)
+
+        assert str(exc_info.value) == "Role inheritance cycle detected"
+        assert exc_info.value.details == {"role_id": 2, "parent_role_id": 1}
+        repository.assign_role_inheritance.assert_not_awaited()
+
+    asyncio.run(run_test())
+
+
+def test_assign_role_inheritance_is_idempotent_when_link_exists() -> None:
+    service, repository, _ = _build_service()
+    repository.get_role.side_effect = [
+        Role(id=4, name="child"),
+        Role(id=2, name="parent"),
+    ]
+    repository.list_role_inheritances.return_value = [RoleInheritance(role_id=4, parent_role_id=2)]
+
+    async def run_test() -> None:
+        await service.assign_role_inheritance(4, 2)
+
+        repository.assign_role_inheritance.assert_not_awaited()
+
+    asyncio.run(run_test())
+
+
+def test_role_reaches_target_skips_already_visited_nodes() -> None:
+    service, _, _ = _build_service()
+    reaches_target = service._role_operations._role_reaches_target(  # pyright: ignore[reportPrivateUsage]
+        parents_by_role_id={
+            1: (2, 3),
+            2: (4,),
+            3: (4,),
+            4: (),
+        },
+        start_role_id=1,
+        target_role_id=5,
+    )
+
+    assert reaches_target is False

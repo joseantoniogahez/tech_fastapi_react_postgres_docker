@@ -4,6 +4,8 @@ from fastapi import APIRouter, FastAPI
 
 from app.routers import ROUTER_ATTRIBUTE, ROUTER_MODULES
 
+API_V1_PREFIX = "/v1"
+
 
 def _resolve_router_module_path(module_name: str) -> str:
     if module_name.startswith("app."):
@@ -26,4 +28,4 @@ def get_registered_routers() -> list[APIRouter]:
 
 def configure_routers(app: FastAPI) -> None:
     for router in get_registered_routers():
-        app.include_router(router)
+        app.include_router(router, prefix=API_V1_PREFIX)

@@ -14,6 +14,15 @@ RoleIdPath = Annotated[
     ),
 ]
 
+ParentRoleIdPath = Annotated[
+    int,
+    Path(
+        ge=1,
+        description="Parent role ID used for role inheritance.",
+        examples=[1],
+    ),
+]
+
 UserIdPath = Annotated[
     int,
     Path(

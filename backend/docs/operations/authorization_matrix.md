@@ -21,20 +21,22 @@ Permission policies are enforced by `app/dependencies/authorization.py` and mapp
 This table is a contract: `tests/routers/test_authorization_policy_coverage.py` verifies it
 against the live router dependency graph.
 
-| Method   | Path                                                | Permission                | Required Scope | Dependency Alias              |
-| -------- | --------------------------------------------------- | ------------------------- | -------------- | ----------------------------- |
-| `POST`   | `/books/`                                           | `books:create`            | `any`          | `BookCreateAuth`              |
-| `PUT`    | `/books/{book_id}`                                  | `books:update`            | `any`          | `BookUpdateAuth`              |
-| `DELETE` | `/books/{book_id}`                                  | `books:delete`            | `any`          | `BookDeleteAuth`              |
-| `GET`    | `/rbac/roles`                                       | `roles:manage`            | `any`          | `RBACRoleAdminAuth`           |
-| `GET`    | `/rbac/permissions`                                 | `role_permissions:manage` | `any`          | `RBACRolePermissionAdminAuth` |
-| `POST`   | `/rbac/roles`                                       | `roles:manage`            | `any`          | `RBACRoleAdminAuth`           |
-| `PUT`    | `/rbac/roles/{role_id}`                             | `roles:manage`            | `any`          | `RBACRoleAdminAuth`           |
-| `DELETE` | `/rbac/roles/{role_id}`                             | `roles:manage`            | `any`          | `RBACRoleAdminAuth`           |
-| `PUT`    | `/rbac/roles/{role_id}/permissions/{permission_id}` | `role_permissions:manage` | `any`          | `RBACRolePermissionAdminAuth` |
-| `DELETE` | `/rbac/roles/{role_id}/permissions/{permission_id}` | `role_permissions:manage` | `any`          | `RBACRolePermissionAdminAuth` |
-| `PUT`    | `/rbac/users/{user_id}/roles/{role_id}`             | `user_roles:manage`       | `any`          | `RBACUserRoleAdminAuth`       |
-| `DELETE` | `/rbac/users/{user_id}/roles/{role_id}`             | `user_roles:manage`       | `any`          | `RBACUserRoleAdminAuth`       |
+| Method   | Path                                                   | Permission                | Required Scope | Dependency Alias              |
+| -------- | ------------------------------------------------------ | ------------------------- | -------------- | ----------------------------- |
+| `POST`   | `/v1/books/`                                           | `books:create`            | `any`          | `BookCreateAuth`              |
+| `PUT`    | `/v1/books/{book_id}`                                  | `books:update`            | `any`          | `BookUpdateAuth`              |
+| `DELETE` | `/v1/books/{book_id}`                                  | `books:delete`            | `any`          | `BookDeleteAuth`              |
+| `GET`    | `/v1/rbac/roles`                                       | `roles:manage`            | `any`          | `RBACRoleAdminAuth`           |
+| `GET`    | `/v1/rbac/permissions`                                 | `role_permissions:manage` | `any`          | `RBACRolePermissionAdminAuth` |
+| `POST`   | `/v1/rbac/roles`                                       | `roles:manage`            | `any`          | `RBACRoleAdminAuth`           |
+| `PUT`    | `/v1/rbac/roles/{role_id}`                             | `roles:manage`            | `any`          | `RBACRoleAdminAuth`           |
+| `DELETE` | `/v1/rbac/roles/{role_id}`                             | `roles:manage`            | `any`          | `RBACRoleAdminAuth`           |
+| `PUT`    | `/v1/rbac/roles/{role_id}/inherits/{parent_role_id}`   | `roles:manage`            | `any`          | `RBACRoleAdminAuth`           |
+| `DELETE` | `/v1/rbac/roles/{role_id}/inherits/{parent_role_id}`   | `roles:manage`            | `any`          | `RBACRoleAdminAuth`           |
+| `PUT`    | `/v1/rbac/roles/{role_id}/permissions/{permission_id}` | `role_permissions:manage` | `any`          | `RBACRolePermissionAdminAuth` |
+| `DELETE` | `/v1/rbac/roles/{role_id}/permissions/{permission_id}` | `role_permissions:manage` | `any`          | `RBACRolePermissionAdminAuth` |
+| `PUT`    | `/v1/rbac/users/{user_id}/roles/{role_id}`             | `user_roles:manage`       | `any`          | `RBACUserRoleAdminAuth`       |
+| `DELETE` | `/v1/rbac/users/{user_id}/roles/{role_id}`             | `user_roles:manage`       | `any`          | `RBACUserRoleAdminAuth`       |
 
 ## Permission Scope Semantics
 
@@ -58,16 +60,16 @@ Canonical read-access policy definitions live in `app/authorization/catalog.py` 
 This table is a contract: `tests/routers/test_authorization_policy_coverage.py` verifies it
 against both the live router dependency graph and the catalog constants.
 
-| Method | Path                | Access Level    | Permission                |
-| ------ | ------------------- | --------------- | ------------------------- |
-| `GET`  | `/health`           | `public`        | No                        |
-| `GET`  | `/users/me`         | `authenticated` | No                        |
-| `GET`  | `/authors/`         | `public`        | No                        |
-| `GET`  | `/books/`           | `public`        | No                        |
-| `GET`  | `/books/published`  | `public`        | No                        |
-| `GET`  | `/books/{book_id}`  | `public`        | No                        |
-| `GET`  | `/rbac/roles`       | `permission`    | `roles:manage`            |
-| `GET`  | `/rbac/permissions` | `permission`    | `role_permissions:manage` |
+| Method | Path                   | Access Level    | Permission                |
+| ------ | ---------------------- | --------------- | ------------------------- |
+| `GET`  | `/v1/health`           | `public`        | No                        |
+| `GET`  | `/v1/users/me`         | `authenticated` | No                        |
+| `GET`  | `/v1/authors/`         | `public`        | No                        |
+| `GET`  | `/v1/books/`           | `public`        | No                        |
+| `GET`  | `/v1/books/published`  | `public`        | No                        |
+| `GET`  | `/v1/books/{book_id}`  | `public`        | No                        |
+| `GET`  | `/v1/rbac/roles`       | `permission`    | `roles:manage`            |
+| `GET`  | `/v1/rbac/permissions` | `permission`    | `role_permissions:manage` |
 
 ## Base Role Catalog (Bootstrap)
 
@@ -77,6 +79,13 @@ Seed source: `utils/rbac_bootstrap.py`
 | ------------- | -------------------------------------------------------------------------------------------------------------- |
 | `admin_role`  | `books:create`, `books:update`, `books:delete`, `roles:manage`, `role_permissions:manage`, `user_roles:manage` |
 | `reader_role` | none (read access behavior is controlled per endpoint)                                                         |
+
+## Role Composition Rules
+
+- Composition is represented as `child_role -> parent_role` links.
+- Effective role permissions are computed as the union of direct and inherited role grants.
+- For duplicate permission IDs across the inheritance graph, the broadest scope wins (`own < tenant < any`).
+- Cycles are rejected when creating inheritance links.
 
 ## Notes
 

@@ -88,3 +88,44 @@ def test_user_has_permission_raises_for_invalid_required_scope_before_loading_gr
         repository.get_user_permission_scope.assert_not_awaited()
 
     asyncio.run(run_test())
+
+
+def test_user_has_permission_reuses_cached_grant_for_same_permission() -> None:
+    permission_evaluator = MagicMock()
+    permission_evaluator.normalize_required_scope.side_effect = [
+        PermissionScope.TENANT,
+        PermissionScope.OWN,
+    ]
+    permission_evaluator.is_granted_scope_allowed.side_effect = [True, True]
+    permission_scope_cache: dict[tuple[int, str], str | None] = {}
+    service, repository = build_service(
+        permission_evaluator=permission_evaluator,
+        permission_scope_cache=permission_scope_cache,
+    )
+    repository.get_user_permission_scope.return_value = PermissionScope.ANY
+
+    async def run_test() -> None:
+        first_result = await service.user_has_permission(
+            user_id=5,
+            permission_id=PermissionId.BOOK_UPDATE,
+            required_scope=PermissionScope.TENANT,
+            user_tenant_id=9,
+            resource_tenant_id=9,
+        )
+        second_result = await service.user_has_permission(
+            user_id=5,
+            permission_id=PermissionId.BOOK_UPDATE,
+            required_scope=PermissionScope.OWN,
+            resource_owner_id=5,
+        )
+
+        assert first_result is True
+        assert second_result is True
+        repository.get_user_permission_scope.assert_awaited_once_with(
+            user_id=5,
+            permission_id=PermissionId.BOOK_UPDATE,
+        )
+        assert permission_scope_cache[(5, PermissionId.BOOK_UPDATE)] == PermissionScope.ANY
+        assert permission_evaluator.is_granted_scope_allowed.call_count == 2
+
+    asyncio.run(run_test())

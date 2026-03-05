@@ -1,14 +1,22 @@
 import asyncio
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from sqlalchemy.exc import IntegrityError
 
 from app.exceptions.repositories import RepositoryConflictError
 from app.models.role import Role
+from app.models.role_inheritance import RoleInheritance
 from app.models.role_permission import RolePermission
 from app.models.user_role import UserRole
 from app.repositories.rbac import RBACRepository
 from utils.testing_support.repositories import build_session_mock
+
+
+def _scalar_result(rows: list[object]) -> MagicMock:
+    result = MagicMock()
+    result.scalars.return_value.all.return_value = rows
+    return result
 
 
 def test_rbac_repository_list_role_permissions_skips_query_for_empty_role_ids() -> None:
@@ -20,6 +28,24 @@ def test_rbac_repository_list_role_permissions_skips_query_for_empty_role_ids() 
 
         assert role_permissions == []
         session.execute.assert_not_awaited()
+
+    asyncio.run(run_test())
+
+
+def test_rbac_repository_list_role_permissions_filters_query_for_role_ids() -> None:
+    session = build_session_mock()
+    repository = RBACRepository(session=session)
+    session.execute.return_value = _scalar_result(
+        [RolePermission(role_id=1, permission_id="books:create", scope="any")]
+    )
+
+    async def run_test() -> None:
+        role_permissions = await repository.list_role_permissions(role_ids=(1,))
+
+        assert len(role_permissions) == 1
+        session.execute.assert_awaited_once()
+        query = session.execute.await_args.args[0]
+        assert "role_permissions.role_id IN" in str(query)
 
     asyncio.run(run_test())
 
@@ -110,6 +136,180 @@ def test_rbac_repository_remove_user_role_returns_false_when_assignment_missing(
         assert removed is False
         session.delete.assert_not_called()
         session.flush.assert_not_awaited()
+
+    asyncio.run(run_test())
+
+
+def test_rbac_repository_list_role_inheritances_skips_query_for_empty_role_ids() -> None:
+    session = build_session_mock()
+    repository = RBACRepository(session=session)
+
+    async def run_test() -> None:
+        role_inheritances = await repository.list_role_inheritances(role_ids=())
+
+        assert role_inheritances == []
+        session.execute.assert_not_awaited()
+
+    asyncio.run(run_test())
+
+
+def test_rbac_repository_list_role_inheritances_filters_query_for_role_ids() -> None:
+    session = build_session_mock()
+    repository = RBACRepository(session=session)
+    session.execute.return_value = _scalar_result([RoleInheritance(role_id=2, parent_role_id=1)])
+
+    async def run_test() -> None:
+        role_inheritances = await repository.list_role_inheritances(role_ids=(2,))
+
+        assert len(role_inheritances) == 1
+        session.execute.assert_awaited_once()
+        query = session.execute.await_args.args[0]
+        assert "role_inheritances.role_id IN" in str(query)
+
+    asyncio.run(run_test())
+
+
+def test_rbac_repository_merge_scope_keeps_current_when_candidate_is_not_broader() -> None:
+    assert RBACRepository._merge_scope("tenant", "own") == "tenant"
+
+
+def test_rbac_repository_build_direct_permission_map_skips_invalid_scope() -> None:
+    permission_map = RBACRepository._build_direct_permission_map(
+        [
+            RolePermission(role_id=1, permission_id="books:create", scope="any"),
+            RolePermission(role_id=1, permission_id="books:delete", scope="regional"),
+        ]
+    )
+
+    assert permission_map == {
+        1: {
+            "books:create": "any",
+        }
+    }
+
+
+def test_rbac_repository_list_effective_role_permissions_returns_empty_for_empty_role_ids() -> None:
+    session = build_session_mock()
+    repository = RBACRepository(session=session)
+
+    async def run_test() -> None:
+        effective_permissions = await repository.list_effective_role_permissions(role_ids=())
+
+        assert effective_permissions == []
+
+    asyncio.run(run_test())
+
+
+def test_rbac_repository_assign_role_inheritance_returns_false_when_assignment_exists() -> None:
+    session = build_session_mock()
+    repository = RBACRepository(session=session)
+    session.get.return_value = RoleInheritance(role_id=3, parent_role_id=2)
+
+    async def run_test() -> None:
+        assigned = await repository.assign_role_inheritance(role_id=3, parent_role_id=2)
+
+        assert assigned is False
+        session.add.assert_not_called()
+        session.flush.assert_not_awaited()
+
+    asyncio.run(run_test())
+
+
+def test_rbac_repository_remove_role_inheritance_returns_false_when_assignment_missing() -> None:
+    session = build_session_mock()
+    repository = RBACRepository(session=session)
+    session.get.return_value = None
+
+    async def run_test() -> None:
+        removed = await repository.remove_role_inheritance(role_id=3, parent_role_id=2)
+
+        assert removed is False
+        session.delete.assert_not_called()
+        session.flush.assert_not_awaited()
+
+    asyncio.run(run_test())
+
+
+def test_rbac_repository_list_effective_role_permissions_includes_inherited_permissions() -> None:
+    session = build_session_mock()
+    repository = RBACRepository(session=session)
+    direct_permissions = [
+        RolePermission(role_id=2, permission_id="books:create", scope="own"),
+        RolePermission(role_id=1, permission_id="books:create", scope="tenant"),
+        RolePermission(role_id=1, permission_id="books:delete", scope="any"),
+    ]
+    inheritances = [RoleInheritance(role_id=2, parent_role_id=1)]
+
+    async def run_test() -> None:
+        with (
+            patch.object(repository, "list_role_permissions", AsyncMock(return_value=direct_permissions)),
+            patch.object(repository, "list_role_inheritances", AsyncMock(return_value=inheritances)),
+        ):
+            effective_permissions = await repository.list_effective_role_permissions(role_ids=(2,))
+
+        by_permission = {permission.permission_id: permission.scope for permission in effective_permissions}
+        assert by_permission == {
+            "books:create": "tenant",
+            "books:delete": "any",
+        }
+        assert all(permission.role_id == 2 for permission in effective_permissions)
+
+    asyncio.run(run_test())
+
+
+def test_rbac_repository_list_effective_role_permissions_handles_cycles() -> None:
+    session = build_session_mock()
+    repository = RBACRepository(session=session)
+    direct_permissions = [
+        RolePermission(role_id=1, permission_id="books:create", scope="own"),
+        RolePermission(role_id=2, permission_id="books:update", scope="tenant"),
+    ]
+    inheritances = [
+        RoleInheritance(role_id=1, parent_role_id=2),
+        RoleInheritance(role_id=2, parent_role_id=1),
+    ]
+
+    async def run_test() -> None:
+        with (
+            patch.object(repository, "list_role_permissions", AsyncMock(return_value=direct_permissions)),
+            patch.object(repository, "list_role_inheritances", AsyncMock(return_value=inheritances)),
+        ):
+            effective_permissions = await repository.list_effective_role_permissions(role_ids=(1,))
+
+        by_permission = {permission.permission_id: permission.scope for permission in effective_permissions}
+        assert by_permission == {
+            "books:create": "own",
+            "books:update": "tenant",
+        }
+
+    asyncio.run(run_test())
+
+
+def test_rbac_repository_list_effective_role_permissions_without_role_filter_uses_all_referenced_roles() -> None:
+    session = build_session_mock()
+    repository = RBACRepository(session=session)
+    direct_permissions = [
+        RolePermission(role_id=2, permission_id="books:create", scope="tenant"),
+    ]
+    inheritances = [
+        RoleInheritance(role_id=1, parent_role_id=2),
+    ]
+
+    async def run_test() -> None:
+        with (
+            patch.object(repository, "list_role_permissions", AsyncMock(return_value=direct_permissions)),
+            patch.object(repository, "list_role_inheritances", AsyncMock(return_value=inheritances)),
+        ):
+            effective_permissions = await repository.list_effective_role_permissions()
+
+        grouped: dict[int, dict[str, str]] = {}
+        for permission in effective_permissions:
+            grouped.setdefault(permission.role_id, {})[permission.permission_id] = permission.scope
+
+        assert grouped == {
+            1: {"books:create": "tenant"},
+            2: {"books:create": "tenant"},
+        }
 
     asyncio.run(run_test())
 

@@ -92,6 +92,8 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
 API docs: `http://localhost:8000/docs`
 
+Runtime API namespace: `/v1` (for example `POST /v1/token`).
+
 ## Migrations
 
 From `backend/`:

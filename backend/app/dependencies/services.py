@@ -1,6 +1,6 @@
-from typing import Annotated
+from typing import Annotated, cast
 
-from fastapi import Depends
+from fastapi import Depends, Request
 
 from app.const.settings import AuthSettings
 from app.services.auth import AuthService, AuthServicePort
@@ -17,6 +17,22 @@ from .repositories import (
     BookRepositoryDependency,
     RBACRepositoryDependency,
 )
+
+PermissionScopeCache = dict[tuple[int, str], str | None]
+_PERMISSION_SCOPE_CACHE_STATE_KEY = "_permission_scope_cache"
+
+
+async def get_request_permission_scope_cache(request: Request) -> PermissionScopeCache:
+    cache = getattr(request.state, _PERMISSION_SCOPE_CACHE_STATE_KEY, None)
+    if isinstance(cache, dict):
+        return cast(PermissionScopeCache, cache)
+
+    request_scope_cache: PermissionScopeCache = {}
+    setattr(request.state, _PERMISSION_SCOPE_CACHE_STATE_KEY, request_scope_cache)
+    return request_scope_cache
+
+
+PermissionScopeCacheDependency = Annotated[PermissionScopeCache, Depends(get_request_permission_scope_cache)]
 
 
 async def get_author_service(
@@ -71,6 +87,7 @@ async def get_auth_service(
     token_service: TokenServiceDependency,
     password_service: PasswordServiceDependency,
     unit_of_work: UnitOfWorkDependency,
+    permission_scope_cache: PermissionScopeCacheDependency,
 ) -> AuthServicePort:
     return AuthService(
         auth_repository=auth_repository,
@@ -78,6 +95,7 @@ async def get_auth_service(
         auth_settings=auth_settings,
         token_service=token_service,
         password_service=password_service,
+        permission_scope_cache=permission_scope_cache,
     )
 
 

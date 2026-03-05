@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.authorization import PERMISSION_SCOPE_RANK
 from app.exceptions.repositories import RepositoryConflictError, RepositoryInternalError
+from app.models.role_inheritance import RoleInheritance
 from app.models.role_permission import RolePermission
 from app.models.user import User
 from app.models.user_role import UserRole
@@ -52,11 +53,23 @@ class AuthRepository(BaseRepository[User]):
                 ) from exc
             raise RepositoryInternalError() from exc
 
-    async def get_rbac_version(self, user_id: int) -> str:
-        query = (
-            select(RolePermission.permission_id, RolePermission.scope)
-            .join(UserRole, RolePermission.role_id == UserRole.role_id)
+    @staticmethod
+    def _build_effective_roles_cte(user_id: int):
+        effective_roles = (
+            select(UserRole.role_id.label("role_id"))
             .where(UserRole.user_id == user_id)
+            .cte(name="effective_roles", recursive=True)
+        )
+        parent_roles = select(RoleInheritance.parent_role_id.label("role_id")).join(
+            effective_roles,
+            RoleInheritance.role_id == effective_roles.c.role_id,
+        )
+        return effective_roles.union(parent_roles)
+
+    async def get_rbac_version(self, user_id: int) -> str:
+        effective_roles = self._build_effective_roles_cte(user_id)
+        query = select(RolePermission.permission_id, RolePermission.scope).join(
+            effective_roles, RolePermission.role_id == effective_roles.c.role_id
         )
         result = await self.session.execute(query)
 
@@ -75,11 +88,11 @@ class AuthRepository(BaseRepository[User]):
         return hashlib.sha256(serialized_scopes.encode("utf-8")).hexdigest()
 
     async def get_user_permission_scope(self, user_id: int, permission_id: str) -> str | None:
+        effective_roles = self._build_effective_roles_cte(user_id)
         query = (
             select(RolePermission.scope)
-            .join(UserRole, RolePermission.role_id == UserRole.role_id)
+            .join(effective_roles, RolePermission.role_id == effective_roles.c.role_id)
             .where(
-                UserRole.user_id == user_id,
                 RolePermission.permission_id == permission_id,
             )
         )

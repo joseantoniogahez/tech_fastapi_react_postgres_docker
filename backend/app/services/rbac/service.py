@@ -2,6 +2,7 @@ from typing import Protocol
 
 from app.models.permission import Permission
 from app.models.role import Role
+from app.models.role_inheritance import RoleInheritance
 from app.models.role_permission import RolePermission
 from app.models.user import User
 from app.schemas.application.rbac import (
@@ -24,6 +25,18 @@ class RBACRepositoryPort(Protocol):
     async def list_permissions(self) -> list[Permission]: ...
 
     async def list_role_permissions(
+        self,
+        *,
+        role_ids: tuple[int, ...] | None = None,
+    ) -> list[RolePermission]: ...
+
+    async def list_role_inheritances(
+        self,
+        *,
+        role_ids: tuple[int, ...] | None = None,
+    ) -> list[RoleInheritance]: ...
+
+    async def list_effective_role_permissions(
         self,
         *,
         role_ids: tuple[int, ...] | None = None,
@@ -57,6 +70,10 @@ class RBACRepositoryPort(Protocol):
 
     async def remove_user_role(self, *, user_id: int, role_id: int) -> bool: ...
 
+    async def assign_role_inheritance(self, *, role_id: int, parent_role_id: int) -> bool: ...
+
+    async def remove_role_inheritance(self, *, role_id: int, parent_role_id: int) -> bool: ...
+
 
 class RBACServicePort(Protocol):
     async def list_roles(self) -> list[RoleResult]: ...
@@ -77,6 +94,10 @@ class RBACServicePort(Protocol):
     ) -> RolePermissionResult: ...
 
     async def remove_role_permission(self, role_id: int, permission_id: str) -> None: ...
+
+    async def assign_role_inheritance(self, role_id: int, parent_role_id: int) -> None: ...
+
+    async def remove_role_inheritance(self, role_id: int, parent_role_id: int) -> None: ...
 
     async def assign_user_role(self, user_id: int, role_id: int) -> UserRoleAssignmentResult: ...
 
@@ -130,6 +151,12 @@ class RBACService:
 
     async def remove_role_permission(self, role_id: int, permission_id: str) -> None:
         await self._role_operations.remove_role_permission(role_id, permission_id)
+
+    async def assign_role_inheritance(self, role_id: int, parent_role_id: int) -> None:
+        await self._role_operations.assign_role_inheritance(role_id, parent_role_id)
+
+    async def remove_role_inheritance(self, role_id: int, parent_role_id: int) -> None:
+        await self._role_operations.remove_role_inheritance(role_id, parent_role_id)
 
     async def assign_user_role(self, user_id: int, role_id: int) -> UserRoleAssignmentResult:
         return await self._user_role_assignments.assign_user_role(user_id, role_id)

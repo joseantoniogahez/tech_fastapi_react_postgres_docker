@@ -6,13 +6,16 @@ from app.openapi.rbac import (
     ASSIGN_USER_ROLE_DOC,
     CREATE_ROLE_DOC,
     DELETE_ROLE_DOC,
+    DELETE_ROLE_INHERITANCE_DOC,
     DELETE_ROLE_PERMISSION_DOC,
     GET_PERMISSIONS_DOC,
     GET_ROLES_DOC,
     REMOVE_USER_ROLE_DOC,
     UPDATE_ROLE_DOC,
+    UPSERT_ROLE_INHERITANCE_DOC,
     UPSERT_ROLE_PERMISSION_DOC,
     CreateRolePayload,
+    ParentRoleIdPath,
     PermissionIdPath,
     RoleIdPath,
     SetRolePermissionPayload,
@@ -83,6 +86,32 @@ async def delete_role(
     role_id: RoleIdPath,
 ) -> None:
     await rbac_service.delete_role(role_id)
+
+
+@router.put(
+    "/roles/{role_id}/inherits/{parent_role_id}",
+    **UPSERT_ROLE_INHERITANCE_DOC,
+)
+async def assign_role_inheritance(
+    rbac_service: RBACServiceDependency,
+    _authorized_user: RBACRoleAdminAuth,
+    role_id: RoleIdPath,
+    parent_role_id: ParentRoleIdPath,
+) -> None:
+    await rbac_service.assign_role_inheritance(role_id, parent_role_id)
+
+
+@router.delete(
+    "/roles/{role_id}/inherits/{parent_role_id}",
+    **DELETE_ROLE_INHERITANCE_DOC,
+)
+async def remove_role_inheritance(
+    rbac_service: RBACServiceDependency,
+    _authorized_user: RBACRoleAdminAuth,
+    role_id: RoleIdPath,
+    parent_role_id: ParentRoleIdPath,
+) -> None:
+    await rbac_service.remove_role_inheritance(role_id, parent_role_id)
 
 
 @router.put(

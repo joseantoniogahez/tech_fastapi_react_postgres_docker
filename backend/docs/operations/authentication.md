@@ -2,10 +2,10 @@
 
 ## Endpoints
 
-- `POST /token`
-- `POST /users/register`
-- `GET /users/me`
-- `PATCH /users/me`
+- `POST /v1/token`
+- `POST /v1/users/register`
+- `GET /v1/users/me`
+- `PATCH /v1/users/me`
 
 ## Bootstrap Admin User (Fresh Environments)
 
@@ -24,13 +24,13 @@ This command:
 ## Authentication Flow
 
 1. Run RBAC bootstrap to create/sync base auth data (including admin user when missing).
-1. Exchange credentials for a bearer token with `POST /token`.
+1. Exchange credentials for a bearer token with `POST /v1/token`.
 1. Call protected endpoints with `Authorization: Bearer <access_token>`.
 
 Access tokens now include:
 
 - standard claims `sub`, `iss`, `aud`, `iat`, `exp`, and `jti`,
-- a custom `rbac_version` claim derived from the caller's current effective permissions.
+- a custom `rbac_version` claim derived from the caller's current effective permissions (including inherited roles).
 
 In plain terms:
 
@@ -43,7 +43,7 @@ In plain terms:
 
 `rbac_version` is how the API handles early token invalidation after RBAC changes.
 
-- At login time, the backend calculates a stable hash of the user's current effective permissions.
+- At login time, the backend calculates a stable hash of the user's current effective permissions (direct + inherited roles).
 - That hash is stored inside the token as `rbac_version`.
 - On each authenticated request, the backend calculates the current hash again.
 - If the stored value and the current value do not match, the token is rejected.
@@ -65,13 +65,14 @@ Evaluation is deterministic and handled in `AuthService.user_has_permission(...)
 - Required `tenant` accepts granted `tenant` (with tenant match) or `any`.
 - Required `own` accepts granted `own` (owner match), granted `tenant` (owner or tenant match), or `any`.
 - Missing required context (`resource_owner_id` / `resource_tenant_id`) resolves to deny.
+- Within a single HTTP request, permission grant lookups are memoized by `(user_id, permission_id)` to avoid repeated repository reads when multiple dependencies enforce the same permission.
 
-## `POST /token` Example
+## `POST /v1/token` Example
 
 Success:
 
 ```bash
-curl -X POST http://localhost:8000/token \
+curl -X POST http://localhost:8000/v1/token \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "username=admin&password=<admin_password>"
 ```
@@ -88,7 +89,7 @@ The JWT payload contains `sub`, `iss`, `aud`, `iat`, `exp`, `jti`, and `rbac_ver
 Invalid credentials (`401 Unauthorized`):
 
 ```bash
-curl -X POST http://localhost:8000/token \
+curl -X POST http://localhost:8000/v1/token \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "username=admin&password=wrong-password"
 ```
@@ -101,10 +102,10 @@ curl -X POST http://localhost:8000/token \
 }
 ```
 
-## Protected Endpoint Example (`GET /users/me`)
+## Protected Endpoint Example (`GET /v1/users/me`)
 
 ```bash
-curl -X GET http://localhost:8000/users/me \
+curl -X GET http://localhost:8000/v1/users/me \
   -H "Authorization: Bearer <access_token>"
 ```
 
@@ -131,7 +132,7 @@ Password rules (registration and password update):
 - At least one number.
 - Cannot contain the username.
 
-`PATCH /users/me` rules:
+`PATCH /v1/users/me` rules:
 
 - At least one updatable field must be provided.
 - `new_password` requires `current_password`.
@@ -140,7 +141,7 @@ Password rules (registration and password update):
 
 Transactional behavior:
 
-- `POST /users/register` and `PATCH /users/me` run inside Unit of Work transaction scopes.
+- `POST /v1/users/register` and `PATCH /v1/users/me` run inside Unit of Work transaction scopes.
 - On failure, pending account writes are rolled back.
 - See `../architecture/unit_of_work.md` for transaction details.
 

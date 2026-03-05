@@ -247,12 +247,12 @@ def test_get_registered_routers_loads_catalog_modules() -> None:
 def test_app_registers_routes_from_dynamic_catalog() -> None:
     paths = {route.path for route in app.routes if isinstance(route, APIRoute)}
     expected_paths = {
-        "/health",
-        "/token",
-        "/users/me",
-        "/users/register",
-        "/books/",
-        "/authors/",
+        "/v1/health",
+        "/v1/token",
+        "/v1/users/me",
+        "/v1/users/register",
+        "/v1/books/",
+        "/v1/authors/",
     }
     assert expected_paths.issubset(paths)
 

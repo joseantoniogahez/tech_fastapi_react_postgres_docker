@@ -237,6 +237,92 @@ DELETE_ROLE_DOC: dict[str, Any] = {
     },
 }
 
+UPSERT_ROLE_INHERITANCE_DOC: dict[str, Any] = {
+    "status_code": status.HTTP_204_NO_CONTENT,
+    "summary": "Assign role inheritance",
+    "description": (f"Attach a parent role to a child role. Requires `{PermissionId.ROLE_MANAGE}`."),
+    "response_description": "Role inheritance assigned.",
+    "responses": {
+        status.HTTP_204_NO_CONTENT: {
+            "description": "Role inheritance assigned (or already present).",
+        },
+        status.HTTP_400_BAD_REQUEST: build_error_response(
+            description="Invalid role IDs or self-inheritance.",
+            example={
+                "detail": "Role cannot inherit from itself",
+                "status": 400,
+                "code": "invalid_input",
+            },
+        ),
+        status.HTTP_401_UNAUTHORIZED: _unauthorized_response(),
+        status.HTTP_403_FORBIDDEN: _forbidden_response(
+            PermissionId.ROLE_MANAGE,
+            "User lacks permission to manage role inheritance.",
+        ),
+        status.HTTP_404_NOT_FOUND: build_error_response(
+            description="Child role or parent role does not exist.",
+            example={
+                "detail": "Role 999 not found",
+                "status": 404,
+                "code": "not_found",
+                "meta": {"id": 999},
+            },
+        ),
+        status.HTTP_409_CONFLICT: build_error_response(
+            description="Inheritance assignment would introduce a cycle.",
+            example={
+                "detail": "Role inheritance cycle detected",
+                "status": 409,
+                "code": "conflict",
+                "meta": {"role_id": 2, "parent_role_id": 1},
+            },
+        ),
+        status.HTTP_500_INTERNAL_SERVER_ERROR: build_error_response(
+            description="Unhandled internal server error.",
+            example=INTERNAL_ERROR_EXAMPLE,
+        ),
+    },
+}
+
+DELETE_ROLE_INHERITANCE_DOC: dict[str, Any] = {
+    "status_code": status.HTTP_204_NO_CONTENT,
+    "summary": "Remove role inheritance",
+    "description": (f"Detach a parent role from a child role. Requires `{PermissionId.ROLE_MANAGE}`."),
+    "response_description": "Role inheritance removed.",
+    "responses": {
+        status.HTTP_204_NO_CONTENT: {
+            "description": "Role inheritance removed (or was already absent).",
+        },
+        status.HTTP_400_BAD_REQUEST: build_error_response(
+            description="Invalid role IDs.",
+            example={
+                "detail": "Request validation error",
+                "status": 400,
+                "code": "invalid_input",
+                "meta": [{"loc": ["path", "role_id"], "msg": "Input should be greater than or equal to 1"}],
+            },
+        ),
+        status.HTTP_401_UNAUTHORIZED: _unauthorized_response(),
+        status.HTTP_403_FORBIDDEN: _forbidden_response(
+            PermissionId.ROLE_MANAGE,
+            "User lacks permission to manage role inheritance.",
+        ),
+        status.HTTP_404_NOT_FOUND: build_error_response(
+            description="Child role or parent role does not exist.",
+            example={
+                "detail": "Role 999 not found",
+                "status": 404,
+                "code": "not_found",
+                "meta": {"id": 999},
+            },
+        ),
+        status.HTTP_500_INTERNAL_SERVER_ERROR: build_error_response(
+            description="Unhandled internal server error.",
+            example=INTERNAL_ERROR_EXAMPLE,
+        ),
+    },
+}
+
 UPSERT_ROLE_PERMISSION_DOC: dict[str, Any] = {
     "summary": "Assign role permission",
     "description": f"Assign or update a permission grant on a role. Requires `{PermissionId.ROLE_PERMISSION_MANAGE}`.",
