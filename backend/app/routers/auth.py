@@ -32,12 +32,12 @@ async def register_user(
     register_data: RegisterUserPayload,
 ) -> AuthenticatedUserResponse:
     user = await auth_service.register(RegisterUserCommand.from_api(register_data))
-    return AuthenticatedUserResponse.model_validate(user)
+    return AuthenticatedUserResponse.from_application(user)
 
 
 @router.get("/users/me", response_model=AuthenticatedUserResponse, **READ_CURRENT_USER_DOC)
 async def read_current_user(current_user: AuthenticatedReadAccessDependency) -> AuthenticatedUserResponse:
-    return AuthenticatedUserResponse.model_validate(current_user)
+    return AuthenticatedUserResponse.from_application(current_user)
 
 
 @router.patch("/users/me", response_model=AuthenticatedUserResponse, **UPDATE_CURRENT_USER_DOC)
@@ -50,4 +50,4 @@ async def update_current_user(
         current_user=current_user,
         update_data=UpdateCurrentUserCommand.from_api(update_data),
     )
-    return AuthenticatedUserResponse.model_validate(updated_user)
+    return AuthenticatedUserResponse.from_application(updated_user)

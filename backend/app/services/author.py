@@ -1,8 +1,9 @@
 from typing import Protocol
 
 from app.common.pagination import DEFAULT_LIST_LIMIT
+from app.common.sorting import AuthorSort
 from app.models.author import Author
-from app.repositories.author import AuthorSort
+from app.schemas.application.author import AuthorResult
 from app.services import UnitOfWorkPort
 
 
@@ -27,9 +28,9 @@ class AuthorServicePort(Protocol):
         offset: int = 0,
         limit: int = DEFAULT_LIST_LIMIT,
         sort: AuthorSort = "name",
-    ) -> list[Author]: ...
+    ) -> list[AuthorResult]: ...
 
-    async def get_by_id_or_create_by_name(self, author_id: int | None, name: str) -> Author: ...
+    async def get_by_id_or_create_by_name(self, author_id: int | None, name: str) -> AuthorResult: ...
 
 
 class AuthorService:
@@ -43,14 +44,16 @@ class AuthorService:
         offset: int = 0,
         limit: int = DEFAULT_LIST_LIMIT,
         sort: AuthorSort = "name",
-    ) -> list[Author]:
-        return await self.author_repository.list_ordered(offset=offset, limit=limit, sort=sort)
+    ) -> list[AuthorResult]:
+        authors = await self.author_repository.list_ordered(offset=offset, limit=limit, sort=sort)
+        return AuthorResult.from_domain_list(authors)
 
-    async def get_by_id_or_create_by_name(self, author_id: int | None, name: str) -> Author:
+    async def get_by_id_or_create_by_name(self, author_id: int | None, name: str) -> AuthorResult:
         async with self.unit_of_work:
             if author_id is not None:
                 author = await self.author_repository.get(author_id)
                 if author is not None:
-                    return author
+                    return AuthorResult.from_domain(author)
 
-            return await self.author_repository.get_or_create_by_name(name=name)
+            author = await self.author_repository.get_or_create_by_name(name=name)
+            return AuthorResult.from_domain(author)

@@ -106,7 +106,10 @@ def test_auth_settings_rejects_blank_jwt_algorithm() -> None:
 @pytest.mark.parametrize("field_name", ["JWT_ISSUER", "JWT_AUDIENCE"])
 def test_auth_settings_rejects_blank_jwt_identity_claim(field_name: str) -> None:
     with pytest.raises(ValidationError):
-        AuthSettings(**{field_name: "   "})
+        if field_name == "JWT_ISSUER":
+            AuthSettings(JWT_ISSUER="   ")
+        else:
+            AuthSettings(JWT_AUDIENCE="   ")
 
 
 def test_app_lifespan_logs_startup_and_shutdown() -> None:

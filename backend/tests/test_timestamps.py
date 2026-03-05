@@ -1,5 +1,5 @@
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import Any, Protocol
 
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import DateTime
@@ -12,7 +12,11 @@ from app.models.role import Role
 from app.models.user import User
 
 
-def _timestamp_columns(model: type) -> tuple[Any, Any]:
+class _ModelWithTable(Protocol):
+    __table__: Any
+
+
+def _timestamp_columns(model: type[_ModelWithTable]) -> tuple[Any, Any]:
     table: Any = model.__table__
     return table.c.created_at, table.c.updated_at
 

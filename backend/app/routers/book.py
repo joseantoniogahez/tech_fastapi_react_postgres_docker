@@ -39,7 +39,7 @@ async def get_books(
     sort: BookSortQuery = "id",
 ) -> list[BookResponse]:
     books = await book_service.get_all(author_id=author_id, offset=offset, limit=limit, sort=sort)
-    return [BookResponse.model_validate(book) for book in books]
+    return [BookResponse.from_application(book) for book in books]
 
 
 @router.get("/published", response_model=list[BookResponse], **GET_PUBLISHED_BOOKS_DOC)
@@ -48,7 +48,7 @@ async def get_published_books(
     _read_access: PublicReadAccessDependency,
 ) -> list[BookResponse]:
     books = await book_service.get_published()
-    return [BookResponse.model_validate(book) for book in books]
+    return [BookResponse.from_application(book) for book in books]
 
 
 @router.get("/{book_id}", response_model=BookResponse, **GET_BOOK_DOC)
@@ -60,7 +60,7 @@ async def get_book(
     book = await book_service.get(book_id)
     if book is None:
         raise NotFoundError(message=f"Book {book_id} not found", details={"book_id": book_id})
-    return BookResponse.model_validate(book)
+    return BookResponse.from_application(book)
 
 
 @router.post("/", response_model=BookResponse, **CREATE_BOOK_DOC)
@@ -70,7 +70,7 @@ async def create_book(
     book_data: CreateBookPayload,
 ) -> BookResponse:
     book = await book_service.create(BookMutationCommand.from_api(book_data))
-    return BookResponse.model_validate(book)
+    return BookResponse.from_application(book)
 
 
 @router.put("/{book_id}", response_model=BookResponse, **UPDATE_BOOK_DOC)
@@ -83,7 +83,7 @@ async def update_book(
     book = await book_service.update(book_id, BookMutationCommand.from_api(book_data))
     if book is None:
         raise NotFoundError(message=f"Book {book_id} not found", details={"book_id": book_id})
-    return BookResponse.model_validate(book)
+    return BookResponse.from_application(book)
 
 
 @router.delete("/{book_id}", **DELETE_BOOK_DOC)

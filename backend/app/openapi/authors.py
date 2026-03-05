@@ -3,8 +3,8 @@ from typing import Annotated, Any
 from fastapi import Query, status
 
 from app.common.pagination import DEFAULT_LIST_LIMIT, MAX_LIST_LIMIT
+from app.common.sorting import AuthorSort
 from app.openapi.common import INTERNAL_ERROR_EXAMPLE, build_error_response
-from app.repositories.author import AuthorSort
 
 OffsetQuery = Annotated[
     int,

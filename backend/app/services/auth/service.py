@@ -4,7 +4,13 @@ from app.authorization import PermissionScope
 from app.const.settings import AuthSettings
 from app.exceptions.services import ConflictError, ForbiddenError, InvalidInputError, UnauthorizedError
 from app.models.user import User
-from app.schemas.application.auth import AccessTokenResult, LoginCommand, RegisterUserCommand, UpdateCurrentUserCommand
+from app.schemas.application.auth import (
+    AccessTokenResult,
+    AuthenticatedUserResult,
+    LoginCommand,
+    RegisterUserCommand,
+    UpdateCurrentUserCommand,
+)
 from app.security.policies import (
     USERNAME_ALLOWED_DESCRIPTION,
     PasswordPolicyError,
@@ -18,6 +24,8 @@ from app.services import UnitOfWorkPort
 from app.services.password_service import Argon2PasswordService, PasswordServicePort
 from app.services.permission_evaluator import PermissionEvaluator, PermissionEvaluatorPort
 from app.services.token_service import JwtTokenService, TokenServicePort
+
+from .profile_updates import AuthProfileUpdates
 
 
 class AuthRepositoryPort(Protocol):
@@ -39,9 +47,13 @@ class AuthRepositoryPort(Protocol):
 class AuthServicePort(Protocol):
     async def login(self, credentials: LoginCommand) -> AccessTokenResult: ...
 
-    async def register(self, registration: RegisterUserCommand) -> User: ...
+    async def register(self, registration: RegisterUserCommand) -> AuthenticatedUserResult: ...
 
-    async def update_current_user(self, current_user: User, update_data: UpdateCurrentUserCommand) -> User: ...
+    async def update_current_user(
+        self,
+        current_user: User,
+        update_data: UpdateCurrentUserCommand,
+    ) -> AuthenticatedUserResult: ...
 
     async def get_user_from_token(self, token: str) -> User: ...
 
@@ -73,6 +85,13 @@ class AuthService:
         self.permission_evaluator = permission_evaluator or PermissionEvaluator()
         self.token_service = token_service or JwtTokenService(settings)
         self.password_service = password_service or Argon2PasswordService()
+        self._profile_updates = AuthProfileUpdates(
+            auth_repository=auth_repository,
+            unit_of_work=unit_of_work,
+            password_service=self.password_service,
+            normalize_username=self._normalize_username,
+            validate_password_policy=self._validate_password_policy,
+        )
 
     def _normalize_username(self, username: str) -> str:
         try:
@@ -117,7 +136,7 @@ class AuthService:
         )
         return AccessTokenResult(access_token=access_token)
 
-    async def register(self, registration: RegisterUserCommand) -> User:
+    async def register(self, registration: RegisterUserCommand) -> AuthenticatedUserResult:
         username = self._normalize_username(registration.username)
         self._validate_password_policy(registration.password, username)
 
@@ -134,36 +153,13 @@ class AuthService:
                 disabled=False,
             )
 
-        return user
+        return AuthenticatedUserResult.from_domain(user)
 
     def _validate_update_request(self, update_data: UpdateCurrentUserCommand) -> None:
-        if update_data.current_password and update_data.new_password is None:
-            raise InvalidInputError(message="new_password is required when current_password is provided")
-
-        if update_data.new_password and update_data.current_password is None:
-            raise InvalidInputError(message="current_password is required to update password")
-
-        if update_data.username is None and update_data.new_password is None:
-            raise InvalidInputError(message="At least one field must be provided to update the user")
+        self._profile_updates.validate_update_request(update_data)
 
     async def _build_username_change(self, current_user: User, username: str | None) -> tuple[str, dict[str, str]]:
-        if username is None:
-            return current_user.username, {}
-
-        normalized_username = self._normalize_username(username)
-        if normalized_username == current_user.username:
-            return normalized_username, {}
-
-        if await self.auth_repository.username_exists(
-            normalized_username,
-            exclude_user_id=current_user.id,
-        ):
-            raise ConflictError(
-                message="Username already exists",
-                details={"username": normalized_username},
-            )
-
-        return normalized_username, {"username": normalized_username}
+        return await self._profile_updates.build_username_change(current_user, username)
 
     def _build_password_change(
         self,
@@ -171,34 +167,18 @@ class AuthService:
         update_data: UpdateCurrentUserCommand,
         normalized_username: str,
     ) -> dict[str, str]:
-        if update_data.new_password is None:
-            return {}
-
-        assert update_data.current_password is not None
-        if not self.password_service.verify_password(update_data.current_password, current_user.hashed_password):
-            raise UnauthorizedError(message="Current password is invalid")
-
-        if self.password_service.verify_password(update_data.new_password, current_user.hashed_password):
-            raise InvalidInputError(message="New password must be different from current password")
-
-        self._validate_password_policy(update_data.new_password, normalized_username)
-        return {"hashed_password": self.password_service.hash_password(update_data.new_password)}
+        return self._profile_updates.build_password_change(current_user, update_data, normalized_username)
 
     async def _persist_user_changes(self, current_user: User, changes: dict[str, str]) -> User:
-        return await self.auth_repository.update(current_user, **changes)
+        return await self._profile_updates.persist_user_changes(current_user, changes)
 
-    async def update_current_user(self, current_user: User, update_data: UpdateCurrentUserCommand) -> User:
-        self._validate_update_request(update_data)
-        async with self.unit_of_work:
-            normalized_username, username_change = await self._build_username_change(current_user, update_data.username)
-            password_change = self._build_password_change(current_user, update_data, normalized_username)
-
-            changes = {**username_change, **password_change}
-            if not changes:
-                raise InvalidInputError(message="No changes detected")
-
-            updated_user = await self._persist_user_changes(current_user, changes)
-        return updated_user
+    async def update_current_user(
+        self,
+        current_user: User,
+        update_data: UpdateCurrentUserCommand,
+    ) -> AuthenticatedUserResult:
+        updated_user = await self._profile_updates.update_current_user(current_user, update_data)
+        return AuthenticatedUserResult.from_domain(updated_user)
 
     async def get_user_from_token(self, token: str) -> User:
         payload = self.token_service.decode_access_token(token)

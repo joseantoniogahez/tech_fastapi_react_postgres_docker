@@ -1,4 +1,4 @@
-from pydantic import Field
+from pydantic import ConfigDict, Field
 
 from .base import ApplicationSchema
 
@@ -22,6 +22,14 @@ class UpdateCurrentUserCommand(ApplicationSchema):
 class AccessTokenResult(ApplicationSchema):
     access_token: str
     token_type: str = "bearer"
+
+
+class AuthenticatedUserResult(ApplicationSchema):
+    id: int
+    username: str
+    disabled: bool
+
+    model_config = ConfigDict(frozen=True, from_attributes=True)
 
 
 class AccessTokenPayload(ApplicationSchema):

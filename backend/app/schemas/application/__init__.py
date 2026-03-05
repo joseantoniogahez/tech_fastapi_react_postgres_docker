@@ -1,5 +1,13 @@
-from .auth import AccessTokenPayload, AccessTokenResult, LoginCommand, RegisterUserCommand, UpdateCurrentUserCommand
-from .book import BookMutationCommand
+from .auth import (
+    AccessTokenPayload,
+    AccessTokenResult,
+    AuthenticatedUserResult,
+    LoginCommand,
+    RegisterUserCommand,
+    UpdateCurrentUserCommand,
+)
+from .author import AuthorResult
+from .book import BookMutationCommand, BookResult
 from .rbac import (
     CreateRoleCommand,
     PermissionResult,

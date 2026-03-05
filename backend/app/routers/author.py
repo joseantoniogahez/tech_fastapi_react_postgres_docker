@@ -21,4 +21,4 @@ async def get_authors(
     sort: AuthorSortQuery = "name",
 ) -> list[AuthorResponse]:
     authors = await author_service.get_all(offset=offset, limit=limit, sort=sort)
-    return [AuthorResponse.model_validate(author) for author in authors]
+    return [AuthorResponse.from_application(author) for author in authors]

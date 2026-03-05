@@ -81,7 +81,7 @@ Seed source: `utils/rbac_bootstrap.py`
 ## Notes
 
 - Permission checks are evaluated after bearer token validation.
-- Scope checks are evaluated in `app/services/auth.py` via `user_has_permission`.
+- Scope checks are evaluated in `app/services/auth/service.py` via `user_has_permission`.
 - Router-level scope/context wiring is defined in `app/dependencies/authorization.py`.
 - Read endpoints are classified as exactly one of `public`, `authenticated`, or `permission`.
 - Missing permission returns `403 forbidden` with `meta.permission_id`.

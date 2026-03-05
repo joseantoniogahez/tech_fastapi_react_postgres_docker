@@ -11,3 +11,13 @@ class ApplicationSchema(BaseModel):
         if isinstance(payload, BaseModel):
             return cls.model_validate(payload.model_dump())
         return cls.model_validate(payload)
+
+    @classmethod
+    def from_domain(cls, payload: Any) -> Self:
+        if isinstance(payload, BaseModel):
+            return cls.model_validate(payload.model_dump())
+        return cls.model_validate(payload)
+
+    @classmethod
+    def from_domain_list(cls, payloads: list[Any]) -> list[Self]:
+        return [cls.from_domain(payload) for payload in payloads]

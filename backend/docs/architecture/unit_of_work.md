@@ -19,7 +19,7 @@ With UoW, a use case either:
 - Service usage:
   - `app/services/book.py`
   - `app/services/author.py`
-  - `app/services/auth.py`
+  - `app/services/auth/service.py`
   - `app/services/rbac/operations.py`
 
 ## Core behavior

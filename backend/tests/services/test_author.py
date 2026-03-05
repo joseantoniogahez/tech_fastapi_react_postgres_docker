@@ -3,6 +3,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 from app.common.pagination import DEFAULT_LIST_LIMIT
 from app.models.author import Author
+from app.schemas.application.author import AuthorResult
 from app.services.author import AuthorService
 
 
@@ -25,8 +26,9 @@ def _build_service() -> tuple[AuthorService, MagicMock, MagicMock]:
 
 def test_get_all_delegates_to_list_ordered() -> None:
     service, author_repository, unit_of_work = _build_service()
-    expected = [Author(id=1, name="Isaac Asimov"), Author(id=2, name="Frank Herbert")]
-    author_repository.list_ordered.return_value = expected
+    repository_result = [Author(id=1, name="Isaac Asimov"), Author(id=2, name="Frank Herbert")]
+    author_repository.list_ordered.return_value = repository_result
+    expected = [AuthorResult(id=1, name="Isaac Asimov"), AuthorResult(id=2, name="Frank Herbert")]
 
     async def run_test() -> None:
         result = await service.get_all()
@@ -60,7 +62,7 @@ def test_get_by_id_or_create_by_name_returns_existing_author_when_id_exists() ->
     async def run_test() -> None:
         result = await service.get_by_id_or_create_by_name(author_id=5, name="ignored")
 
-        assert result is existing_author
+        assert result == AuthorResult(id=5, name="Arthur C. Clarke")
         author_repository.get.assert_awaited_once_with(5)
         author_repository.get_or_create_by_name.assert_not_awaited()
         unit_of_work.__aenter__.assert_awaited_once_with()
@@ -78,7 +80,7 @@ def test_get_by_id_or_create_by_name_falls_back_to_name_when_id_not_found() -> N
     async def run_test() -> None:
         result = await service.get_by_id_or_create_by_name(author_id=99, name="Ursula Le Guin")
 
-        assert result is created_author
+        assert result == AuthorResult(id=6, name="Ursula Le Guin")
         author_repository.get.assert_awaited_once_with(99)
         author_repository.get_or_create_by_name.assert_awaited_once_with(name="Ursula Le Guin")
         unit_of_work.__aenter__.assert_awaited_once_with()
@@ -95,7 +97,7 @@ def test_get_by_id_or_create_by_name_uses_name_when_author_id_is_none() -> None:
     async def run_test() -> None:
         result = await service.get_by_id_or_create_by_name(author_id=None, name="Octavia Butler")
 
-        assert result is created_author
+        assert result == AuthorResult(id=7, name="Octavia Butler")
         author_repository.get.assert_not_awaited()
         author_repository.get_or_create_by_name.assert_awaited_once_with(name="Octavia Butler")
         unit_of_work.__aenter__.assert_awaited_once_with()

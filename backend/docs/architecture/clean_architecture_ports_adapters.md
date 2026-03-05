@@ -23,7 +23,7 @@ This backend already applies:
 - `app/services/book.py`
   - `BookRepositoryPort`
   - `BookServicePort`
-- `app/services/auth.py`
+- `app/services/auth/service.py`
   - `AuthRepositoryPort`
   - `AuthServicePort`
 - `app/services/rbac/service.py`
@@ -157,7 +157,9 @@ Services are responsible for:
 
 Explicit rule: services must not depend on SQLAlchemy exceptions. Database-specific exceptions must be translated before they cross into the service layer, typically inside repositories or through repository-specific infrastructure exceptions.
 
-Explicit rule: HTTP request/response schemas in `app.schemas.api` belong to the delivery layer. If a use case maps directly to a persisted entity, the service contract may accept or return the ORM model. If it needs a shape that does not map cleanly to a single entity, define an application-owned schema in `app.schemas.application.*` and let routers translate between HTTP schemas and service contracts.
+Explicit rule: HTTP request/response schemas in `app.schemas.api` belong to the delivery layer. Service contracts that are consumed by routers must use application-owned schemas in `app.schemas.application.*` (`*Command` and `*Result`). Routers are responsible for translating API schemas to application commands and application results back to API responses. Keep ORM entities behind the service boundary.
+
+Narrow exception: dependencies that resolve authenticated identity/authorization context may still use domain models (for example `User`) when required by existing security composition. Treat this as integration data, not as the default service contract shape for router-facing use cases.
 
 ### Repositories own persistence concerns
 
@@ -189,6 +191,7 @@ Operational rules:
 1. Keep composition and wiring in dependency modules (`db.py`, `repositories.py`, `services.py`, etc.).
 1. Keep transaction boundaries at use-case level with `async with unit_of_work`.
 1. When a concern is shared across layers, place it in a neutral module rather than in `repositories`.
+1. For router-facing use cases, define service inputs/outputs in `app.schemas.application.*` and keep mapping in routers.
 
 Real example:
 
@@ -271,6 +274,7 @@ Use this checklist before considering a refactor complete:
 1. Repositories own SQLAlchemy interaction and translate persistence failures before they reach services.
 1. Repositories do not export shared cross-layer constants as a public common API.
 1. Shared constants or validators used by multiple layers live in a neutral module.
+1. Router-facing service contracts use `app.schemas.application` commands/results instead of ORM entities.
 1. `__init__.py` files are limited to package markers and re-exports.
 1. `UnitOfWork`, base classes, and similar runtime behavior live in explicit modules, not in `__init__.py`.
 1. Dependency modules remain the only place where concrete wiring is assembled.

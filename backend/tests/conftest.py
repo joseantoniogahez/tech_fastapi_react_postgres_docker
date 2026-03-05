@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import pathlib
 import tempfile
 from collections.abc import AsyncGenerator, Generator
@@ -21,6 +22,11 @@ from app.models.user import User
 from app.models.user_role import UserRole
 from utils.testing_support.database import MockDatabase
 from utils.testing_support.fixtures import get_fixture_data, load_mock_data
+
+
+@pytest.fixture(scope="session", autouse=True)
+def set_app_http_logger_to_error() -> None:
+    logging.getLogger("app.http").setLevel(logging.ERROR)
 
 
 @pytest.fixture(scope="module")

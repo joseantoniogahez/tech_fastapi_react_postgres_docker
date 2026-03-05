@@ -1,4 +1,5 @@
 import logging
+from collections.abc import Mapping
 from typing import Any, cast
 
 from fastapi import FastAPI, Request, status
@@ -49,7 +50,7 @@ def get_request_id(request: Request) -> str | None:
 
 
 def build_response_headers(
-    headers: dict[str, str] | None,
+    headers: Mapping[str, str] | None,
     request_id: str | None,
 ) -> dict[str, str] | None:
     response_headers = dict(headers or {})
