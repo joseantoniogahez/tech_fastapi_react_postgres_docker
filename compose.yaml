@@ -28,7 +28,7 @@ services:
           "CMD",
           "python",
           "-c",
-          "import urllib.request; urllib.request.urlopen('http://localhost:${API_PORT:-8000}/health', timeout=2)",
+          "import urllib.request; urllib.request.urlopen('http://localhost:${API_PORT:-8000}/v1/health', timeout=2)",
         ]
       interval: 10s
       timeout: 3s
@@ -57,14 +57,14 @@ services:
 
   frontend:
     build:
-      context: books-app
+      context: frontend
       args:
-        NEXT_PUBLIC_API_ORIGIN: "${NEXT_PUBLIC_API_ORIGIN}"
-        NEXT_PUBLIC_API_BASE_PATH: "${NEXT_PUBLIC_API_BASE_PATH}"
+        VITE_API_ORIGIN: "${VITE_API_ORIGIN:-http://localhost:8000}"
+        VITE_API_BASE_PATH: "${VITE_API_BASE_PATH:-/v1}"
     depends_on:
       backend:
         condition: service_healthy
     environment:
-      NEXT_PUBLIC_API_ORIGIN: "${NEXT_PUBLIC_API_ORIGIN}"
-      NEXT_PUBLIC_API_BASE_PATH: "${NEXT_PUBLIC_API_BASE_PATH}"
+      VITE_API_ORIGIN: "${VITE_API_ORIGIN:-http://localhost:8000}"
+      VITE_API_BASE_PATH: "${VITE_API_BASE_PATH:-/v1}"
       PORT: "${UI_PORT}"

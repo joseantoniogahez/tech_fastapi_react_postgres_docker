@@ -1,9 +1,9 @@
-# Books App (FastAPI + Next.js + PostgreSQL)
+# Books App (FastAPI + React + PostgreSQL)
 
-Full-stack sample application for managing books and authors.
+Full-stack sample application with JWT authentication and RBAC.
 
 - Backend: FastAPI + SQLAlchemy (async) + Alembic
-- Frontend: Next.js (App Router, React 19)
+- Frontend: Vite + React 19 + TypeScript
 - Database: PostgreSQL 18
 - Orchestration: Docker Compose
 
@@ -11,13 +11,13 @@ Full-stack sample application for managing books and authors.
 
 - `README.md` (this file): repository architecture and multi-service run flow.
 - `backend/README.md`: backend-only setup, API behavior, migrations, and backend tests.
-- `books-app/README.md`: frontend-only setup, scripts, tests, and API client configuration.
+- `frontend/README.md`: frontend-only setup, scripts, tests, and API client configuration.
 
 ## Project Structure
 
 - `backend/`: FastAPI API, models, services, migrations, backend tests
 - `backend/docs/`: backend documentation (API endpoints, auth, RBAC, DI, OpenAPI pattern)
-- `books-app/`: Next.js UI and frontend tests
+- `frontend/`: React SPA and frontend tests
 - `compose.yaml`: base multi-container stack
 - `compose.override.yaml`: local development overrides loaded automatically by `docker compose`
 - `compose.test.yaml`: isolated services for backend/frontend test runs
@@ -63,8 +63,8 @@ Notes:
 
 - Backend runs Alembic migrations during startup (`backend/prestart.sh`).
 - `compose.override.yaml` is loaded automatically for local runs and enables backend hot reload via bind mount.
-- Frontend API target is controlled by `NEXT_PUBLIC_API_ORIGIN` and `NEXT_PUBLIC_API_BASE_PATH`.
-- `NEXT_PUBLIC_*` values are baked into frontend build output; rebuild frontend image after changing them.
+- Frontend API target is controlled by `VITE_API_ORIGIN` and `VITE_API_BASE_PATH`.
+- Vite env vars are baked into build output; rebuild frontend image after changing them.
 
 ## Run Tests (Docker Compose)
 
@@ -89,11 +89,9 @@ The repository includes a GitHub Actions workflow at `.github/workflows/ci.yaml`
 
 It runs three independent quality gates:
 
-- `pre-commit`: runs repository hooks in CI for both `pre-commit` and `pre-push` stages (file hygiene, formatting, compose validation, security checks, and typed checks configured in `.pre-commit-config.yaml`)
+- `pre-commit`: runs repository hooks in CI for both `pre-commit` and `pre-push` stages
 - `backend`: runs `pytest backend/tests` with coverage enabled and a minimum threshold of `100%`
 - `frontend`: runs frontend lint, typecheck, unit tests, and production build
-
-This keeps the template reusable with the same baseline checks enforced locally and in CI.
 
 ## Run Production Profile (Docker Compose)
 
@@ -123,11 +121,10 @@ docker compose -f compose.yaml -f compose.prod.yaml down -v
 docker compose -f compose.yaml -f compose.prod.yaml up --build -d
 ```
 
-## API Base Path Contract (`/`)
+## API Base Path Contract (`/v1`)
 
-- Canonical API route base path is root (`/`).
-- Backend routes are declared as `/books/`, `/authors/`, and `/health`.
-- Frontend default is `NEXT_PUBLIC_API_BASE_PATH=/` (normalized to root path calls).
+- Backend routes are mounted under `/v1`.
+- Frontend default is `VITE_API_BASE_PATH=/v1`.
 - `API_PATH` controls FastAPI `root_path` metadata for proxy deployments only; it does not remount routes.
 
 ## Repository Tooling (Root)
@@ -137,9 +134,9 @@ The repository uses a root virtual environment for shared tooling and hooks.
 Local `pre-commit` hooks depend on more than the root Python environment:
 
 - Python 3.14.3 for Python-based hooks
-- Node.js 22+ and npm 11+ for `books-app` ESLint and typecheck hooks
+- Node.js 22+ and npm 11+ for `frontend` ESLint and typecheck hooks
 - Docker Desktop (or Docker Engine + Compose plugin) for `hadolint` and `docker compose config` hooks
-- A local `.env` copied from `.env_examples`, because the compose validation hooks resolve environment variables from it
+- A local `.env` copied from `.env_examples`, because compose validation hooks resolve environment variables from it
 
 Create and activate:
 
@@ -159,11 +156,11 @@ Install tooling:
 ```bash
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
-npm --prefix books-app install
+npm --prefix frontend install
 pre-commit install --install-hooks --hook-type pre-commit --hook-type pre-push
 ```
 
-Before running hooks, make sure Docker is running so the local Docker-based hooks can start successfully.
+Before running hooks, make sure Docker is running so local Docker-based hooks can start successfully.
 
 Run repository hooks:
 
@@ -176,20 +173,3 @@ Run heavier pre-push hooks locally:
 ```bash
 pre-commit run --all-files --hook-stage pre-push
 ```
-
-If a dependency version used by the `mypy` hook changes in `backend/requirements.txt` or `backend/tests/requirements.txt`,
-update the matching version in `.pre-commit-config.yaml`.
-
-Maintain hook versions with a pinned update flow:
-
-```bash
-pre-commit autoupdate
-pre-commit run --all-files
-pre-commit run --all-files --hook-stage pre-push
-```
-
-Review the diff before committing:
-
-- Keep every hook `rev` pinned to an explicit version.
-- Keep Docker image hooks pinned to explicit tags (for example `ghcr.io/hadolint/hadolint:v2.14.0`), never implicit `latest`.
-- If a hook upgrade changes generated files like `.secrets.baseline`, stage the regenerated file in the same change.

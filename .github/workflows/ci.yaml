@@ -32,7 +32,7 @@ jobs:
         with:
           node-version: "22"
           cache: npm
-          cache-dependency-path: books-app/package-lock.json
+          cache-dependency-path: frontend/package-lock.json
 
       - name: Cache pre-commit environments
         uses: actions/cache@v4
@@ -44,7 +44,7 @@ jobs:
         run: python -m pip install --upgrade pip && python -m pip install -r requirements.txt
 
       - name: Install frontend dependencies
-        run: npm ci --prefix books-app
+        run: npm ci --prefix frontend
 
       - name: Prepare local environment file for compose validation hooks
         run: cp .env_examples .env
@@ -98,19 +98,19 @@ jobs:
         with:
           node-version: "22"
           cache: npm
-          cache-dependency-path: books-app/package-lock.json
+          cache-dependency-path: frontend/package-lock.json
 
       - name: Install frontend dependencies
-        run: npm ci --prefix books-app
+        run: npm ci --prefix frontend
 
       - name: Lint frontend
-        run: npm --prefix books-app run lint
+        run: npm --prefix frontend run lint
 
       - name: Typecheck frontend
-        run: npm --prefix books-app run typecheck
+        run: npm --prefix frontend run typecheck
 
       - name: Test frontend
-        run: npm --prefix books-app run test -- --runInBand
+        run: npm --prefix frontend run test
 
       - name: Build frontend
-        run: npm --prefix books-app run build
+        run: npm --prefix frontend run build

@@ -19,8 +19,9 @@ exclude: |
     (^|/)__pycache__/|
     (^|/)\.venv/|
     (^|/)node_modules/|
-    (^|/)\.next/|
+    (^|/)\.vite/|
     (^|/)\.swc/|
+    (^|/)dist/|
     (^|/)htmlcov/|
     (^|/)\.coverage$
   )
@@ -66,7 +67,7 @@ repos:
     hooks:
       - id: detect-secrets
         args: [--baseline, .secrets.baseline]
-        exclude: ^(books-app/package-lock\.json|backend/alembic/versions/.*\.py|\.secrets\.baseline)$
+        exclude: ^(frontend/package-lock\.json|backend/alembic/versions/.*\.py|\.secrets\.baseline)$
 
   # Fast spelling checks on source and docs, with generated artifacts excluded.
   - repo: https://github.com/codespell-project/codespell
@@ -74,9 +75,9 @@ repos:
     hooks:
       - id: codespell
         args: [--ignore-words=.codespell-ignore-words.txt]
-        exclude: ^(books-app/package-lock\.json|\.secrets\.baseline)$
+        exclude: ^(frontend/package-lock\.json|\.secrets\.baseline|frontend/src/shared/i18n/ui-text\.ts)$
 
-  # Frontend autofix with the existing books-app ESLint setup.
+  # Frontend autofix with the current frontend ESLint setup.
   - repo: local
     hooks:
       # Pin the hadolint container tag explicitly; the upstream docker_image hook defaults to latest.
@@ -84,22 +85,21 @@ repos:
         name: hadolint dockerfiles
         entry: ghcr.io/hadolint/hadolint:v2.14.0 hadolint
         language: docker_image
-        files: ^(backend|books-app)/Dockerfile$
-      - id: books-app-eslint-fix
-        name: books-app eslint --fix
-        entry: npm --prefix books-app run lint -- --fix --no-warn-ignored
+        files: ^(backend|frontend)/Dockerfile$
+      - id: frontend-eslint-fix
+        name: frontend eslint --fix
+        entry: npm --prefix frontend run lint -- --fix --no-warn-ignored
         language: system
         pass_filenames: false
-        files: ^books-app/.*\.(js|jsx|ts|tsx|mjs|cjs)$
-        exclude: ^books-app/next-env\.d\.ts$
+        files: ^frontend/.*\.(js|jsx|ts|tsx|mjs|cjs)$
       # Heavier frontend confidence checks run on pre-push. Full test suites stay in CI.
-      - id: books-app-typecheck
-        name: books-app typecheck
-        entry: npm --prefix books-app run typecheck
+      - id: frontend-typecheck
+        name: frontend typecheck
+        entry: npm --prefix frontend run typecheck
         language: system
         pass_filenames: false
         stages: [pre-push]
-        files: ^books-app/(src/.*\.(ts|tsx)|next-env\.d\.ts|next\.config\.ts|tailwind\.config\.ts|tsconfig\.json|package(?:-lock)?\.json)$
+        files: ^frontend/(src/.*\.(ts|tsx)|vite\.config\.ts|eslint\.config\.mjs|tsconfig.*\.json|package(?:-lock)?\.json)$
       - id: compose-base-config
         name: docker compose config (base)
         entry: docker compose -f compose.yaml config -q

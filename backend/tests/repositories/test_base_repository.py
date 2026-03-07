@@ -36,6 +36,15 @@ def test_to_record_maps_model_to_record() -> None:
     assert record.name == "ops_role"
 
 
+def test_resolve_record_type_raises_when_type_is_not_provided() -> None:
+    repository = BaseRepository(session=build_session_mock(), model=Role)
+
+    with pytest.raises(RepositoryError) as exc_info:
+        repository._resolve_record_type(None)
+
+    assert "Record type must be provided for this repository" in str(exc_info.value)
+
+
 def test_build_query_applies_filters_and_sort() -> None:
     repository = BaseRepository(session=build_session_mock(), model=Role)
 

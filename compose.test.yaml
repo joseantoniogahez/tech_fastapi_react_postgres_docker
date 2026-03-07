@@ -18,15 +18,15 @@ services:
 
   frontend-test:
     image: node:22-alpine
-    working_dir: /workspace/books-app
+    working_dir: /workspace/frontend
     environment:
       CI: "true"
-      NEXT_PUBLIC_API_ORIGIN: "${NEXT_PUBLIC_API_ORIGIN}"
-      NEXT_PUBLIC_API_BASE_PATH: "${NEXT_PUBLIC_API_BASE_PATH}"
+      VITE_API_ORIGIN: "${VITE_API_ORIGIN:-http://localhost:8000}"
+      VITE_API_BASE_PATH: "${VITE_API_BASE_PATH:-/v1}"
     volumes:
-      - ./books-app:/workspace/books-app
-      - frontend_test_node_modules:/workspace/books-app/node_modules
-    command: ["sh", "-c", "npm install -g npm@11.10.0 && npm ci && npm test -- --runInBand"]
+      - ./frontend:/workspace/frontend
+      - frontend_test_node_modules:/workspace/frontend/node_modules
+    command: ["sh", "-c", "npm install -g npm@11.10.0 && npm ci && npm test"]
 
 volumes:
   frontend_test_node_modules:
