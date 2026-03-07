@@ -1,5 +1,7 @@
 # API Endpoints
 
+For implementation rules and extension workflows, see `../backend_playbook.md`.
+
 All routes are versioned under `/v1`.
 
 ## Global Conventions

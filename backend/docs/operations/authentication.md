@@ -1,5 +1,7 @@
 # Authentication and Account Management
 
+For implementation rules and extension workflows, see `../backend_playbook.md`.
+
 ## Endpoints
 
 - `POST /v1/token`

@@ -6,11 +6,11 @@ Keep this backend as a neutral feature-based template that can grow by vertical 
 
 ## Near-Term Items
 
-- Add one example feature module beyond `auth`, `health`, and `rbac` to document the preferred vertical pattern.
-- Define conventions for feature-local OpenAPI metadata, schemas, services, and repository ownership.
+- Add one additional feature module beyond `auth`, `health`, `rbac`, and `outbox` to reinforce the vertical-slice baseline.
+- Add one concrete adapter implementation for a port in `app/integrations` (message broker, jobs, files, or search).
 - Add architecture tests that prevent forbidden imports from `app/core/setup` into feature repositories.
 - Add a smoke test for `alembic upgrade head` against a clean SQLite database.
-- Add a template checklist for introducing a new feature: models, migration, router, tests, docs, authorization.
+- Add contract checks that architecture annex docs stay aligned with current module inventory.
 
 ## Guardrails
 

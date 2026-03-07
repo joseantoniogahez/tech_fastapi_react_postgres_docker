@@ -1,5 +1,7 @@
 # Domain Error -> HTTP Status
 
+For implementation rules and extension workflows, see `../backend_playbook.md`.
+
 ## Standard Error Payload
 
 Backend exception handlers return a normalized payload:

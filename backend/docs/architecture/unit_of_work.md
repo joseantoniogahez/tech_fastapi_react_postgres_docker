@@ -13,14 +13,13 @@ With UoW, a use case either:
 
 ## Where UoW is implemented
 
-- Core class: `app/repositories/uow.py` (`UnitOfWork`)
-- Compatibility re-export: `app/repositories/__init__.py`
-- DI provider: `app/dependencies/db.py` (`get_unit_of_work`)
+- Core class: `app/core/db/uow.py` (`UnitOfWork`)
+- Port contract: `app/core/db/ports.py` (`UnitOfWorkPort`)
+- DI provider: `app/core/setup/dependencies.py` (`get_unit_of_work`)
 - Service usage:
-  - `app/services/book.py`
-  - `app/services/author.py`
-  - `app/services/auth/service.py`
-  - `app/services/rbac/operations.py`
+  - `app/features/auth/service.py`
+  - `app/features/rbac/service.py`
+  - `app/features/outbox/service.py`
 
 ## Core behavior
 
@@ -37,13 +36,13 @@ Key rules:
 - `__aexit__` rolls back when an exception is raised.
 - Nested scopes are supported:
   - only the outermost scope decides final commit.
-  - if any nested scope fails, `rollback_only` is set and final commit is skipped.
+- if any nested scope fails, `rollback_only` is set and final commit is skipped.
 
 This prevents accidental commit after an inner failure that was caught by outer code.
 
 ## Repository contract after UoW refactor
 
-`BaseRepository` no longer commits in `create`, `update`, or `delete`.
+`BaseRepository` (`app/core/db/repository_base.py`) does not commit in `create`, `update`, or `delete`.
 
 Repository write methods now do:
 
@@ -56,22 +55,12 @@ Final transaction decision is always delegated to `UnitOfWork`.
 
 Write use cases wrap business logic with `async with self.unit_of_work`.
 
-Examples:
+Examples in current code:
 
-- `BookService.create`, `BookService.update`, `BookService.delete`
-- `AuthService.register`, `AuthService.update_current_user`
-- `AuthorService.get_by_id_or_create_by_name`
-
-### Cross-service atomicity example
-
-`BookService.create` may call `AuthorService.get_by_id_or_create_by_name`.
-
-Both services receive the same `UnitOfWork` instance from DI, so both repository operations share the same transaction.
-
-Result:
-
-- author creation + book creation commit together, or
-- both changes rollback together.
+- `AuthService.register`
+- `AuthProfileUpdates.persist_user_changes` (called by `AuthService.update_current_user`)
+- `RBACService` write methods (create/update/delete/assignment operations)
+- `OutboxService.enqueue` and `OutboxService.mark_published`
 
 ## Rollback policy
 
@@ -80,7 +69,7 @@ Result:
 
 ## Dependency Injection wiring
 
-`db.py` creates one request-scoped `AsyncSession` and `UnitOfWork`; repository and service modules reuse them:
+`app/core/setup/dependencies.py` creates one request-scoped `AsyncSession` and `UnitOfWork`; repository and service modules reuse them:
 
 - repositories
 - `UnitOfWork`
@@ -92,11 +81,11 @@ This guarantees repositories and UoW operate on the same SQLAlchemy session.
 
 UoW behavior is verified in:
 
-- `tests/repositories/test_unit_of_work.py`:
+- `backend/tests/repositories/test_unit_of_work.py`:
   - commit on success
   - rollback on exception
   - nested scope behavior
-- `tests/services/*`:
+- `backend/tests/services/*`:
   - write methods execute inside UoW context
-- `tests/routers/*`:
+- `backend/tests/routers/*`:
   - end-to-end write flows keep expected behavior

@@ -1,5 +1,7 @@
 # Authorization Matrix
 
+For implementation rules and extension workflows, see `../backend_playbook.md`.
+
 Canonical permission definitions live in `app/core/authorization/catalog.py`.
 Permission IDs follow `<resource>:<action>` with lowercase letters, numbers, and underscores.
 

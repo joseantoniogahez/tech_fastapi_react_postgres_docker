@@ -86,7 +86,7 @@ When introducing a new vertical slice:
 
 ## Anti-patterns
 
-- rebuilding a global `app/services`, `app/repositories`, or `app/routers` layer
+- rebuilding global cross-feature layers that bypass `app/features/<feature>` ownership
 - moving feature-specific helpers into `app/core` too early
 - putting business logic in dependency providers
 - leaving public permissions undocumented

@@ -130,8 +130,12 @@ The backend is organized as:
 
 ## Documentation
 
+- `docs/backend_playbook.md`
 - `docs/README.md`
 - `docs/operations/api_endpoints.md`
 - `docs/operations/authentication.md`
 - `docs/operations/authorization_matrix.md`
 - `docs/operations/error_mapping.md`
+- `docs/templates/feature_request.md`
+- `docs/templates/integration_request.md`
+- `docs/templates/code_change_request.md`
