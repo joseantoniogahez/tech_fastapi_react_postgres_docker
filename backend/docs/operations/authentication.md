@@ -176,11 +176,11 @@ Transactional behavior:
 
 ```json
 {
-  "detail": "Missing required permission: books:create",
+  "detail": "Missing required permission: role_permissions:manage",
   "status": 403,
   "code": "forbidden",
   "meta": {
-    "permission_id": "books:create"
+    "permission_id": "role_permissions:manage"
   }
 }
 ```

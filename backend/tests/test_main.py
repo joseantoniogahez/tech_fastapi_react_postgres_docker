@@ -11,18 +11,22 @@ from pydantic import ValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.testclient import TestClient
 
-from app.const.settings import ApiSettings, AuthSettings
-from app.dependencies.db import create_async_session, get_db_session, get_unit_of_work
-from app.exceptions.setup.handlers import REQUEST_ID_HEADER, configure_exception_handlers
-from app.factory import app_lifespan, configure_logging, configure_request_context_middleware, validate_auth_settings
+from app.core.config.settings import ApiSettings, AuthSettings
+from app.core.errors.setup.handlers import REQUEST_ID_HEADER, configure_exception_handlers
+from app.core.setup.cors import configure_cors
+from app.core.setup.dependencies import create_async_session, get_db_session, get_unit_of_work
+from app.core.setup.factory import (
+    app_lifespan,
+    configure_logging,
+    configure_request_context_middleware,
+    validate_auth_settings,
+)
+from app.core.setup.routers import ROUTER_MODULES, _load_router, get_registered_routers
 from app.main import app
-from app.routers import ROUTER_MODULES
-from app.setup.cors import configure_cors
-from app.setup.routers import _load_router, get_registered_routers
 
 
 def test_configure_logging_warns_on_invalid_level() -> None:
-    with patch("app.factory.logging.getLogger") as get_logger:
+    with patch("app.core.setup.factory.logging.getLogger") as get_logger:
         configure_logging(ApiSettings(LOG_LEVEL="invalid"))
 
     get_logger.return_value.warning.assert_called_once_with(
@@ -87,29 +91,21 @@ def test_validate_auth_settings_allows_secure_values_in_production(
     validate_auth_settings()
 
 
-def test_auth_settings_normalizes_blank_app_env_to_local() -> None:
+def test_auth_settings_validators_for_blank_values() -> None:
     settings = AuthSettings(APP_ENV="   ", JWT_SECRET_KEY="unit-test-secret", JWT_ALGORITHM="HS256")
-
     assert settings.APP_ENV == "local"
 
-
-def test_auth_settings_rejects_blank_jwt_secret_key() -> None:
     with pytest.raises(ValidationError):
         AuthSettings(JWT_SECRET_KEY="   ")
 
-
-def test_auth_settings_rejects_blank_jwt_algorithm() -> None:
     with pytest.raises(ValidationError):
         AuthSettings(JWT_ALGORITHM="   ")
 
-
-@pytest.mark.parametrize("field_name", ["JWT_ISSUER", "JWT_AUDIENCE"])
-def test_auth_settings_rejects_blank_jwt_identity_claim(field_name: str) -> None:
     with pytest.raises(ValidationError):
-        if field_name == "JWT_ISSUER":
-            AuthSettings(JWT_ISSUER="   ")
-        else:
-            AuthSettings(JWT_AUDIENCE="   ")
+        AuthSettings(JWT_ISSUER="   ")
+
+    with pytest.raises(ValidationError):
+        AuthSettings(JWT_AUDIENCE="   ")
 
 
 def test_app_lifespan_logs_startup_and_shutdown() -> None:
@@ -119,7 +115,7 @@ def test_app_lifespan_logs_startup_and_shutdown() -> None:
         async with app_lifespan(FastAPI()):
             pass
 
-    with patch("app.factory.logging.getLogger", return_value=logger):
+    with patch("app.core.setup.factory.logging.getLogger", return_value=logger):
         asyncio.run(run_lifespan())
 
     logger.info.assert_has_calls(
@@ -132,7 +128,7 @@ def test_app_lifespan_logs_startup_and_shutdown() -> None:
 
 def test_request_context_middleware_generates_request_id_and_logs_success() -> None:
     logger = MagicMock()
-    with patch("app.factory.logging.getLogger", return_value=logger):
+    with patch("app.core.setup.factory.logging.getLogger", return_value=logger):
         test_app = FastAPI()
         configure_request_context_middleware(test_app)
 
@@ -163,7 +159,7 @@ def test_request_context_middleware_generates_request_id_and_logs_success() -> N
 
 def test_request_context_middleware_reuses_incoming_request_id_for_errors() -> None:
     logger = MagicMock()
-    with patch("app.factory.logging.getLogger", return_value=logger):
+    with patch("app.core.setup.factory.logging.getLogger", return_value=logger):
         test_app = FastAPI()
         configure_request_context_middleware(test_app)
     configure_exception_handlers(test_app)
@@ -188,9 +184,9 @@ def test_request_context_middleware_reuses_incoming_request_id_for_errors() -> N
     assert log_call.args[5] == 404
 
 
-def test_request_context_middleware_logs_server_errors_at_error_level() -> None:
+def test_request_context_middleware_logs_server_errors_and_explicit_500_at_error_level() -> None:
     logger = MagicMock()
-    with patch("app.factory.logging.getLogger", return_value=logger):
+    with patch("app.core.setup.factory.logging.getLogger", return_value=logger):
         test_app = FastAPI()
         configure_request_context_middleware(test_app)
     configure_exception_handlers(test_app)
@@ -199,49 +195,40 @@ def test_request_context_middleware_logs_server_errors_at_error_level() -> None:
     async def crash() -> None:
         raise RuntimeError("boom")
 
-    with TestClient(test_app, raise_server_exceptions=False) as client:
-        response = client.get("/crash")
-
-    assert response.status_code == 500
-    request_id = response.headers[REQUEST_ID_HEADER]
-    assert response.json()["request_id"] == request_id
-
-    log_call = logger.log.call_args
-    assert log_call is not None
-    assert log_call.args[0] == logging.ERROR
-    assert log_call.args[2] == request_id
-    assert log_call.args[3] == "GET"
-    assert log_call.args[4] == "/crash"
-    assert log_call.args[5] == 500
-
-
-def test_request_context_middleware_logs_explicit_500_responses_at_error_level() -> None:
-    logger = MagicMock()
-    with patch("app.factory.logging.getLogger", return_value=logger):
-        test_app = FastAPI()
-        configure_request_context_middleware(test_app)
-
     @test_app.get("/status-500")
     async def status_500() -> Response:
         return Response(status_code=500)
 
-    with TestClient(test_app) as client:
-        response = client.get("/status-500")
+    with TestClient(test_app, raise_server_exceptions=False) as client:
+        crash_response = client.get("/crash")
+        explicit_500_response = client.get("/status-500")
 
-    assert response.status_code == 500
+    assert crash_response.status_code == 500
+    crash_request_id = crash_response.headers[REQUEST_ID_HEADER]
+    assert crash_response.json()["request_id"] == crash_request_id
 
-    log_call = logger.log.call_args
-    assert log_call is not None
-    assert log_call.args[0] == logging.ERROR
-    assert log_call.args[3] == "GET"
-    assert log_call.args[4] == "/status-500"
-    assert log_call.args[5] == 500
+    assert explicit_500_response.status_code == 500
+
+    error_logs = [
+        call_args
+        for call_args in logger.log.call_args_list
+        if call_args.args[0] == logging.ERROR and call_args.args[5] == 500
+    ]
+    assert len(error_logs) >= 2
+    assert any(call_args.args[4] == "/crash" for call_args in error_logs)
+    assert any(call_args.args[4] == "/status-500" for call_args in error_logs)
 
 
-def test_get_registered_routers_loads_catalog_modules() -> None:
+def test_get_registered_routers_loads_catalog_modules_and_supports_fqcn() -> None:
     routers = get_registered_routers()
     assert len(routers) == len(ROUTER_MODULES)
     assert all(isinstance(router, APIRouter) for router in routers)
+
+    with patch("app.core.setup.routers.ROUTER_MODULES", ["app.features.health.router"]):
+        fqcn_routers = get_registered_routers()
+
+    assert len(fqcn_routers) == 1
+    assert isinstance(fqcn_routers[0], APIRouter)
 
 
 def test_app_registers_routes_from_dynamic_catalog() -> None:
@@ -251,8 +238,8 @@ def test_app_registers_routes_from_dynamic_catalog() -> None:
         "/v1/token",
         "/v1/users/me",
         "/v1/users/register",
-        "/v1/books/",
-        "/v1/authors/",
+        "/v1/rbac/roles",
+        "/v1/rbac/permissions",
     }
     assert expected_paths.issubset(paths)
 
@@ -285,7 +272,9 @@ def test_get_db_session_yields_session_from_create_async_session() -> None:
             events.append("exit")
 
     async def run_test() -> None:
-        with patch("app.dependencies.db.create_async_session", return_value=_SessionContextManager()) as factory:
+        with patch(
+            "app.core.setup.dependencies.create_async_session", return_value=_SessionContextManager()
+        ) as factory:
             generator = get_db_session()
             session = await anext(generator)
             assert session is expected_session
@@ -303,7 +292,7 @@ def test_create_async_session_calls_lazy_factory() -> None:
     expected_session_context = object()
     factory = MagicMock(return_value=expected_session_context)
 
-    with patch("app.dependencies.db.get_async_session_factory", return_value=factory) as get_factory:
+    with patch("app.core.setup.dependencies.get_async_session_factory", return_value=factory) as get_factory:
         result = create_async_session()
 
     assert result is expected_session_context
@@ -325,7 +314,7 @@ def test_get_db_session_rolls_back_when_exception_is_raised_after_yield() -> Non
             events.append("exit")
 
     async def run_test() -> None:
-        with patch("app.dependencies.db.create_async_session", return_value=_SessionContextManager()):
+        with patch("app.core.setup.dependencies.create_async_session", return_value=_SessionContextManager()):
             generator = get_db_session()
             yielded_session = await anext(generator)
             assert yielded_session is session
@@ -338,20 +327,12 @@ def test_get_db_session_rolls_back_when_exception_is_raised_after_yield() -> Non
     assert events == ["enter", "exit"]
 
 
-def test_get_registered_routers_supports_fully_qualified_module_names() -> None:
-    with patch("app.setup.routers.ROUTER_MODULES", ["app.routers.health"]):
-        routers = get_registered_routers()
-
-    assert len(routers) == 1
-    assert isinstance(routers[0], APIRouter)
-
-
 def test_get_unit_of_work_returns_repository_unit_of_work() -> None:
     session = object()
     expected_uow = object()
 
     async def run_test() -> None:
-        with patch("app.dependencies.db.UnitOfWork", return_value=expected_uow) as unit_of_work:
+        with patch("app.core.setup.dependencies.UnitOfWork", return_value=expected_uow) as unit_of_work:
             result = await get_unit_of_work(session)  # type: ignore[arg-type]
 
         assert result is expected_uow
@@ -364,10 +345,10 @@ def test_load_router_raises_for_invalid_router_export() -> None:
     invalid_module = SimpleNamespace(router="not-an-api-router")
 
     with (
-        patch("app.setup.routers.import_module", return_value=invalid_module),
+        patch("app.core.setup.routers.import_module", return_value=invalid_module),
         pytest.raises(RuntimeError) as exc_info,
     ):
         _load_router("invalid_module")
 
-    assert "app.routers.invalid_module" in str(exc_info.value)
+    assert "invalid_module" in str(exc_info.value)
     assert "APIRouter" in str(exc_info.value)

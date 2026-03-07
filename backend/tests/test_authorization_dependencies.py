@@ -3,21 +3,20 @@ from unittest.mock import patch
 
 from starlette.requests import Request
 
-from app.authorization import PermissionId, PermissionScope
-from app.dependencies.authorization import (
+from app.core.authorization import PermissionId, PermissionScope
+from app.core.authorization.dependencies import (
     _log_authorization_decision,
     build_current_tenant_permission_context,
     build_current_user_permission_context,
     build_default_permission_context,
 )
-from app.models.user import User
+from app.features.auth.principal import CurrentPrincipal
 
 
-def _build_user(*, user_id: int, tenant_id: int | None) -> User:
-    return User(
+def _build_user(*, user_id: int, tenant_id: int | None) -> CurrentPrincipal:
+    return CurrentPrincipal(
         id=user_id,
         username="dependency-user",
-        hashed_password="hash",
         disabled=False,
         tenant_id=tenant_id,
     )
@@ -76,11 +75,11 @@ def test_build_current_tenant_permission_context_maps_tenant_only() -> None:
 def test_log_authorization_decision_falls_back_when_request_context_is_missing() -> None:
     request = _request("/scope/fallback/42")
 
-    with patch("app.dependencies.authorization.logger") as authz_logger:
+    with patch("app.core.authorization.dependencies.logger") as authz_logger:
         _log_authorization_decision(
             request=request,
             user_id=7,
-            permission_id=PermissionId.BOOK_UPDATE,
+            permission_id=PermissionId.ROLE_PERMISSION_MANAGE,
             required_scope=PermissionScope.ANY,
             decision="allow",
         )

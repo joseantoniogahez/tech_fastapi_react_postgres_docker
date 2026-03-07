@@ -8,14 +8,9 @@ from argon2 import PasswordHasher
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.authorization import PERMISSION_SPECS, PermissionScope
-from app.infrastructure.database import get_async_session_factory
-from app.models.permission import Permission
-from app.models.role import Role
-from app.models.role_permission import RolePermission
-from app.models.user import User
-from app.models.user_role import UserRole
-from app.security.policies import (
+from app.core.authorization import PERMISSION_SPECS, PermissionScope
+from app.core.db.database import get_async_session_factory
+from app.core.security.policies import (
     PasswordPolicyError,
     UsernamePolicyError,
     UsernamePolicyErrorCode,
@@ -23,6 +18,8 @@ from app.security.policies import (
     normalize_username,
     validate_password_policy,
 )
+from app.features.auth.models import User
+from app.features.rbac.models import Permission, Role, RolePermission, UserRole
 
 BASE_PERMISSION_SPECS: tuple[tuple[str, str], ...] = PERMISSION_SPECS
 

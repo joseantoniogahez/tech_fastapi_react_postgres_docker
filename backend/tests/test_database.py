@@ -3,9 +3,9 @@ from unittest.mock import MagicMock, patch
 import pytest
 from pydantic import BaseModel, ValidationError
 
-from app.const.settings import DatabaseSettings
-from app.infrastructure import database as database_module
-from app.infrastructure.database import (
+from app.core.config.settings import DatabaseSettings
+from app.core.db import database as database_module
+from app.core.db.database import (
     DatabaseConfigError,
     DatabaseConnectionType,
     DatabaseManager,
@@ -21,7 +21,7 @@ def test_build_network_database_url() -> None:
         DB_PASSWORD="password",
         DB_HOST="localhost",
         DB_PORT=5432,
-        DB_NAME="books",
+        DB_NAME="app_data",
     )
 
     url = database_manager.build_network_database_url(settings)
@@ -31,7 +31,7 @@ def test_build_network_database_url() -> None:
     assert url.password == "password"
     assert url.host == "localhost"
     assert url.port == 5432
-    assert url.database == "books"
+    assert url.database == "app_data"
 
 
 def test_build_file_database_url() -> None:
@@ -44,7 +44,7 @@ def test_build_file_database_url() -> None:
     assert url.password is None
     assert url.host is None
     assert url.port is None
-    assert url.database == "library.db"
+    assert url.database == "app.db"
 
 
 def _get_validation_error() -> ValidationError:
@@ -60,7 +60,7 @@ def test_build_database_url_raises_database_config_error_when_settings_fail() ->
     validation_error = _get_validation_error()
 
     with (
-        patch("app.infrastructure.database.DatabaseSettings", side_effect=validation_error),
+        patch("app.core.db.database.DatabaseSettings", side_effect=validation_error),
         pytest.raises(DatabaseConfigError) as exc_info,
     ):
         database_manager.build_database_url()
@@ -74,7 +74,7 @@ def test_build_network_database_url_raises_on_missing_required_fields() -> None:
         DB_PASSWORD="password",
         DB_HOST="localhost",
         DB_PORT=5432,
-        DB_NAME="books",
+        DB_NAME="app_data",
     )
 
     with pytest.raises(DatabaseConfigError) as exc_info:
@@ -99,7 +99,7 @@ def test_build_database_url_returns_network_url_for_network_settings() -> None:
         DB_PASSWORD="password",
         DB_HOST="localhost",
         DB_PORT=5432,
-        DB_NAME="books",
+        DB_NAME="app_data",
     )
     manager = DatabaseManager(settings_loader=lambda: settings)
 
@@ -110,7 +110,7 @@ def test_build_database_url_returns_network_url_for_network_settings() -> None:
     assert url.password == "password"
     assert url.host == "localhost"
     assert url.port == 5432
-    assert url.database == "books"
+    assert url.database == "app_data"
 
 
 def test_build_database_url_raises_on_unsupported_connection_type() -> None:
@@ -161,7 +161,7 @@ def test_build_engine_creates_async_engine_with_pool_pre_ping() -> None:
     database_url = MagicMock()
     engine = MagicMock()
 
-    with patch("app.infrastructure.database.create_async_engine", return_value=engine) as create_engine:
+    with patch("app.core.db.database.create_async_engine", return_value=engine) as create_engine:
         result = DatabaseManager.build_engine(database_url)
 
     assert result is engine
@@ -175,7 +175,7 @@ def test_build_session_factory_builds_engine_and_sessionmaker() -> None:
 
     with (
         patch.object(DatabaseManager, "build_engine", return_value=engine) as build_engine,
-        patch("app.infrastructure.database.async_sessionmaker", return_value=session_factory) as sessionmaker,
+        patch("app.core.db.database.async_sessionmaker", return_value=session_factory) as sessionmaker,
     ):
         result = DatabaseManager.build_session_factory(database_url)
 
@@ -211,67 +211,47 @@ def test_database_runtime_builds_session_factory_for_explicit_connection_type() 
     manager.build_session_factory.assert_called_once_with(explicit_url)
 
 
-def test_module_get_database_url_delegates_to_runtime() -> None:
+def test_module_database_runtime_helpers_delegate_to_runtime() -> None:
     runtime = MagicMock()
     database_url = MagicMock()
-    runtime.get_database_url.return_value = database_url
-
-    with patch.object(database_module, "database_runtime", runtime):
-        result = database_module.get_database_url()
-
-    assert result is database_url
-    runtime.get_database_url.assert_called_once_with(DatabaseConnectionType.AUTO)
-
-
-def test_module_get_async_session_factory_delegates_to_runtime() -> None:
-    runtime = MagicMock()
     session_factory = MagicMock()
+    runtime.get_database_url.return_value = database_url
     runtime.get_session_factory.return_value = session_factory
 
     with patch.object(database_module, "database_runtime", runtime):
-        result = database_module.get_async_session_factory()
-
-    assert result is session_factory
-    runtime.get_session_factory.assert_called_once_with(DatabaseConnectionType.AUTO)
-
-
-def test_module_reset_database_runtime_delegates_to_runtime() -> None:
-    runtime = MagicMock()
-
-    with patch.object(database_module, "database_runtime", runtime):
+        resolved_database_url = database_module.get_database_url()
+        resolved_session_factory = database_module.get_async_session_factory()
         database_module.reset_database_runtime()
 
+    assert resolved_database_url is database_url
+    assert resolved_session_factory is session_factory
+    runtime.get_database_url.assert_called_once_with(DatabaseConnectionType.AUTO)
+    runtime.get_session_factory.assert_called_once_with(DatabaseConnectionType.AUTO)
     runtime.reset.assert_called_once_with()
 
 
-def test_module___getattr___resolves_database_url() -> None:
+def test_module_dynamic_attributes_resolve_known_exports_and_include_public_api() -> None:
     database_url = MagicMock()
-
-    with patch("app.infrastructure.database.get_database_url", return_value=database_url) as get_database_url:
-        result = database_module.__getattr__("DATABASE_URL")
-
-    assert result is database_url
-    get_database_url.assert_called_once_with()
-
-
-def test_module___getattr___resolves_async_session_database() -> None:
     session_factory = MagicMock()
 
-    with patch("app.infrastructure.database.get_async_session_factory", return_value=session_factory) as get_factory:
-        result = database_module.__getattr__("AsyncSessionDatabase")
+    with (
+        patch("app.core.db.database.get_database_url", return_value=database_url) as get_database_url,
+        patch("app.core.db.database.get_async_session_factory", return_value=session_factory) as get_factory,
+    ):
+        resolved_database_url = database_module.__getattr__("DATABASE_URL")
+        resolved_session_factory = database_module.__getattr__("AsyncSessionDatabase")
 
-    assert result is session_factory
+    assert resolved_database_url is database_url
+    assert resolved_session_factory is session_factory
+    get_database_url.assert_called_once_with()
     get_factory.assert_called_once_with()
+
+    names = database_module.__dir__()
+    assert "DATABASE_URL" in names
+    assert "AsyncSessionDatabase" in names
+    assert "reset_database_runtime" in names
 
 
 def test_module___getattr___raises_for_unknown_attribute() -> None:
     with pytest.raises(AttributeError):
         database_module.__getattr__("UNKNOWN")
-
-
-def test_module___dir___includes_public_database_api() -> None:
-    names = database_module.__dir__()
-
-    assert "DATABASE_URL" in names
-    assert "AsyncSessionDatabase" in names
-    assert "reset_database_runtime" in names

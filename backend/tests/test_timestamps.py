@@ -5,11 +5,9 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy import DateTime
 from sqlalchemy.dialects import postgresql
 
-from app.models.author import Author
-from app.models.book import Book
-from app.models.permission import Permission
-from app.models.role import Role
-from app.models.user import User
+from app.features.auth.models import User
+from app.features.outbox.models import OutboxEvent
+from app.features.rbac.models import Permission, Role
 
 
 class _ModelWithTable(Protocol):
@@ -22,7 +20,7 @@ def _timestamp_columns(model: type[_ModelWithTable]) -> tuple[Any, Any]:
 
 
 def test_timestamp_columns_are_timezone_aware_with_defaults() -> None:
-    for model in (Author, Book, User, Role, Permission):
+    for model in (User, Role, Permission, OutboxEvent):
         created_at, updated_at = _timestamp_columns(model)
 
         assert isinstance(created_at.type, DateTime)
@@ -47,9 +45,9 @@ class _TimestampPayload(BaseModel):
 
 def test_timestamp_serialization_keeps_utc_offset() -> None:
     timestamp = datetime(2026, 2, 25, 10, 0, 0, tzinfo=UTC)
-    author = Author(name="Test Author", created_at=timestamp, updated_at=timestamp)
+    role = Role(name="timestamp_test_role", created_at=timestamp, updated_at=timestamp)
 
-    payload = _TimestampPayload.model_validate(author).model_dump(mode="json")
+    payload = _TimestampPayload.model_validate(role).model_dump(mode="json")
 
     created_at = datetime.fromisoformat(payload["created_at"].replace("Z", "+00:00"))
     updated_at = datetime.fromisoformat(payload["updated_at"].replace("Z", "+00:00"))

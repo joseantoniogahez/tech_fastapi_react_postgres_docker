@@ -6,7 +6,7 @@ from pathlib import Path
 from fastapi.dependencies.models import Dependant
 from fastapi.routing import APIRoute
 
-from app.authorization import (
+from app.core.authorization import (
     PERMISSION_ID_PATTERN,
     PERMISSION_SCOPES,
     READ_ACCESS_LEVELS,
@@ -14,7 +14,7 @@ from app.authorization import (
     PermissionScope,
     ReadAccessLevel,
 )
-from app.dependencies.authorization import allow_authenticated_read_access, allow_public_read_access
+from app.core.authorization.dependencies import allow_authenticated_read_access, allow_public_read_access
 from app.main import app
 from utils.testing_support.docs import API_ENDPOINTS_PATH, AUTHORIZATION_MATRIX_PATH
 
@@ -134,7 +134,7 @@ def _collect_route_permission_scopes(route: APIRoute) -> set[str]:
 
 def _is_application_router_route(route: APIRoute) -> bool:
     route_module = getattr(route.endpoint, "__module__", "")
-    return route_module.startswith("app.routers.")
+    return route_module.startswith("app.features.")
 
 
 def _route_has_dependency_callable(route: APIRoute, dependency_callable: Callable[..., object]) -> bool:

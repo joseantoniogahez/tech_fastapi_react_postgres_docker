@@ -3,8 +3,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from app.authorization import PermissionId, PermissionScope
-from app.services.permission_evaluator import PermissionEvaluator
+from app.core.authorization import PermissionId, PermissionScope
+from app.core.authorization.permission_evaluator import PermissionEvaluator
 from utils.testing_support.auth_service import build_service
 
 
@@ -18,7 +18,7 @@ def test_user_has_permission_delegates_scope_evaluation_after_loading_grant() ->
     async def run_test() -> None:
         has_permission = await service.user_has_permission(
             user_id=3,
-            permission_id=PermissionId.BOOK_UPDATE,
+            permission_id=PermissionId.ROLE_PERMISSION_MANAGE,
             required_scope=" TENANT ",
             user_tenant_id=4,
             resource_tenant_id=4,
@@ -29,7 +29,7 @@ def test_user_has_permission_delegates_scope_evaluation_after_loading_grant() ->
         permission_evaluator.normalize_required_scope.assert_called_once_with(" TENANT ")
         repository.get_user_permission_scope.assert_awaited_once_with(
             user_id=3,
-            permission_id=PermissionId.BOOK_UPDATE,
+            permission_id=PermissionId.ROLE_PERMISSION_MANAGE,
         )
         permission_evaluator.is_granted_scope_allowed.assert_called_once_with(
             granted_scope=PermissionScope.ANY,
@@ -53,7 +53,7 @@ def test_user_has_permission_passes_missing_grant_to_evaluator() -> None:
     async def run_test() -> None:
         has_permission = await service.user_has_permission(
             user_id=7,
-            permission_id=PermissionId.BOOK_UPDATE,
+            permission_id=PermissionId.ROLE_PERMISSION_MANAGE,
             required_scope=PermissionScope.OWN,
             resource_owner_id=7,
         )
@@ -78,7 +78,7 @@ def test_user_has_permission_raises_for_invalid_required_scope_before_loading_gr
         with pytest.raises(ValueError, match="Invalid permission scope 'regional'"):
             await service.user_has_permission(
                 user_id=12,
-                permission_id=PermissionId.BOOK_UPDATE,
+                permission_id=PermissionId.ROLE_PERMISSION_MANAGE,
                 required_scope="regional",
                 resource_owner_id=None,
                 user_tenant_id=None,
@@ -107,14 +107,14 @@ def test_user_has_permission_reuses_cached_grant_for_same_permission() -> None:
     async def run_test() -> None:
         first_result = await service.user_has_permission(
             user_id=5,
-            permission_id=PermissionId.BOOK_UPDATE,
+            permission_id=PermissionId.ROLE_PERMISSION_MANAGE,
             required_scope=PermissionScope.TENANT,
             user_tenant_id=9,
             resource_tenant_id=9,
         )
         second_result = await service.user_has_permission(
             user_id=5,
-            permission_id=PermissionId.BOOK_UPDATE,
+            permission_id=PermissionId.ROLE_PERMISSION_MANAGE,
             required_scope=PermissionScope.OWN,
             resource_owner_id=5,
         )
@@ -123,9 +123,9 @@ def test_user_has_permission_reuses_cached_grant_for_same_permission() -> None:
         assert second_result is True
         repository.get_user_permission_scope.assert_awaited_once_with(
             user_id=5,
-            permission_id=PermissionId.BOOK_UPDATE,
+            permission_id=PermissionId.ROLE_PERMISSION_MANAGE,
         )
-        assert permission_scope_cache[(5, PermissionId.BOOK_UPDATE)] == PermissionScope.ANY
+        assert permission_scope_cache[(5, PermissionId.ROLE_PERMISSION_MANAGE)] == PermissionScope.ANY
         assert permission_evaluator.is_granted_scope_allowed.call_count == 2
 
     asyncio.run(run_test())

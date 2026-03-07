@@ -10,11 +10,11 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.requests import Request
 
-from app.exceptions.domain import DomainError, DomainErrorType, ErrorLayer
-from app.exceptions.repositories import RepositoryConflictError, RepositoryError, RepositoryInternalError
-from app.exceptions.routers import RouterError
-from app.exceptions.services import UnauthorizedError
-from app.exceptions.setup.handlers import (
+from app.core.errors.domain import DomainError, DomainErrorType, ErrorLayer
+from app.core.errors.repositories import RepositoryConflictError, RepositoryError, RepositoryInternalError
+from app.core.errors.routers import RouterError
+from app.core.errors.services import UnauthorizedError
+from app.core.errors.setup.handlers import (
     REQUEST_ID_HEADER,
     build_error_payload,
     configure_exception_handlers,
@@ -173,7 +173,7 @@ def test_http_exception_handler_with_non_string_detail() -> None:
 
 
 def test_unhandled_exception_handler_logs_and_returns_internal_error() -> None:
-    with patch("app.exceptions.setup.handlers.logger.exception") as logger_exception:
+    with patch("app.core.errors.setup.handlers.logger.exception") as logger_exception:
         response = asyncio.run(unhandled_error_handler(_request("req-123"), RuntimeError("boom")))
 
     logger_exception.assert_called_once()

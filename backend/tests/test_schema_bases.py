@@ -2,8 +2,7 @@ import unittest
 
 from pydantic import BaseModel
 
-from app.schemas.api.base import ApiSchema
-from app.schemas.application.base import ApplicationSchema
+from app.core.common.schema import ApiSchema, ApplicationSchema
 
 
 class _ApiPayload(BaseModel):

@@ -4,10 +4,9 @@ from http import HTTPStatus
 from typing import Any
 
 import jwt
-import pytest
 from starlette.testclient import TestClient
 
-from app.const.settings import AuthSettings
+from app.core.config.settings import AuthSettings
 from utils.testing_support.api_assertions import assert_error_response
 
 
@@ -53,19 +52,16 @@ def test_token_success(mock_client: TestClient) -> None:
     assert payload["access_token"]
 
 
-@pytest.mark.parametrize(
-    "credentials",
-    [
+def test_token_rejects_invalid_credentials_variants(mock_client: TestClient) -> None:
+    for credentials in (
         {"username": "admin", "password": "wrong-password"},
         {"username": "unknown", "password": "admin123"},
-    ],
-)
-def test_token_invalid_credentials(mock_client: TestClient, credentials: dict[str, str]) -> None:
-    response = mock_client.post("/v1/token", data=credentials)
+    ):
+        response = mock_client.post("/v1/token", data=credentials)
 
-    assert response.status_code == HTTPStatus.UNAUTHORIZED
-    _assert_error_payload(response, "unauthorized", "Invalid username or password")
-    assert response.headers["www-authenticate"] == "Bearer"
+        assert response.status_code == HTTPStatus.UNAUTHORIZED
+        _assert_error_payload(response, "unauthorized", "Invalid username or password")
+        assert response.headers["www-authenticate"] == "Bearer"
 
 
 def test_token_disabled_user(mock_client: TestClient) -> None:
@@ -101,30 +97,27 @@ def test_get_current_active_user(mock_client: TestClient) -> None:
     }
 
 
-def test_get_current_active_user_with_invalid_token(mock_client: TestClient) -> None:
-    response = mock_client.get("/v1/users/me", headers={"Authorization": "Bearer not-a-valid-token"})
+def test_get_current_active_user_rejects_invalid_tokens_and_inactive_user(mock_client: TestClient) -> None:
+    authorizations = (
+        "Bearer not-a-valid-token",
+        f"Bearer {_build_access_token('ghost-user')}",
+        f"Bearer {_build_access_token('disabled_user')}",
+    )
+    status_codes = (HTTPStatus.UNAUTHORIZED, HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN)
+    error_types = ("unauthorized", "unauthorized", "forbidden")
+    messages = ("Could not validate credentials", "Could not validate credentials", "Inactive user")
+    expects_www_authenticate_values = (True, True, False)
 
-    assert response.status_code == HTTPStatus.UNAUTHORIZED
-    _assert_error_payload(response, "unauthorized", "Could not validate credentials")
-    assert response.headers["www-authenticate"] == "Bearer"
+    for authorization, status_code, error_type, message, expects_www_authenticate in zip(
+        authorizations, status_codes, error_types, messages, expects_www_authenticate_values, strict=True
+    ):
+        response = mock_client.get("/v1/users/me", headers={"Authorization": authorization})
 
-
-def test_get_current_active_user_when_user_does_not_exist(mock_client: TestClient) -> None:
-    token = _build_access_token("ghost-user")
-
-    response = mock_client.get("/v1/users/me", headers={"Authorization": f"Bearer {token}"})
-
-    assert response.status_code == HTTPStatus.UNAUTHORIZED
-    _assert_error_payload(response, "unauthorized", "Could not validate credentials")
-    assert response.headers["www-authenticate"] == "Bearer"
-
-
-def test_get_current_active_user_when_user_is_disabled(mock_client: TestClient) -> None:
-    token = _build_access_token("disabled_user")
-    response = mock_client.get("/v1/users/me", headers={"Authorization": f"Bearer {token}"})
-
-    assert response.status_code == HTTPStatus.FORBIDDEN
-    _assert_error_payload(response, "forbidden", "Inactive user")
+        assert response.status_code == status_code
+        error_type = error_type
+        _assert_error_payload(response, error_type, message)
+        if expects_www_authenticate:
+            assert response.headers["www-authenticate"] == "Bearer"
 
 
 def test_register_user_success(mock_client: TestClient) -> None:
@@ -152,88 +145,33 @@ def test_register_user_success(mock_client: TestClient) -> None:
     assert token_response.status_code == HTTPStatus.OK
 
 
-def test_register_user_invalid_username_format(mock_client: TestClient) -> None:
-    response = mock_client.post(
-        "/v1/users/register",
-        json={
-            "username": "invalid user!",
-            "password": "StrongPass1",
-        },
+def test_register_user_rejects_common_error_cases(mock_client: TestClient) -> None:
+    payloads = (
+        {"username": "invalid user!", "password": "StrongPass1"},
+        {"username": "admin", "password": "StrongPass1"},
+        {"username": "policy_user", "password": "onlylowercase1"},
+    )
+    status_codes = (HTTPStatus.BAD_REQUEST, HTTPStatus.CONFLICT, HTTPStatus.BAD_REQUEST)
+    error_types = ("invalid_input", "conflict", "invalid_input")
+    messages = ("Username has invalid format", "Username already exists", "Password does not meet policy")
+    detail_dicts = (
+        {"allowed": "lowercase letters, numbers, dot, underscore and hyphen"},
+        {"username": "admin"},
+        {"violations": ["Password must include at least one uppercase letter"]},
     )
 
-    assert response.status_code == HTTPStatus.BAD_REQUEST
-    _assert_error_payload(
-        response,
-        "invalid_input",
-        "Username has invalid format",
-        details={"allowed": "lowercase letters, numbers, dot, underscore and hyphen"},
-    )
+    for payload, status_code, error_type, message, details in zip(
+        payloads, status_codes, error_types, messages, detail_dicts, strict=True
+    ):
+        response = mock_client.post("/v1/users/register", json=payload)
 
-
-def test_register_user_username_conflict(mock_client: TestClient) -> None:
-    response = mock_client.post(
-        "/v1/users/register",
-        json={
-            "username": "admin",
-            "password": "StrongPass1",
-        },
-    )
-
-    assert response.status_code == HTTPStatus.CONFLICT
-    _assert_error_payload(
-        response,
-        "conflict",
-        "Username already exists",
-        details={"username": "admin"},
-    )
-
-
-def test_register_user_password_policy(mock_client: TestClient) -> None:
-    response = mock_client.post(
-        "/v1/users/register",
-        json={
-            "username": "policy_user",
-            "password": "onlylowercase1",
-        },
-    )
-
-    assert response.status_code == HTTPStatus.BAD_REQUEST
-    _assert_error_payload(
-        response,
-        "invalid_input",
-        "Password does not meet policy",
-        details={"violations": ["Password must include at least one uppercase letter"]},
-    )
-
-
-@pytest.mark.parametrize(
-    ("password", "expected_violations"),
-    [
-        ("ONLYUPPER1", ["Password must include at least one lowercase letter"]),
-        ("NoDigitsPass", ["Password must include at least one number"]),
-        ("Xpolicy_user9", ["Password cannot contain the username"]),
-    ],
-)
-def test_register_user_password_policy_additional_violations(
-    mock_client: TestClient,
-    password: str,
-    expected_violations: list[str],
-) -> None:
-    response = mock_client.post(
-        "/v1/users/register",
-        json={
-            "username": "policy_user",
-            "password": password,
-        },
-    )
-
-    assert response.status_code == HTTPStatus.BAD_REQUEST
-    _assert_error_payload(
-        response,
-        "invalid_input",
-        "Password does not meet policy",
-        details={"violations": expected_violations},
-    )
+        assert response.status_code == status_code
+        _assert_error_payload(
+            response,
+            error_type,
+            message,
+            details=details,
+        )
 
 
 def test_update_current_user_username_and_password(mock_client: TestClient) -> None:
@@ -293,7 +231,7 @@ def test_update_current_user_username_and_password(mock_client: TestClient) -> N
     assert new_login.status_code == HTTPStatus.OK
 
 
-def test_update_current_user_requires_current_password(mock_client: TestClient) -> None:
+def test_update_current_user_rejects_invalid_update_payloads(mock_client: TestClient) -> None:
     login_response = mock_client.post(
         "/v1/token",
         data={
@@ -303,78 +241,29 @@ def test_update_current_user_requires_current_password(mock_client: TestClient) 
     )
     assert login_response.status_code == HTTPStatus.OK
     headers = {"Authorization": f"Bearer {login_response.json()['access_token']}"}
-
-    response = mock_client.patch(
-        "/v1/users/me",
-        headers=headers,
-        json={"new_password": "AdminPass9"},
+    payloads = (
+        {"new_password": "AdminPass9"},
+        {"current_password": "admin123"},
+        {"username": " ADMIN "},
+        {"current_password": "admin123", "new_password": "admin123"},
+    )
+    expected_messages = (
+        "current_password is required to update password",
+        "new_password is required when current_password is provided",
+        "No changes detected",
+        "New password must be different from current password",
     )
 
-    assert response.status_code == HTTPStatus.BAD_REQUEST
-    _assert_error_payload(response, "invalid_input", "current_password is required to update password")
+    for payload, expected_message in zip(payloads, expected_messages, strict=True):
+        response = mock_client.patch("/v1/users/me", headers=headers, json=payload)
 
+        assert response.status_code == HTTPStatus.BAD_REQUEST
+        _assert_error_payload(response, "invalid_input", expected_message)
 
-def test_update_current_user_requires_new_password(mock_client: TestClient) -> None:
-    login_response = mock_client.post(
-        "/v1/token",
-        data={
-            "username": "admin",
-            "password": "admin123",
-        },
-    )
-    assert login_response.status_code == HTTPStatus.OK
-    headers = {"Authorization": f"Bearer {login_response.json()['access_token']}"}
-
-    response = mock_client.patch(
-        "/v1/users/me",
-        headers=headers,
-        json={"current_password": "admin123"},
-    )
-
-    assert response.status_code == HTTPStatus.BAD_REQUEST
-    _assert_error_payload(response, "invalid_input", "new_password is required when current_password is provided")
-
-
-def test_update_current_user_requires_at_least_one_field(mock_client: TestClient) -> None:
-    login_response = mock_client.post(
-        "/v1/token",
-        data={
-            "username": "admin",
-            "password": "admin123",
-        },
-    )
-    assert login_response.status_code == HTTPStatus.OK
-    headers = {"Authorization": f"Bearer {login_response.json()['access_token']}"}
-
-    response = mock_client.patch(
-        "/v1/users/me",
-        headers=headers,
-        json={},
-    )
+    response = mock_client.patch("/v1/users/me", headers=headers, json={})
 
     assert response.status_code == HTTPStatus.BAD_REQUEST
     _assert_error_payload(response, "invalid_input", "At least one field must be provided to update the user")
-
-
-def test_update_current_user_same_username_has_no_changes(mock_client: TestClient) -> None:
-    login_response = mock_client.post(
-        "/v1/token",
-        data={
-            "username": "admin",
-            "password": "admin123",
-        },
-    )
-    assert login_response.status_code == HTTPStatus.OK
-    headers = {"Authorization": f"Bearer {login_response.json()['access_token']}"}
-
-    response = mock_client.patch(
-        "/v1/users/me",
-        headers=headers,
-        json={"username": " ADMIN "},
-    )
-
-    assert response.status_code == HTTPStatus.BAD_REQUEST
-    _assert_error_payload(response, "invalid_input", "No changes detected")
 
 
 def test_update_current_user_rejects_invalid_current_password(mock_client: TestClient) -> None:
@@ -400,30 +289,6 @@ def test_update_current_user_rejects_invalid_current_password(mock_client: TestC
     assert response.status_code == HTTPStatus.UNAUTHORIZED
     _assert_error_payload(response, "unauthorized", "Current password is invalid")
     assert response.headers["www-authenticate"] == "Bearer"
-
-
-def test_update_current_user_rejects_same_password(mock_client: TestClient) -> None:
-    login_response = mock_client.post(
-        "/v1/token",
-        data={
-            "username": "admin",
-            "password": "admin123",
-        },
-    )
-    assert login_response.status_code == HTTPStatus.OK
-    headers = {"Authorization": f"Bearer {login_response.json()['access_token']}"}
-
-    response = mock_client.patch(
-        "/v1/users/me",
-        headers=headers,
-        json={
-            "current_password": "admin123",
-            "new_password": "admin123",
-        },
-    )
-
-    assert response.status_code == HTTPStatus.BAD_REQUEST
-    _assert_error_payload(response, "invalid_input", "New password must be different from current password")
 
 
 def test_update_current_user_username_conflict(mock_client: TestClient) -> None:

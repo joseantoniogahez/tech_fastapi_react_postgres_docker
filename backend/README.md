@@ -1,13 +1,12 @@
 # backend (FastAPI API)
 
-Backend service for the Books App.
+Reusable FastAPI backend template organized by feature.
 
-For full-stack orchestration and repository-level setup, see `../README.md`.
-For frontend-only setup, see `../books-app/README.md`.
+For repository-level setup, see `../README.md`.
 
-## Quick Start (Unit Tests + Basic Local Run)
+## Quick Start
 
-This project uses a repository-level virtual environment (`../.venv`).
+This project uses the repository virtual environment `../.venv`.
 
 From repo root:
 
@@ -25,55 +24,39 @@ Activate:
 source .venv/bin/activate
 ```
 
-Install dependencies (backend runtime + backend tests + repo tooling):
+Install dependencies:
 
 ```bash
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
-Run backend unit tests:
+Run tests:
 
 ```bash
 pytest backend/tests
 ```
 
-Run only one test module or a subset:
+## Default Configuration
 
-```bash
-pytest backend/tests/routers/test_auth.py
-pytest backend/tests -k "rbac or token"
-```
-
-Coverage (from `backend/`):
-
-```bash
-cd backend
-pytest --cov-report term-missing:skip-covered --cov app
-```
-
-## Basic Backend Configuration
-
-The backend can run with defaults (SQLite) for API/DB settings:
+The backend can run locally with SQLite defaults:
 
 - `APP_ENV=local`
 - `DB_TYPE=sqlite+aiosqlite`
-- `DB_NAME=library.db`
+- `DB_NAME=app.db`
 - `API_PATH=`
 - `API_CORS_ORIGINS=`
 - `LOG_LEVEL=WARNING`
 
-JWT settings default for `local/test`:
+JWT defaults for `local/test`:
 
 - `JWT_SECRET_KEY=local-dev-jwt-secret`
-- `JWT_ALGORITHM` (for example `HS256`)
-- `JWT_ACCESS_TOKEN_EXPIRE_MINUTES` (integer > 0)
+- `JWT_ALGORITHM=HS256`
+- `JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30`
+- `JWT_ISSUER=fastapi-template`
+- `JWT_AUDIENCE=fastapi-template-api`
 
-When `APP_ENV=prod` (or `production` / `staging`), JWT settings are required from environment variables and validated at startup.
-
-If `DB_TYPE` starts with `sqlite`, only `DB_TYPE` and `DB_NAME` are required.
-
-If `DB_TYPE` is a network database driver (for example `postgresql+asyncpg`), set all DB network variables:
+For network databases, set:
 
 - `DB_USER`
 - `DB_PASSWORD`
@@ -81,7 +64,7 @@ If `DB_TYPE` is a network database driver (for example `postgresql+asyncpg`), se
 - `DB_PORT`
 - `DB_NAME`
 
-## Run Backend Locally
+## Run Locally
 
 From repo root:
 
@@ -90,9 +73,9 @@ cd backend
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-API docs: `http://localhost:8000/docs`
+Docs: `http://localhost:8000/docs`
 
-Runtime API namespace: `/v1` (for example `POST /v1/token`).
+Base API namespace: `/v1`
 
 ## Migrations
 
@@ -102,45 +85,53 @@ From `backend/`:
 alembic upgrade head
 ```
 
-Create a new migration:
+Create a migration:
 
 ```bash
 alembic revision --autogenerate -m "describe change"
 ```
 
-## RBAC Bootstrap (Idempotent)
+## RBAC Bootstrap
 
-After running migrations, bootstrap RBAC base data:
+After migrations, seed the RBAC baseline:
 
 ```bash
 cd backend
 python -m utils.rbac_bootstrap --admin-username admin --admin-password "StrongSeed9"
 ```
 
-What this command does:
+This command:
 
-- Upserts base permissions (`books:create`, `books:update`, `books:delete`).
-- Creates missing base roles (`admin_role`, `reader_role`).
-- Ensures base role-permission assignments (admin gets all base permissions).
-- Creates the bootstrap admin user only if missing.
-- Ensures bootstrap admin user has `admin_role`.
+- upserts base permissions,
+- creates missing base roles,
+- creates the admin user only if missing,
+- ensures the admin role assignment.
 
-Environment variable defaults:
+Current base permissions:
 
-- `RBAC_BOOTSTRAP_ADMIN_USERNAME` (default: `admin`)
-- `RBAC_BOOTSTRAP_ADMIN_PASSWORD` (required only when creating the admin user)
+- `roles:manage`
+- `role_permissions:manage`
+- `user_roles:manage`
 
-The command is safe to run repeatedly and does not create duplicates.
+Environment variables:
 
-## Documentation By Topic
+- `RBAC_BOOTSTRAP_ADMIN_USERNAME` default: `admin`
+- `RBAC_BOOTSTRAP_ADMIN_PASSWORD` required only when creating the admin user
 
-- Docs index: `docs/README.md`
-- API endpoints: `docs/operations/api_endpoints.md`
-- Authentication and account management: `docs/operations/authentication.md`
-- RBAC permission matrix: `docs/operations/authorization_matrix.md`
-- Error mapping and payload format: `docs/operations/error_mapping.md`
-- Unit of Work transaction boundary and atomic write policy: `docs/architecture/unit_of_work.md`
-- OpenAPI documentation pattern: `docs/architecture/openapi_documentation.md`
-- Dependency injection guide: `docs/architecture/dependency_injection.md`
-- Layered architecture target, ports/adapters, and refactor rules: `docs/architecture/clean_architecture_ports_adapters.md`
-- Router auto-registration: `docs/architecture/router_registration.md`
+## Template Shape
+
+The backend is organized as:
+
+- `app/core`: shared runtime, config, security, authorization, DB, setup
+- `app/features/auth`: register, login, current-user profile
+- `app/features/health`: health endpoint
+- `app/features/rbac`: roles, permissions, user-role assignment
+- `app/features/outbox`: outbox capability
+
+## Documentation
+
+- `docs/README.md`
+- `docs/operations/api_endpoints.md`
+- `docs/operations/authentication.md`
+- `docs/operations/authorization_matrix.md`
+- `docs/operations/error_mapping.md`

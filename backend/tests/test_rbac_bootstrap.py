@@ -5,12 +5,9 @@ import pytest
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.infrastructure.database import Base
-from app.models.permission import Permission
-from app.models.role import Role
-from app.models.role_permission import RolePermission
-from app.models.user import User
-from app.models.user_role import UserRole
+from app.core.db.database import Base
+from app.features.auth.models import User
+from app.features.rbac.models import Permission, Role, RolePermission, UserRole
 from utils.rbac_bootstrap import BASE_PERMISSION_SPECS, BASE_ROLE_PERMISSION_SPECS, bootstrap_rbac
 from utils.testing_support.database import MockDatabase
 

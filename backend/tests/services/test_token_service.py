@@ -2,8 +2,8 @@ from datetime import UTC, datetime, timedelta
 
 import jwt
 
-from app.const.settings import AuthSettings
-from app.services.token_service import JwtTokenService
+from app.core.config.settings import AuthSettings
+from app.core.security.service import JwtTokenService
 
 
 def _build_token_service() -> JwtTokenService:

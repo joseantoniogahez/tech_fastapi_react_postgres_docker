@@ -1,4 +1,4 @@
-from app.services.password_service import Argon2PasswordService
+from app.core.security.service import Argon2PasswordService
 
 
 def test_hash_and_verify_password_round_trip() -> None:

@@ -2,7 +2,7 @@ import asyncio
 
 import pytest
 
-from app.repositories.uow import UnitOfWork
+from app.core.db.uow import UnitOfWork
 from utils.testing_support.repositories import build_session_mock
 
 

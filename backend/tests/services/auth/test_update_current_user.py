@@ -2,9 +2,10 @@ import asyncio
 
 import pytest
 
-from app.exceptions.repositories import RepositoryConflictError, RepositoryInternalError
-from app.exceptions.services import ConflictError, InvalidInputError, UnauthorizedError
-from app.schemas.application.auth import UpdateCurrentUserCommand
+from app.core.errors.repositories import RepositoryConflictError, RepositoryInternalError
+from app.core.errors.services import ConflictError, InvalidInputError, UnauthorizedError
+from app.features.auth.principal import CurrentPrincipal
+from app.features.auth.schemas import UpdateCurrentUserCommand
 from utils.testing_support.auth_service import assert_unit_of_work_scope_committed, build_service, build_user
 
 
@@ -91,7 +92,7 @@ def test_build_password_change_validates_current_and_new_password() -> None:
 def test_persist_user_changes_propagates_repository_conflict_for_username_change() -> None:
     service, repository = build_service()
     current_user = build_user(service)
-    repository.update.side_effect = RepositoryConflictError(
+    repository.update_user.side_effect = RepositoryConflictError(
         message="Username already exists",
         details={"username": "new-user"},
     )
@@ -109,7 +110,7 @@ def test_persist_user_changes_propagates_repository_conflict_for_username_change
 def test_persist_user_changes_propagates_repository_internal_error() -> None:
     service, repository = build_service()
     current_user = build_user(service)
-    repository.update.side_effect = RepositoryInternalError()
+    repository.update_user.side_effect = RepositoryInternalError()
 
     async def run_test() -> None:
         with pytest.raises(RepositoryInternalError) as exc_info:
@@ -121,9 +122,10 @@ def test_persist_user_changes_propagates_repository_internal_error() -> None:
 
 
 def test_update_current_user_raises_when_no_changes_are_detected() -> None:
-    service, _ = build_service()
+    service, repository = build_service()
     current_user = build_user(service, username="john")
     update_data = UpdateCurrentUserCommand(username="  JOHN ")
+    repository.get_by_username.return_value = current_user
 
     async def run_test() -> None:
         with pytest.raises(InvalidInputError) as exc_info:
@@ -138,7 +140,8 @@ def test_update_current_user_persists_username_and_password_changes() -> None:
     service, repository = build_service()
     current_user = build_user(service, user_id=9, username="john", password="StrongPass1")
     updated_user = build_user(service, user_id=9, username="new.user", password="AnotherPass1")
-    repository.update.return_value = updated_user
+    repository.get_by_username.return_value = current_user
+    repository.update_user.return_value = updated_user
     update_data = UpdateCurrentUserCommand(
         username="new.user",
         current_password="StrongPass1",
@@ -152,10 +155,28 @@ def test_update_current_user_persists_username_and_password_changes() -> None:
         assert result.username == "new.user"
         assert result.disabled is False
         repository.username_exists.assert_awaited_once_with("new.user", exclude_user_id=9)
-        repository.update.assert_awaited_once()
+        repository.update_user.assert_awaited_once()
         assert_unit_of_work_scope_committed(service.unit_of_work)
-        update_kwargs = repository.update.await_args.kwargs
+        update_kwargs = repository.update_user.await_args.kwargs
         assert update_kwargs["username"] == "new.user"
         assert service.password_service.verify_password("AnotherPass1", update_kwargs["hashed_password"]) is True
+
+    asyncio.run(run_test())
+
+
+def test_update_current_user_raises_unauthorized_when_principal_user_is_missing() -> None:
+    service, repository = build_service()
+    repository.get_by_username.return_value = None
+    principal = CurrentPrincipal(
+        id=55,
+        username="ghost-user",
+        disabled=False,
+        tenant_id=None,
+    )
+    update_data = UpdateCurrentUserCommand(username="new-name")
+
+    async def run_test() -> None:
+        with pytest.raises(UnauthorizedError, match="Could not validate credentials"):
+            await service.update_current_user(principal, update_data)
 
     asyncio.run(run_test())

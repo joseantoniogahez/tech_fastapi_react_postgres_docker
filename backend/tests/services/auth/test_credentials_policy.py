@@ -2,7 +2,7 @@ from typing import cast
 
 import pytest
 
-from app.exceptions.services import InvalidInputError
+from app.core.errors.services import InvalidInputError
 from utils.testing_support.auth_service import build_service
 
 

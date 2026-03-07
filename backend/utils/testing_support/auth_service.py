@@ -1,12 +1,11 @@
 from typing import cast
 from unittest.mock import AsyncMock, MagicMock
 
-from app.const.settings import AuthSettings
-from app.models.user import User
-from app.services.auth import AuthService
-from app.services.password_service import PasswordServicePort
-from app.services.permission_evaluator import PermissionEvaluatorPort
-from app.services.token_service import TokenServicePort
+from app.core.authorization.permission_evaluator import PermissionEvaluatorPort
+from app.core.config.settings import AuthSettings
+from app.core.security.service import PasswordServicePort, TokenServicePort
+from app.features.auth.models import User
+from app.features.auth.service import AuthService
 
 
 def assert_unit_of_work_scope_committed(unit_of_work: object) -> None:
@@ -21,8 +20,8 @@ def _build_repository_mock() -> MagicMock:
     repository = MagicMock()
     repository.get_by_username = AsyncMock()
     repository.username_exists = AsyncMock(return_value=False)
-    repository.create = AsyncMock()
-    repository.update = AsyncMock()
+    repository.create_user = AsyncMock()
+    repository.update_user = AsyncMock()
     repository.get_rbac_version = AsyncMock(
         return_value="0" * 64,
     )

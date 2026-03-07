@@ -3,13 +3,12 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from app.exceptions.repositories import RepositoryConflictError
-from app.exceptions.services import ConflictError, InvalidInputError
-from app.models.role import Role
-from app.models.role_inheritance import RoleInheritance
-from app.schemas.application.rbac import CreateRoleCommand, UpdateRoleCommand
-from app.services.rbac import RBACService
-from app.services.rbac.mappers import normalize_role_name
+from app.core.errors.repositories import RepositoryConflictError
+from app.core.errors.services import ConflictError, InvalidInputError
+from app.features.rbac.models import Role, RoleInheritance
+from app.features.rbac.schemas import CreateRoleCommand, UpdateRoleCommand
+from app.features.rbac.service import RBACService
+from app.features.rbac.service_mappers import normalize_role_name
 
 
 def _build_repository_mock() -> MagicMock:
@@ -18,7 +17,6 @@ def _build_repository_mock() -> MagicMock:
     repository.list_permissions = AsyncMock(return_value=[])
     repository.list_role_permissions = AsyncMock(return_value=[])
     repository.list_role_inheritances = AsyncMock(return_value=[])
-    repository.list_effective_role_permissions = AsyncMock(return_value=[])
     repository.get_role = AsyncMock(return_value=None)
     repository.role_name_exists = AsyncMock(return_value=False)
     repository.create_role = AsyncMock()
@@ -65,7 +63,8 @@ def test_list_roles_returns_empty_without_fetching_permissions() -> None:
         assert roles == []
         repository.list_roles.assert_awaited_once_with()
         repository.list_permissions.assert_not_awaited()
-        repository.list_effective_role_permissions.assert_not_awaited()
+        repository.list_role_permissions.assert_not_awaited()
+        repository.list_role_inheritances.assert_not_awaited()
 
     asyncio.run(run_test())
 
@@ -96,8 +95,8 @@ def test_list_roles_uses_effective_permissions() -> None:
         roles = await service.list_roles()
 
         assert len(roles) == 1
-        repository.list_effective_role_permissions.assert_awaited_once_with(role_ids=(2,))
-        repository.list_role_permissions.assert_not_awaited()
+        repository.list_role_permissions.assert_awaited_once_with()
+        repository.list_role_inheritances.assert_awaited_once_with()
 
     asyncio.run(run_test())
 

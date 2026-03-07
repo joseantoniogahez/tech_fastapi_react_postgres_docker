@@ -3,7 +3,7 @@ from collections import Counter
 
 import pytest
 
-from app.authorization import (
+from app.core.authorization import (
     PERMISSION_CATALOG,
     PERMISSION_CATALOG_BY_ID,
     PERMISSION_ID_PATTERN,
@@ -18,8 +18,7 @@ from app.authorization import (
     validate_permission_catalog,
     validate_read_access_policy_catalog,
 )
-from app.dependencies.authorization_books import BOOK_PERMISSION_IDS
-from app.dependencies.authorization_rbac import RBAC_PERMISSION_IDS
+from app.features.rbac.dependencies import RBAC_PERMISSION_IDS
 from utils.testing_support.docs import AUTHORIZATION_MATRIX_PATH
 
 PERMISSION_TOKEN_PATTERN = re.compile(r"`([a-z][a-z0-9_]*:[a-z][a-z0-9_]*)`")
@@ -42,12 +41,6 @@ def test_permission_catalog_ids_follow_resource_action_naming() -> None:
     assert invalid_ids == []
 
 
-def test_book_authorization_dependencies_reference_catalog_permissions() -> None:
-    catalog_ids = set(PERMISSION_CATALOG_BY_ID)
-    orphan_ids = sorted(set(BOOK_PERMISSION_IDS.values()) - catalog_ids)
-    assert orphan_ids == []
-
-
 def test_rbac_authorization_dependencies_reference_catalog_permissions() -> None:
     catalog_ids = set(PERMISSION_CATALOG_BY_ID)
     orphan_ids = sorted(set(RBAC_PERMISSION_IDS.values()) - catalog_ids)
@@ -67,23 +60,23 @@ def test_authorization_matrix_references_catalog_permissions_only() -> None:
 
 
 def test_build_permission_id_raises_for_invalid_format() -> None:
-    with pytest.raises(ValueError, match="Invalid permission id 'Books:create'"):
-        build_permission_id(resource="Books", action="create")
+    with pytest.raises(ValueError, match="Invalid permission id 'Roles:manage'"):
+        build_permission_id(resource="Roles", action="manage")
 
 
 def test_validate_permission_catalog_raises_for_duplicate_ids() -> None:
     duplicate_catalog = (
-        PermissionDefinition(resource="books", action="create", name="Create books"),
-        PermissionDefinition(resource="books", action="create", name="Create books duplicate"),
+        PermissionDefinition(resource="roles", action="manage", name="Manage roles"),
+        PermissionDefinition(resource="roles", action="manage", name="Manage roles duplicate"),
     )
 
-    with pytest.raises(ValueError, match="Duplicate permission ids in PERMISSION_CATALOG: books:create"):
+    with pytest.raises(ValueError, match="Duplicate permission ids in PERMISSION_CATALOG: roles:manage"):
         validate_permission_catalog(duplicate_catalog)
 
 
 def test_validate_read_access_policy_catalog_raises_for_invalid_method() -> None:
     invalid_catalog = (
-        ReadAccessPolicyDefinition(method="POST", path="/books/private", access_level=ReadAccessLevel.PUBLIC),
+        ReadAccessPolicyDefinition(method="POST", path="/v1/private", access_level=ReadAccessLevel.PUBLIC),
     )
 
     with pytest.raises(ValueError, match="Invalid read-access method 'POST'"):
@@ -92,15 +85,15 @@ def test_validate_read_access_policy_catalog_raises_for_invalid_method() -> None
 
 def test_validate_read_access_policy_catalog_raises_for_invalid_path() -> None:
     invalid_catalog = (
-        ReadAccessPolicyDefinition(method="GET", path="books/private", access_level=ReadAccessLevel.PUBLIC),
+        ReadAccessPolicyDefinition(method="GET", path="v1/private", access_level=ReadAccessLevel.PUBLIC),
     )
 
-    with pytest.raises(ValueError, match="Invalid read-access path 'books/private'"):
+    with pytest.raises(ValueError, match="Invalid read-access path 'v1/private'"):
         validate_read_access_policy_catalog(invalid_catalog)
 
 
 def test_validate_read_access_policy_catalog_raises_for_invalid_access_level() -> None:
-    invalid_catalog = (ReadAccessPolicyDefinition(method="GET", path="/books/private", access_level="internal"),)
+    invalid_catalog = (ReadAccessPolicyDefinition(method="GET", path="/v1/private", access_level="internal"),)
 
     with pytest.raises(ValueError, match="Invalid read-access level 'internal'"):
         validate_read_access_policy_catalog(invalid_catalog)
@@ -108,7 +101,7 @@ def test_validate_read_access_policy_catalog_raises_for_invalid_access_level() -
 
 def test_validate_read_access_policy_catalog_raises_for_permission_policy_without_permission_id() -> None:
     invalid_catalog = (
-        ReadAccessPolicyDefinition(method="GET", path="/books/private", access_level=ReadAccessLevel.PERMISSION),
+        ReadAccessPolicyDefinition(method="GET", path="/v1/private", access_level=ReadAccessLevel.PERMISSION),
     )
 
     with pytest.raises(ValueError, match="Permission-based read-access policies require permission_id"):
@@ -119,13 +112,13 @@ def test_validate_read_access_policy_catalog_raises_for_unknown_permission_id() 
     invalid_catalog = (
         ReadAccessPolicyDefinition(
             method="GET",
-            path="/books/private",
+            path="/v1/private",
             access_level=ReadAccessLevel.PERMISSION,
-            permission_id="books:read",
+            permission_id="resources:read",
         ),
     )
 
-    with pytest.raises(ValueError, match="Unknown permission id 'books:read'"):
+    with pytest.raises(ValueError, match="Unknown permission id 'resources:read'"):
         validate_read_access_policy_catalog(invalid_catalog)
 
 
@@ -133,9 +126,9 @@ def test_validate_read_access_policy_catalog_raises_for_permission_id_on_non_per
     invalid_catalog = (
         ReadAccessPolicyDefinition(
             method="GET",
-            path="/books/public",
+            path="/v1/public",
             access_level=ReadAccessLevel.PUBLIC,
-            permission_id=PermissionId.BOOK_CREATE,
+            permission_id=PermissionId.ROLE_MANAGE,
         ),
     )
 
@@ -145,11 +138,11 @@ def test_validate_read_access_policy_catalog_raises_for_permission_id_on_non_per
 
 def test_validate_read_access_policy_catalog_raises_for_duplicate_endpoints() -> None:
     invalid_catalog = (
-        ReadAccessPolicyDefinition(method="GET", path="/books/private", access_level=ReadAccessLevel.PUBLIC),
-        ReadAccessPolicyDefinition(method="GET", path="/books/private", access_level=ReadAccessLevel.PUBLIC),
+        ReadAccessPolicyDefinition(method="GET", path="/v1/private", access_level=ReadAccessLevel.PUBLIC),
+        ReadAccessPolicyDefinition(method="GET", path="/v1/private", access_level=ReadAccessLevel.PUBLIC),
     )
 
-    with pytest.raises(ValueError, match="Duplicate endpoints in READ_ACCESS_POLICY_CATALOG: GET /books/private"):
+    with pytest.raises(ValueError, match="Duplicate endpoints in READ_ACCESS_POLICY_CATALOG: GET /v1/private"):
         validate_read_access_policy_catalog(invalid_catalog)
 
 
@@ -157,9 +150,9 @@ def test_validate_read_access_policy_catalog_allows_permission_based_read_policy
     valid_catalog = (
         ReadAccessPolicyDefinition(
             method="GET",
-            path="/books/private",
+            path="/v1/private",
             access_level=ReadAccessLevel.PERMISSION,
-            permission_id=PermissionId.BOOK_CREATE,
+            permission_id=PermissionId.ROLE_MANAGE,
         ),
     )
 

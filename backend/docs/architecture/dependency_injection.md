@@ -1,121 +1,64 @@
-# Dependency Injection Guide (FastAPI Native)
+# Dependency Injection Guide
 
-## 1) Dependency module layout
+## Goal
 
-Dependency providers are split by concern under `app/dependencies/`:
+Keep wiring in one place and keep feature modules focused on behavior.
 
-- `db.py`
-  - `get_db_session`
-  - `get_unit_of_work`
-- `repositories.py`
-  - `get_book_repository`
-  - `get_author_repository`
-  - `get_auth_repository`
-  - `get_rbac_repository`
-- `services.py`
-  - `get_book_service`
-  - `get_author_service`
-  - `get_auth_service`
-  - `get_auth_settings`
-  - `get_password_service`
-  - `get_token_service`
-  - `get_rbac_service`
-- `authentication.py`
-  - `get_auth_credentials`
-  - `get_current_user`
-  - `get_current_active_user`
-- `authorization.py`
-  - read-access dependencies (`allow_public_read_access`, `allow_authenticated_read_access`)
-  - generic policy builders (`require_permission`, `require_authorized_user`)
-- `authorization_books.py`
-  - book-specific authorization aliases
-- `authorization_rbac.py`
-  - RBAC-specific authorization aliases
+## Current layout
 
-## 2) Typed aliases used in routers
+Dependency providers live in `app/core/setup/dependencies.py`.
 
-- Service aliases:
-  - `BookServiceDependency`
-  - `AuthorServiceDependency`
-  - `AuthServiceDependency`
-  - `RBACServiceDependency`
-- Transaction alias:
-  - `UnitOfWorkDependency`
-- User aliases:
-  - `CurrentUserDependency`
-  - `CurrentActiveUserDependency`
-- Read access aliases:
-  - `PublicReadAccessDependency`
-  - `AuthenticatedReadAccessDependency`
-- Permission aliases:
-  - `BookCreateAuth`
-  - `BookUpdateAuth`
-  - `BookDeleteAuth`
-  - `RBACRoleAdminAuth`
-  - `RBACRolePermissionAdminAuth`
-  - `RBACUserRoleAdminAuth`
+Main providers:
 
-## 3) Endpoint examples
-
-### `POST /v1/books/`
-
-```python
-from app.openapi.books import CreateBookPayload
-from app.schemas.application.book import BookMutationCommand
-
-@router.post("/", response_model=BookResponse, **CREATE_BOOK_DOC)
-async def create_book(
-    book_service: BookServiceDependency,
-    _authorized_user: BookCreateAuth,
-    book_data: CreateBookPayload,
-) -> BookResponse:
-    book = await book_service.create(BookMutationCommand.from_api(book_data))
-    return BookResponse.model_validate(book)
-```
-
-### `PUT /v1/books/{book_id}`
-
-```python
-from app.openapi.books import BookIdPath, UpdateBookPayload
-from app.exceptions.services import NotFoundError
-from app.schemas.application.book import BookMutationCommand
-
-@router.put("/{book_id}", response_model=BookResponse, **UPDATE_BOOK_DOC)
-async def update_book(
-    book_service: BookServiceDependency,
-    _authorized_user: BookUpdateAuth,
-    book_id: BookIdPath,
-    book_data: UpdateBookPayload,
-) -> BookResponse:
-    book = await book_service.update(book_id, BookMutationCommand.from_api(book_data))
-    if book is None:
-        raise NotFoundError(message=f"Book {book_id} not found", details={"book_id": book_id})
-    return BookResponse.model_validate(book)
-```
-
-## 4) How DI enables one transaction per use case
-
-`get_db_session` creates one `AsyncSession` per request. That same session is reused by:
-
-- repository providers
+- `get_db_session`
 - `get_unit_of_work`
-- service providers
+- `get_auth_repository`
+- `get_rbac_repository`
+- `get_outbox_repository`
+- `get_auth_service`
+- `get_rbac_service`
+- `get_outbox_service`
+- `get_password_service`
+- `get_token_service`
 
-This guarantees repositories and Unit of Work share the same transaction context.
+Feature-local auth dependencies live in:
+
+- `app/features/auth/dependencies.py`
+- `app/features/rbac/dependencies.py`
+- `app/core/authorization/dependencies.py`
+
+## Router usage
+
+Routers consume typed dependency aliases instead of constructing services directly.
+
+Example:
+
+```python
+@router.get("/roles", response_model=list[RBACRole], **GET_ROLES_DOC)
+async def list_roles(
+    rbac_service: RBACServiceDependency,
+    _authorized_user: RBACRoleAdminAuth,
+) -> list[RBACRole]:
+    roles = await rbac_service.list_roles()
+    return to_role_response_list(roles)
+```
+
+## Transaction model
+
+`get_db_session` creates one `AsyncSession` per request.
+That same session is reused by repositories and `UnitOfWork`, so one use case runs inside one transaction scope.
 
 Practical effect:
 
-- success path: one final commit at Unit of Work exit
+- success path: commit at Unit of Work exit
 - failure path: rollback for all pending writes in scope
 
-See `unit_of_work.md` for detailed behavior.
+## Test overrides
 
-## 5) Test overrides with `app.dependency_overrides`
-
-### Override DB session
+Use `app.dependency_overrides` in tests.
 
 ```python
-from app.dependencies.db import get_db_session
+from app.core.setup.dependencies import get_db_session
 from app.main import app
 
 async def override_db_session():
@@ -125,22 +68,7 @@ async def override_db_session():
 app.dependency_overrides[get_db_session] = override_db_session
 ```
 
-### Override a service provider
-
-```python
-from app.dependencies.services import get_auth_service
-from app.schemas.application.auth import AccessTokenResult
-
-class FakeAuthService:
-    async def login(self, credentials):
-        return AccessTokenResult(access_token="fake-token")
-
-app.dependency_overrides[get_auth_service] = lambda: FakeAuthService()
-```
-
-### Cleanup
-
-Always clear overrides during teardown:
+Clear overrides during teardown:
 
 ```python
 app.dependency_overrides.clear()

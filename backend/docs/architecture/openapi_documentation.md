@@ -2,96 +2,48 @@
 
 ## Goal
 
-Keep routers readable while still providing rich Swagger UI docs at `http://localhost:8000/docs`.
+Keep routers readable while preserving explicit endpoint documentation.
 
 ## Current structure
 
-- Common helpers: `app/openapi/common.py`
-- Domain-specific docs:
-  - `app/openapi/auth.py`
-  - `app/openapi/books/`
-  - `app/openapi/rbac/`
-  - `app/openapi/authors.py`
-  - `app/openapi/health.py`
-- Routers consume those constants with `**DOC_CONSTANT`.
+OpenAPI metadata is owned by the feature that exposes the endpoint.
+
+- shared helpers: `app/core/common/openapi.py`
+- feature docs:
+  - `app/features/auth/openapi.py`
+  - `app/features/health/openapi.py`
+  - `app/features/rbac/openapi/__init__.py`
+  - `app/features/rbac/openapi/docs.py`
+  - `app/features/rbac/openapi/params.py`
+
+Routers consume those constants with `**DOC_CONSTANT`.
 
 ## Router pattern
 
-Router modules should stay focused on behavior:
-
 ```python
-@router.get("/", response_model=List[BookResponse], **GET_BOOKS_DOC)
-async def get_books(...):
+@router.get("/roles", response_model=list[RBACRole], **GET_ROLES_DOC)
+async def list_roles(...):
     ...
 ```
 
-Request parameter/body metadata is also defined in `app/openapi/*` via typed aliases:
+Typed payload/path aliases can also live next to feature docs:
 
 ```python
-AuthorIdQuery = Annotated[
-    Optional[int],
-    Query(ge=1, description="Filter by author ID", examples=[1]),
-]
-
-CreateBookPayload = Annotated[
-    CreateBookRequest,
-    Body(description="Payload to create a book.", examples=CREATE_BOOK_BODY_EXAMPLES),
-]
-```
-
-Router usage stays minimal:
-
-```python
-async def create_book(
-    book_service: BookServiceDependency,
-    _authorized_user: BookCreateAuth,
-    book_data: CreateBookPayload,
-) -> BookResponse:
-    ...
+RoleIdPath = Annotated[int, Path(ge=1)]
+CreateRolePayload = Annotated[CreateRoleRequest, Body(...)]
 ```
 
 ## Naming conventions
 
-- Endpoint metadata: `<ENDPOINT_NAME>_DOC`
-  - Example: `GET_BOOK_DOC`, `UPDATE_CURRENT_USER_DOC`
-- Request body examples: `<ENDPOINT_NAME>_BODY_EXAMPLES`
-  - Example: `CREATE_BOOK_BODY_EXAMPLES`
-- Shared helpers:
+- endpoint metadata: `<ENDPOINT_NAME>_DOC`
+- payload/path aliases: descriptive singular names such as `CreateRolePayload`, `RoleIdPath`
+- shared helpers:
   - `build_error_response`
   - `INTERNAL_ERROR_EXAMPLE`
 
-## Recommended endpoint documentation checklist
-
-1. `summary`
-1. `description`
-1. `response_description`
-1. `responses` with realistic status codes
-1. At least one success example
-1. At least one representative error example for each expected status code
-1. `WWW-Authenticate` header docs for `401` responses
-
-## Error response consistency
-
-Use `build_error_response(...)` from `app/openapi/common.py` to enforce:
-
-- Stable payload schema
-- Shared header docs for bearer challenges
-- Consistent error examples across domains
-
 ## Adding docs for a new endpoint
 
-1. Add documentation constants in the domain file under `app/openapi/`.
-1. Import and apply them in the router decorator with `**CONSTANT`.
-1. Add or update body/query/path examples as needed.
-1. Run router tests to ensure behavior remains unchanged.
-
-## Verification
-
-After changes:
-
-1. Open `http://localhost:8000/docs` and inspect rendered endpoint docs.
-1. Run:
-
-```bash
-.\.venv\Scripts\python -m pytest backend/tests/routers -q -p no:cacheprovider
-```
+1. Add metadata constants in the feature OpenAPI module.
+1. Import them in the feature router.
+1. Keep examples close to the feature, not in a global demo module.
+1. Run router tests after updating the docs.

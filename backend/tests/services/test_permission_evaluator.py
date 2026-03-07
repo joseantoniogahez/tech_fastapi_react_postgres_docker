@@ -2,8 +2,8 @@ from unittest.mock import patch
 
 import pytest
 
-from app.authorization import PermissionScope
-from app.services.permission_evaluator import PermissionEvaluator
+from app.core.authorization import PermissionScope
+from app.core.authorization.permission_evaluator import PermissionEvaluator
 
 
 def test_normalize_required_scope_trims_and_lowercases() -> None:
@@ -183,7 +183,7 @@ def test_scope_evaluator_defensive_fallback_returns_false_for_unknown_required_s
     evaluator = PermissionEvaluator()
 
     # Simula una futura expansion de scopes para ejecutar la rama defensiva actual.
-    with patch.dict("app.services.permission_evaluator.PERMISSION_SCOPE_RANK", {"regional": 2}, clear=False):
+    with patch.dict("app.core.authorization.permission_evaluator.PERMISSION_SCOPE_RANK", {"regional": 2}, clear=False):
         allowed = evaluator.is_granted_scope_allowed(
             granted_scope=PermissionScope.ANY,
             required_scope="regional",

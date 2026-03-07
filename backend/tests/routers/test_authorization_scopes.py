@@ -5,15 +5,15 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from fastapi import Depends, FastAPI
 from starlette.testclient import TestClient
 
-from app.authorization import PermissionId, PermissionScope
-from app.const.settings import AuthSettings
-from app.dependencies.authentication import get_current_active_user
-from app.dependencies.authorization import PermissionResourceContext, require_permission
-from app.dependencies.services import get_auth_service
-from app.exceptions.setup.handlers import configure_exception_handlers
-from app.factory import configure_request_context_middleware
-from app.models.user import User
-from app.services.auth import AuthService
+from app.core.authorization import PermissionId, PermissionScope
+from app.core.authorization.dependencies import PermissionResourceContext, require_permission
+from app.core.config.settings import AuthSettings
+from app.core.errors.setup.handlers import configure_exception_handlers
+from app.core.setup.dependencies import get_auth_service
+from app.core.setup.factory import configure_request_context_middleware
+from app.features.auth.dependencies import get_current_active_user
+from app.features.auth.principal import CurrentPrincipal
+from app.features.auth.service import AuthService
 from utils.testing_support.api_assertions import assert_error_response
 
 
@@ -25,8 +25,8 @@ def _build_scoped_auth_service(
     repository = MagicMock()
     repository.get_by_username = AsyncMock()
     repository.username_exists = AsyncMock(return_value=False)
-    repository.create = AsyncMock()
-    repository.update = AsyncMock()
+    repository.create_user = AsyncMock()
+    repository.update_user = AsyncMock()
     repository.get_user_permission_scope = AsyncMock(return_value=granted_scope)
     repository.user_has_permission = AsyncMock()
 
@@ -57,13 +57,16 @@ def _build_scoped_test_app() -> FastAPI:
     async def tenant_context(target_tenant_id: int) -> PermissionResourceContext:
         return PermissionResourceContext(tenant_id=target_tenant_id)
 
+    async def conditional_policy(conditional_allow: bool) -> bool:
+        return conditional_allow
+
     @app.get("/scope/own/{target_user_id}")
     async def own_scope_route(
         _: Annotated[
             None,
             Depends(
                 require_permission(
-                    PermissionId.BOOK_UPDATE,
+                    PermissionId.ROLE_PERMISSION_MANAGE,
                     required_scope=PermissionScope.OWN,
                     resource_context_dependency=owner_context,
                 )
@@ -78,7 +81,7 @@ def _build_scoped_test_app() -> FastAPI:
             None,
             Depends(
                 require_permission(
-                    PermissionId.BOOK_UPDATE,
+                    PermissionId.ROLE_PERMISSION_MANAGE,
                     required_scope=PermissionScope.TENANT,
                     resource_context_dependency=tenant_context,
                 )
@@ -91,13 +94,34 @@ def _build_scoped_test_app() -> FastAPI:
     async def any_scope_route(
         _: Annotated[
             None,
-            Depends(require_permission(PermissionId.BOOK_UPDATE, required_scope=PermissionScope.ANY)),
+            Depends(require_permission(PermissionId.ROLE_PERMISSION_MANAGE, required_scope=PermissionScope.ANY)),
         ],
     ) -> dict[str, str]:
         return {"status": "ok"}
 
-    first_permission_check = require_permission(PermissionId.BOOK_UPDATE, required_scope=PermissionScope.ANY)
-    second_permission_check = require_permission(PermissionId.BOOK_UPDATE, required_scope=PermissionScope.ANY)
+    @app.get("/scope/conditional/{conditional_allow}")
+    async def conditional_policy_route(
+        _: Annotated[
+            None,
+            Depends(
+                require_permission(
+                    PermissionId.ROLE_PERMISSION_MANAGE,
+                    required_scope=PermissionScope.ANY,
+                    conditional_policy_dependency=conditional_policy,
+                )
+            ),
+        ],
+    ) -> dict[str, str]:
+        return {"status": "ok"}
+
+    first_permission_check = require_permission(
+        PermissionId.ROLE_PERMISSION_MANAGE,
+        required_scope=PermissionScope.ANY,
+    )
+    second_permission_check = require_permission(
+        PermissionId.ROLE_PERMISSION_MANAGE,
+        required_scope=PermissionScope.ANY,
+    )
 
     @app.get("/scope/multi")
     async def multi_scope_route(
@@ -117,16 +141,15 @@ def _request_with_scope(
     current_user_tenant_id: int | None = 7,
 ) -> Any:
     app = _build_scoped_test_app()
-    current_user = User(
+    current_user = CurrentPrincipal(
         id=current_user_id,
         username="scope-user",
-        hashed_password="hash",
         disabled=False,
         tenant_id=current_user_tenant_id,
     )
     auth_service = _build_scoped_auth_service(granted_scope)
 
-    async def override_current_active_user() -> User:
+    async def override_current_active_user() -> CurrentPrincipal:
         return current_user
 
     async def override_auth_service() -> AuthService:
@@ -154,55 +177,31 @@ def test_scoped_authorization_denies_own_scope_for_other_owner() -> None:
     assert response.status_code == HTTPStatus.FORBIDDEN
     assert_error_response(
         response,
-        detail=f"Missing required permission: {PermissionId.BOOK_UPDATE}",
+        detail=f"Missing required permission: {PermissionId.ROLE_PERMISSION_MANAGE}",
         status_code=HTTPStatus.FORBIDDEN,
         code="forbidden",
-        meta={"permission_id": PermissionId.BOOK_UPDATE},
+        meta={"permission_id": PermissionId.ROLE_PERMISSION_MANAGE},
     )
 
 
-def test_scoped_authorization_allows_tenant_scope_for_matching_tenant() -> None:
-    response = _request_with_scope("/scope/tenant/7", granted_scope=PermissionScope.TENANT)
-
-    assert response.status_code == HTTPStatus.OK
-    assert response.json() == {"status": "ok"}
-
-
-def test_scoped_authorization_denies_tenant_scope_for_mismatched_tenant() -> None:
-    response = _request_with_scope("/scope/tenant/8", granted_scope=PermissionScope.TENANT)
+def test_conditional_policy_denies_when_policy_evaluates_false() -> None:
+    response = _request_with_scope("/scope/conditional/false", granted_scope=PermissionScope.ANY)
 
     assert response.status_code == HTTPStatus.FORBIDDEN
     assert_error_response(
         response,
-        detail=f"Missing required permission: {PermissionId.BOOK_UPDATE}",
+        detail=f"Conditional policy denied access: {PermissionId.ROLE_PERMISSION_MANAGE}",
         status_code=HTTPStatus.FORBIDDEN,
         code="forbidden",
-        meta={"permission_id": PermissionId.BOOK_UPDATE},
-    )
-
-
-def test_scoped_authorization_allows_any_scope_for_global_admin() -> None:
-    response = _request_with_scope("/scope/any", granted_scope=PermissionScope.ANY)
-
-    assert response.status_code == HTTPStatus.OK
-    assert response.json() == {"status": "ok"}
-
-
-def test_scoped_authorization_denies_non_global_scope_when_any_is_required() -> None:
-    response = _request_with_scope("/scope/any", granted_scope=PermissionScope.TENANT)
-
-    assert response.status_code == HTTPStatus.FORBIDDEN
-    assert_error_response(
-        response,
-        detail=f"Missing required permission: {PermissionId.BOOK_UPDATE}",
-        status_code=HTTPStatus.FORBIDDEN,
-        code="forbidden",
-        meta={"permission_id": PermissionId.BOOK_UPDATE},
+        meta={
+            "permission_id": PermissionId.ROLE_PERMISSION_MANAGE,
+            "authorization_stage": "conditional_policy",
+        },
     )
 
 
 def test_scoped_authorization_logs_allow_decision_event() -> None:
-    with patch("app.dependencies.authorization.logger") as authz_logger:
+    with patch("app.core.authorization.dependencies.logger") as authz_logger:
         response = _request_with_scope("/scope/own/10", granted_scope=PermissionScope.OWN)
 
     assert response.status_code == HTTPStatus.OK
@@ -215,7 +214,7 @@ def test_scoped_authorization_logs_allow_decision_event() -> None:
     )
     assert isinstance(log_call.args[1], str) and log_call.args[1]
     assert log_call.args[2] == 10
-    assert log_call.args[3] == PermissionId.BOOK_UPDATE
+    assert log_call.args[3] == PermissionId.ROLE_PERMISSION_MANAGE
     assert log_call.args[4] == PermissionScope.OWN
     assert log_call.args[5] == "allow"
     assert log_call.args[6] == "GET"
@@ -224,7 +223,7 @@ def test_scoped_authorization_logs_allow_decision_event() -> None:
 
 
 def test_scoped_authorization_logs_deny_decision_event() -> None:
-    with patch("app.dependencies.authorization.logger") as authz_logger:
+    with patch("app.core.authorization.dependencies.logger") as authz_logger:
         response = _request_with_scope("/scope/tenant/8", granted_scope=PermissionScope.TENANT)
 
     assert response.status_code == HTTPStatus.FORBIDDEN
@@ -237,7 +236,7 @@ def test_scoped_authorization_logs_deny_decision_event() -> None:
     )
     assert isinstance(log_call.args[1], str) and log_call.args[1]
     assert log_call.args[2] == 10
-    assert log_call.args[3] == PermissionId.BOOK_UPDATE
+    assert log_call.args[3] == PermissionId.ROLE_PERMISSION_MANAGE
     assert log_call.args[4] == PermissionScope.TENANT
     assert log_call.args[5] == "deny"
     assert log_call.args[6] == "GET"
@@ -247,10 +246,9 @@ def test_scoped_authorization_logs_deny_decision_event() -> None:
 
 def test_scoped_authorization_reuses_permission_lookup_within_request() -> None:
     app = _build_scoped_test_app()
-    current_user = User(
+    current_user = CurrentPrincipal(
         id=10,
         username="scope-user",
-        hashed_password="hash",
         disabled=False,
         tenant_id=7,
     )
@@ -259,7 +257,7 @@ def test_scoped_authorization_reuses_permission_lookup_within_request() -> None:
         permission_scope_cache={},
     )
 
-    async def override_current_active_user() -> User:
+    async def override_current_active_user() -> CurrentPrincipal:
         return current_user
 
     async def override_auth_service() -> AuthService:
@@ -277,5 +275,5 @@ def test_scoped_authorization_reuses_permission_lookup_within_request() -> None:
     repository = cast(MagicMock, auth_service.auth_repository)
     repository.get_user_permission_scope.assert_awaited_once_with(
         user_id=10,
-        permission_id=PermissionId.BOOK_UPDATE,
+        permission_id=PermissionId.ROLE_PERMISSION_MANAGE,
     )

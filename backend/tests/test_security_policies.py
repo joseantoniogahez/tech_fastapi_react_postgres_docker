@@ -1,6 +1,6 @@
 import pytest
 
-from app.security.policies import (
+from app.core.security.policies import (
     PasswordPolicyError,
     PasswordPolicyRule,
     UsernamePolicyError,

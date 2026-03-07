@@ -1,6 +1,6 @@
 from typing import Any
 
-from app.exceptions.setup.handlers import REQUEST_ID_HEADER
+from app.core.errors.setup.handlers import REQUEST_ID_HEADER
 
 
 def assert_error_response(

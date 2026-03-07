@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import pathlib
 import tempfile
 from collections.abc import AsyncGenerator, Generator
 from typing import Any
@@ -9,40 +8,20 @@ import pytest
 from argon2 import PasswordHasher
 from starlette.testclient import TestClient
 
-from app.authorization import PERMISSION_SPECS
-from app.dependencies.db import get_db_session
-from app.infrastructure.database import Base
+from app.core.authorization import PERMISSION_SPECS
+from app.core.db.database import Base
+from app.core.setup.dependencies import get_db_session
+from app.features.auth.models import User
+from app.features.outbox.models import OutboxEvent
+from app.features.rbac.models import Permission, Role, RoleInheritance, RolePermission, UserRole
 from app.main import app
-from app.models.author import Author
-from app.models.book import Book
-from app.models.permission import Permission
-from app.models.role import Role
-from app.models.role_inheritance import RoleInheritance
-from app.models.role_permission import RolePermission
-from app.models.user import User
-from app.models.user_role import UserRole
 from utils.testing_support.database import MockDatabase
-from utils.testing_support.fixtures import get_fixture_data, load_mock_data
+from utils.testing_support.fixtures import load_mock_data
 
 
 @pytest.fixture(scope="session", autouse=True)
 def set_app_http_logger_to_error() -> None:
     logging.getLogger("app.http").setLevel(logging.ERROR)
-
-
-@pytest.fixture(scope="module")
-def path() -> str:
-    return str(pathlib.Path(__file__).parent.resolve())
-
-
-@pytest.fixture(scope="module")
-def mock_authors(path: str) -> list[dict[str, Any]]:
-    return get_fixture_data(path, "authors")
-
-
-@pytest.fixture(scope="module")
-def mock_books(path: str) -> list[dict[str, Any]]:
-    return get_fixture_data(path, "books")
 
 
 @pytest.fixture(scope="module")
@@ -98,8 +77,6 @@ def mock_role_permissions() -> list[dict[str, Any]]:
 
 @pytest.fixture(scope="module")
 def mock_data(
-    mock_authors: list[dict[str, Any]],
-    mock_books: list[dict[str, Any]],
     mock_users: list[dict[str, Any]],
     mock_roles: list[dict[str, Any]],
     mock_permissions: list[dict[str, Any]],
@@ -113,13 +90,12 @@ def mock_data(
         {"class": UserRole, "json": mock_user_roles},
         {"class": RolePermission, "json": mock_role_permissions},
         {"class": RoleInheritance, "json": []},
-        {"class": Author, "json": mock_authors},
-        {"class": Book, "json": mock_books},
+        {"class": OutboxEvent, "json": []},
     ]
 
 
 @pytest.fixture(scope="module")
-def mock_database(path: str, mock_data: list[dict[str, Any]]) -> Generator[MockDatabase]:
+def mock_database(mock_data: list[dict[str, Any]]) -> Generator[MockDatabase]:
     with tempfile.TemporaryDirectory(prefix="backend-tests-db-") as db_tmp_dir:
         mock_db = MockDatabase(path=db_tmp_dir, echo=False)
         asyncio.run(mock_db.setup(Base))

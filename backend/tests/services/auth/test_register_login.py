@@ -3,9 +3,9 @@ from unittest.mock import patch
 
 import pytest
 
-from app.exceptions.repositories import RepositoryConflictError
-from app.exceptions.services import ConflictError, ForbiddenError, UnauthorizedError
-from app.schemas.application.auth import LoginCommand, RegisterUserCommand
+from app.core.errors.repositories import RepositoryConflictError
+from app.core.errors.services import ConflictError, ForbiddenError, UnauthorizedError
+from app.features.auth.schemas import LoginCommand, RegisterUserCommand
 from utils.testing_support.auth_service import assert_unit_of_work_scope_committed, build_service, build_user
 
 
@@ -83,7 +83,7 @@ def test_register_raises_conflict_when_username_already_exists() -> None:
 
         assert "Username already exists" in str(exc_info.value)
         assert exc_info.value.details == {"username": "john"}
-        repository.create.assert_not_called()
+        repository.create_user.assert_not_called()
 
     asyncio.run(run_test())
 
@@ -93,7 +93,7 @@ def test_register_creates_user_and_returns_authenticated_user() -> None:
     registration = RegisterUserCommand(username=" John ", password="StrongPass1")
 
     async def create_user(**kwargs: str | bool):
-        from app.models.user import User
+        from app.features.auth.models import User
 
         return User(
             id=42,
@@ -102,7 +102,7 @@ def test_register_creates_user_and_returns_authenticated_user() -> None:
             disabled=bool(kwargs["disabled"]),
         )
 
-    repository.create.side_effect = create_user
+    repository.create_user.side_effect = create_user
 
     async def run_test() -> None:
         authenticated_user = await service.register(registration)
@@ -111,9 +111,9 @@ def test_register_creates_user_and_returns_authenticated_user() -> None:
         assert authenticated_user.username == "john"
         assert authenticated_user.disabled is False
         repository.username_exists.assert_awaited_once_with("john")
-        repository.create.assert_awaited_once()
+        repository.create_user.assert_awaited_once()
         assert_unit_of_work_scope_committed(service.unit_of_work)
-        created_kwargs = repository.create.await_args.kwargs
+        created_kwargs = repository.create_user.await_args.kwargs
         assert created_kwargs["username"] == "john"
         assert created_kwargs["disabled"] is False
         assert created_kwargs["hashed_password"] != registration.password
@@ -127,7 +127,7 @@ def test_register_creates_user_and_returns_authenticated_user() -> None:
 def test_register_propagates_repository_conflict_from_create() -> None:
     service, repository = build_service()
     registration = RegisterUserCommand(username="john", password="StrongPass1")
-    repository.create.side_effect = RepositoryConflictError(
+    repository.create_user.side_effect = RepositoryConflictError(
         message="Username already exists",
         details={"username": "john"},
     )
