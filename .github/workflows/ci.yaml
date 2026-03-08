@@ -49,9 +49,6 @@ jobs:
       - name: Prepare local environment file for compose validation hooks
         run: cp .env_examples .env
 
-      - name: Run pre-commit hooks
-        run: pre-commit run --all-files --hook-stage pre-commit --show-diff-on-failure
-
       - name: Run pre-push hooks
         run: pre-commit run --all-files --hook-stage pre-push --show-diff-on-failure
 
