@@ -21,7 +21,7 @@ REGISTER_USER_BODY_EXAMPLES: dict[str, Any] = {
         "summary": "Valid registration",
         "value": {
             "username": "new_user",
-            "password": "StrongPass1",  # pragma: allowlist secret
+            "password": "{{strong_password}}",
         },
     }
 }
@@ -34,16 +34,16 @@ UPDATE_CURRENT_USER_BODY_EXAMPLES: dict[str, Any] = {
     "password": {
         "summary": "Change password",
         "value": {
-            "current_password": "OldPass1",  # pragma: allowlist secret
-            "new_password": "NewPass2",  # pragma: allowlist secret
+            "current_password": "{{current_password}}",
+            "new_password": "{{new_password}}",
         },
     },
     "both": {
         "summary": "Change username and password",
         "value": {
             "username": "new_username",
-            "current_password": "OldPass1",  # pragma: allowlist secret
-            "new_password": "NewPass2",  # pragma: allowlist secret
+            "current_password": "{{current_password}}",
+            "new_password": "{{new_password}}",
         },
     },
 }
@@ -110,8 +110,8 @@ LOGIN_FOR_ACCESS_TOKEN_DOC: dict[str, Any] = {
             "content": {
                 "application/x-www-form-urlencoded": {
                     "example": {
-                        "username": "admin",
-                        "password": "admin123",  # pragma: allowlist secret
+                        "username": "demo_user",
+                        "password": "{{password}}",
                     }
                 }
             },

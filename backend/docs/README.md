@@ -9,6 +9,7 @@ This folder is the canonical backend documentation set. It is organized for thre
 ## Core Playbook
 
 - `backend_playbook.md`: single source of truth for architecture map, mandatory engineering rules, delivery workflows, AI protocol, and reviewer approval checklist.
+- `foundation_status.md`: canonical snapshot of current backend foundation state, guardrails, and required validation gates.
 
 ## Canonical Runtime Contracts
 
@@ -36,6 +37,7 @@ This folder is the canonical backend documentation set. It is organized for thre
 ### AI Assistant Execution (Mandatory)
 
 1. `backend_playbook.md`
+1. `foundation_status.md`
 1. `operations/api_endpoints.md`
 1. `operations/authorization_matrix.md`
 1. `operations/error_mapping.md`
@@ -44,6 +46,7 @@ This folder is the canonical backend documentation set. It is organized for thre
 ### Human Reviewer Onboarding
 
 1. `backend_playbook.md`
+1. `foundation_status.md`
 1. `operations/api_endpoints.md`
 1. `operations/authentication.md`
 1. `operations/authorization_matrix.md`

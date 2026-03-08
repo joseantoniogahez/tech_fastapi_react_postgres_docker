@@ -1,6 +1,8 @@
+import { ApiContractError } from "@/shared/api/contracts";
 import { buildApiUrl } from "@/shared/api/env";
 import {
   loginWithCredentials,
+  readCurrentUser,
   resolveSessionUser,
 } from "@/shared/auth/session";
 import { getAccessToken, setAccessToken } from "@/shared/auth/storage";
@@ -18,7 +20,7 @@ describe("session client", () => {
     } satisfies Partial<Response>);
     vi.stubGlobal("fetch", fetchMock);
 
-    await loginWithCredentials({ username: "admin", password: "admin123" }); // pragma: allowlist secret
+    await loginWithCredentials({ username: "admin", password: "{{password}}" });
 
     const [url, request] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(url).toBe(buildApiUrl("/token"));
@@ -28,7 +30,7 @@ describe("session client", () => {
     );
     const body = request.body as URLSearchParams;
     expect(body.get("username")).toBe("admin");
-    expect(body.get("password")).toBe("admin123");
+    expect(body.get("password")).toBe("{{password}}");
     expect(getAccessToken()).toBe("fresh-token");
   });
 
@@ -50,5 +52,22 @@ describe("session client", () => {
 
     expect(user).toBeNull();
     expect(getAccessToken()).toBeNull();
+  });
+
+  it("raises contract error when /users/me payload is invalid", async () => {
+    setAccessToken("valid-token");
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () =>
+        Promise.resolve({
+          id: "1",
+          username: "admin",
+          disabled: false,
+        }),
+    } satisfies Partial<Response>);
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(readCurrentUser()).rejects.toBeInstanceOf(ApiContractError);
   });
 });

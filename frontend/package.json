@@ -9,13 +9,22 @@
   },
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 3000",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && npm run perf:check",
     "preview": "vite preview",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
-    "check": "npm run lint && npm run typecheck && npm run test"
+    "test:a11y": "vitest run src/app/accessibility.routes.test.tsx",
+    "e2e:install": "playwright install chromium",
+    "test:e2e": "playwright test",
+    "test:e2e:ci": "playwright test --workers=1 --retries=2 --reporter=line",
+    "perf:check": "node ./scripts/performance-budget.mjs",
+    "deps:audit": "node ./scripts/dependency-audit.mjs",
+    "openapi:sync": "node ./scripts/sync-openapi.mjs",
+    "openapi:check": "node ./scripts/sync-openapi.mjs --check",
+    "check": "npm run lint && npm run typecheck && npm run test:coverage && npm run openapi:check && npm run deps:audit"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.90.5",
@@ -25,6 +34,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@playwright/test": "^1.58.2",
     "@tailwindcss/vite": "^4.1.18",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
@@ -33,6 +43,8 @@
     "@types/react": "^19.2.3",
     "@types/react-dom": "^19.2.2",
     "@vitejs/plugin-react": "^5.1.0",
+    "@vitest/coverage-v8": "^4.0.18",
+    "axe-core": "^4.11.1",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.24",

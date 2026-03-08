@@ -1,14 +1,18 @@
 import { buildApiUrl } from "@/shared/api/env";
-import { parseApiError } from "@/shared/api/errors";
+import { ApiError, parseApiError } from "@/shared/api/errors";
 import { getAccessToken } from "@/shared/auth/storage";
+import { emitObservabilityEvent } from "@/shared/observability/events";
 
-type RequestOptions = Omit<RequestInit, "headers"> & {
+type ResponseParser<T> = (payload: unknown) => T;
+
+type RequestOptions<T> = Omit<RequestInit, "headers"> & {
   headers?: HeadersInit;
   withAuth?: boolean;
+  parse?: ResponseParser<T>;
 };
 
-export const apiRequest = async <T>(path: string, options: RequestOptions = {}): Promise<T> => {
-  const { withAuth = true, headers, ...init } = options;
+export const apiRequest = async <T>(path: string, options: RequestOptions<T> = {}): Promise<T> => {
+  const { withAuth = true, headers, parse, ...init } = options;
   const requestHeaders = new Headers(headers ?? {});
 
   if (withAuth) {
@@ -18,18 +22,51 @@ export const apiRequest = async <T>(path: string, options: RequestOptions = {}):
     }
   }
 
-  const response = await fetch(buildApiUrl(path), {
-    ...init,
-    headers: requestHeaders,
-  });
+  const method = init.method ?? "GET";
+  let response: Response;
+  try {
+    response = await fetch(buildApiUrl(path), {
+      ...init,
+      headers: requestHeaders,
+    });
+  } catch {
+    const networkError = new ApiError("Error de comunicacion con el servidor", 0, "network_error");
+    emitObservabilityEvent({
+      event_name: "api.request.network_error",
+      level: "error",
+      context: {
+        method,
+        path,
+        code: networkError.code,
+      },
+    });
+    throw networkError;
+  }
 
   if (!response.ok) {
-    throw await parseApiError(response);
+    const apiError = await parseApiError(response);
+    emitObservabilityEvent({
+      event_name: "api.request.response_error",
+      level: "error",
+      request_id: apiError.requestId ?? null,
+      context: {
+        method,
+        path,
+        status: apiError.status,
+        code: apiError.code,
+      },
+    });
+    throw apiError;
   }
 
   if (response.status === 204) {
     return undefined as T;
   }
 
-  return (await response.json()) as T;
+  const payload = (await response.json()) as unknown;
+  if (parse) {
+    return parse(payload);
+  }
+
+  return payload as T;
 };

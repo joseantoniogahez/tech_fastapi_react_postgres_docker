@@ -91,4 +91,30 @@ describe("LoginPage", () => {
 
     expect(await screen.findByText("Invalid username or password")).toBeInTheDocument();
   });
+
+  it("shows request-id diagnostic when backend returns correlation header", async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      statusText: "Internal Server Error",
+      headers: {
+        get: (header: string) => (header === "X-Request-ID" ? "req-login-500" : null),
+      },
+      json: () =>
+        Promise.resolve({
+          detail: "Unexpected error",
+          code: "internal_error",
+        }),
+    } satisfies Partial<Response>);
+    vi.stubGlobal("fetch", fetchMock);
+    const user = userEvent.setup();
+
+    renderLogin();
+
+    await user.type(screen.getByLabelText(t("auth.login.fields.username")), "admin");
+    await user.type(screen.getByLabelText(t("auth.login.fields.password")), "wrong");
+    await user.click(screen.getByRole("button", { name: t("auth.login.submit.default") }));
+
+    expect(await screen.findByText("Unexpected error (request_id=req-login-500)")).toBeInTheDocument();
+  });
 });

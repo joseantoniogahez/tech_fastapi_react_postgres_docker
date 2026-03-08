@@ -2,7 +2,8 @@ import { FormEvent, startTransition, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 
-import { ApiError } from "@/shared/api/errors";
+import { authLoginMutationPolicy } from "@/app/mutation-policy";
+import { ApiError, appendRequestIdDiagnostic, getApiErrorRequestId } from "@/shared/api/errors";
 import { SESSION_QUERY_KEY, loginWithCredentials, readCurrentUser, useSession } from "@/shared/auth/session";
 import { t } from "@/shared/i18n/ui-text";
 import { CenteredMessage } from "@/shared/ui/CenteredMessage";
@@ -24,12 +25,14 @@ export const LoginPage = () => {
   const session = useSession();
 
   const loginMutation = useMutation({
+    ...authLoginMutationPolicy,
     mutationFn: async ({ username, password }: LoginFormState) => {
       await loginWithCredentials({ username, password });
       return await readCurrentUser();
     },
-    onSuccess: (user) => {
+    onSuccess: async (user) => {
       queryClient.setQueryData(SESSION_QUERY_KEY, user);
+      await queryClient.invalidateQueries({ queryKey: SESSION_QUERY_KEY });
       startTransition(() => {
         void navigate("/welcome", { replace: true });
       });
@@ -52,7 +55,7 @@ export const LoginPage = () => {
 
   const mutationError =
     loginMutation.error instanceof ApiError
-      ? loginMutation.error.message
+      ? appendRequestIdDiagnostic(loginMutation.error.message, getApiErrorRequestId(loginMutation.error))
       : t("auth.login.error.generic");
 
   return (

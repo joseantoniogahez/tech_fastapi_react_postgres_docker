@@ -1,5 +1,12 @@
 # Integration Request Template
 
+## How to Use This Template With the AI Assistant
+
+1. Fill every section with concrete integration behavior and failure expectations.
+1. Reference backend architecture and operation docs the assistant must respect.
+1. Define test coverage and validation commands up front.
+1. Paste the completed template in your request to the assistant.
+
 ## Problem and Goal
 
 Describe the integration need, target system, and expected backend outcome.
@@ -31,6 +38,23 @@ Describe the integration need, target system, and expected backend outcome.
 
 - Define integration success behavior and expected failure behavior.
 
+## AI Execution Constraints (Required)
+
+- Docs the AI must read before coding (minimum):
+  - `backend/docs/backend_playbook.md`
+  - Relevant files in `backend/docs/operations/`
+  - `backend/docs/architecture/clean_architecture_ports_adapters.md`
+  - `backend/docs/architecture/dependency_injection.md`
+- Mandatory boundaries:
+  - Keep ports/adapters boundaries intact.
+  - Keep transaction handling in UnitOfWork for write side effects.
+  - Keep normalized error contracts.
+- Expected AI output:
+  - Implement integration behavior and deterministic failure handling.
+  - Add/update tests for success and failure paths.
+  - Update impacted docs/contracts.
+  - Report executed validation commands and outcomes.
+
 ## Required Tests
 
 - Service-level integration orchestration tests.
@@ -44,3 +68,4 @@ Describe the integration need, target system, and expected backend outcome.
 - [ ] Failure behavior is deterministic and test-covered.
 - [ ] Observability events are defined.
 - [ ] Public contract and permission impact is documented.
+- [ ] AI execution constraints are explicit and enforceable.

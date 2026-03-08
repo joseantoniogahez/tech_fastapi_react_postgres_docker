@@ -16,8 +16,16 @@ export default defineConfig({
     globals: true,
     setupFiles: "./src/test/setup.ts",
     css: true,
+    exclude: ["e2e/**", "**/node_modules/**", "**/dist/**", "**/.{idea,git,cache,output,temp}/**"],
     coverage: {
+      provider: "v8",
       reporter: ["text", "lcov"],
+      thresholds: {
+        statements: 92,
+        branches: 85,
+        functions: 96,
+        lines: 92,
+      },
     },
   },
 });

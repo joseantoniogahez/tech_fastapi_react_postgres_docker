@@ -5,7 +5,12 @@ import { RouterProvider, createBrowserRouter } from "react-router-dom";
 
 import { appRoutes } from "@/app/routes";
 import { createQueryClient } from "@/app/query-client";
+import { readFrontendEnvConfig } from "@/shared/api/env";
+import { installGlobalRuntimeErrorHandlers } from "@/shared/observability/runtime-errors";
 import "@/app/styles.css";
+
+readFrontendEnvConfig();
+installGlobalRuntimeErrorHandlers();
 
 const router = createBrowserRouter(appRoutes);
 const queryClient = createQueryClient();

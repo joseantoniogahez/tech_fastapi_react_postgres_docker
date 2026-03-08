@@ -1,0 +1,5 @@
+{
+  "max_high": 0,
+  "max_critical": 0,
+  "audit_scope": "production_dependencies_only"
+}

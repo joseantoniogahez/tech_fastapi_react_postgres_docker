@@ -46,6 +46,7 @@ All registered routers are mounted under API prefix `/v1`.
 1. Public endpoint contracts must be reflected in `docs/operations/api_endpoints.md`.
 1. Domain errors must map to the normalized payload contract in `docs/operations/error_mapping.md`.
 1. Naming guardrails must stay compliant with tests (for example, avoid generic `id` parameter names in routers/services).
+1. Foundation status must stay current in `docs/foundation_status.md` when baseline rules/contracts/gates change.
 
 ## Add a New Feature Workflow
 

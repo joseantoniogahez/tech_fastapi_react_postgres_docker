@@ -1,0 +1,6 @@
+{
+  "max_total_js_bytes": 375000,
+  "max_total_js_gzip_bytes": 115000,
+  "max_total_css_bytes": 20000,
+  "max_total_css_gzip_bytes": 6000
+}
