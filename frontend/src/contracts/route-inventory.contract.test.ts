@@ -14,6 +14,8 @@ const ROUTE_INVENTORY_PATH = path.join(FRONTEND_DIR, "docs", "operations", "rout
 const ROUTE_ROW_PATTERN = /^\|\s*`(?<path>\/[^`]*)`\s*\|\s*`(?<access>public|protected)`\s*\|\s*`(?<owner>[^`]+)`\s*\|/gm;
 
 const ROUTE_OWNER_BY_COMPONENT: Record<string, string> = {
+  AdminRolesPage: "features/admin-roles/AdminRolesPage",
+  AdminUsersPage: "features/admin-users/AdminUsersPage",
   LandingPage: "features/landing/LandingPage",
   LoginPage: "features/auth/LoginPage",
   WelcomePage: "features/welcome/WelcomePage",

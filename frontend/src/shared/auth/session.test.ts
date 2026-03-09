@@ -2,6 +2,7 @@ import { ApiContractError } from "@/shared/api/contracts";
 import { buildApiUrl } from "@/shared/api/env";
 import {
   loginWithCredentials,
+  logout,
   readCurrentUser,
   resolveSessionUser,
 } from "@/shared/auth/session";
@@ -69,5 +70,13 @@ describe("session client", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(readCurrentUser()).rejects.toBeInstanceOf(ApiContractError);
+  });
+
+  it("clears token on logout", () => {
+    setAccessToken("valid-token");
+
+    logout();
+
+    expect(getAccessToken()).toBeNull();
   });
 });

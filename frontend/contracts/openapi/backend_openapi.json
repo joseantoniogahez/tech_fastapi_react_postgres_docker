@@ -19,6 +19,72 @@
         "title": "AccessTokenResponse",
         "type": "object"
       },
+      "AdminUserResponse": {
+        "properties": {
+          "disabled": {
+            "title": "Disabled",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "role_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Role Ids",
+            "type": "array"
+          },
+          "username": {
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": ["id", "username", "disabled"],
+        "title": "AdminUserResponse",
+        "type": "object"
+      },
+      "AssignedRole": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": ["id", "name"],
+        "title": "AssignedRole",
+        "type": "object"
+      },
+      "AssignedUser": {
+        "properties": {
+          "disabled": {
+            "title": "Disabled",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "username": {
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": ["id", "username", "disabled"],
+        "title": "AssignedUser",
+        "type": "object"
+      },
       "AuthenticatedUserResponse": {
         "properties": {
           "disabled": {
@@ -96,6 +162,32 @@
         "title": "Body_login_for_access_token_v1_token_post",
         "type": "object"
       },
+      "CreateAdminUserRequest": {
+        "properties": {
+          "password": {
+            "maxLength": 255,
+            "minLength": 8,
+            "title": "Password",
+            "type": "string"
+          },
+          "role_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Role Ids",
+            "type": "array"
+          },
+          "username": {
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": ["username", "password"],
+        "title": "CreateAdminUserRequest",
+        "type": "object"
+      },
       "CreateRoleRequest": {
         "properties": {
           "name": {
@@ -152,6 +244,13 @@
             "minLength": 1,
             "title": "Name",
             "type": "string"
+          },
+          "parent_role_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Parent Role Ids",
+            "type": "array"
           },
           "permissions": {
             "items": {
@@ -220,6 +319,76 @@
           }
         },
         "title": "SetRolePermissionRequest",
+        "type": "object"
+      },
+      "UpdateAdminUserRequest": {
+        "properties": {
+          "current_password": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Password"
+          },
+          "disabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disabled"
+          },
+          "new_password": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "minLength": 8,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "New Password"
+          },
+          "role_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role Ids"
+          },
+          "username": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Username"
+          }
+        },
+        "title": "UpdateAdminUserRequest",
         "type": "object"
       },
       "UpdateCurrentUserRequest": {
@@ -535,6 +704,7 @@
                   {
                     "id": 1,
                     "name": "admin_role",
+                    "parent_role_ids": [],
                     "permissions": [
                       {
                         "id": "roles:manage",
@@ -700,6 +870,7 @@
                 "example": {
                   "id": 1,
                   "name": "admin_role",
+                  "parent_role_ids": [],
                   "permissions": [
                     {
                       "id": "roles:manage",
@@ -1198,6 +1369,7 @@
                 "example": {
                   "id": 1,
                   "name": "admin_role",
+                  "parent_role_ids": [],
                   "permissions": [
                     {
                       "id": "roles:manage",
@@ -2481,6 +2653,1681 @@
           }
         ],
         "summary": "Assign role permission",
+        "tags": ["rbac"]
+      }
+    },
+    "/v1/rbac/roles/{role_id}/users": {
+      "get": {
+        "description": "List users directly assigned to a role. Requires `user_roles:manage`.",
+        "operationId": "list_role_users_v1_rbac_roles__role_id__users_get",
+        "parameters": [
+          {
+            "description": "Role ID.",
+            "in": "path",
+            "name": "role_id",
+            "required": true,
+            "schema": {
+              "description": "Role ID.",
+              "examples": [1],
+              "minimum": 1,
+              "title": "Role Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": [
+                  {
+                    "disabled": false,
+                    "id": 3,
+                    "username": "reader_user"
+                  }
+                ],
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AssignedUser"
+                  },
+                  "title": "Response List Role Users V1 Rbac Roles  Role Id  Users Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Role users fetched successfully."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "invalid_input",
+                  "detail": "Request validation error",
+                  "meta": [
+                    {
+                      "loc": ["path", "role_id"],
+                      "msg": "Input should be greater than or equal to 1"
+                    }
+                  ],
+                  "status": 400
+                },
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "description": "Machine-readable domain error code.",
+                      "type": "string"
+                    },
+                    "detail": {
+                      "description": "Human-readable error message.",
+                      "type": "string"
+                    },
+                    "meta": {
+                      "description": "Optional structured error metadata."
+                    },
+                    "status": {
+                      "description": "HTTP status code.",
+                      "type": "integer"
+                    }
+                  },
+                  "required": ["detail", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Invalid role ID."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "unauthorized",
+                  "detail": "Could not validate credentials",
+                  "status": 401
+                },
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "description": "Machine-readable domain error code.",
+                      "type": "string"
+                    },
+                    "detail": {
+                      "description": "Human-readable error message.",
+                      "type": "string"
+                    },
+                    "meta": {
+                      "description": "Optional structured error metadata."
+                    },
+                    "status": {
+                      "description": "HTTP status code.",
+                      "type": "integer"
+                    }
+                  },
+                  "required": ["detail", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Missing, expired, or invalid token.",
+            "headers": {
+              "WWW-Authenticate": {
+                "description": "Bearer authentication challenge.",
+                "schema": {
+                  "example": "Bearer",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "forbidden",
+                  "detail": "Missing required permission: user_roles:manage",
+                  "meta": {
+                    "permission_id": "user_roles:manage"
+                  },
+                  "status": 403
+                },
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "description": "Machine-readable domain error code.",
+                      "type": "string"
+                    },
+                    "detail": {
+                      "description": "Human-readable error message.",
+                      "type": "string"
+                    },
+                    "meta": {
+                      "description": "Optional structured error metadata."
+                    },
+                    "status": {
+                      "description": "HTTP status code.",
+                      "type": "integer"
+                    }
+                  },
+                  "required": ["detail", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "User lacks permission to read role user assignments."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "not_found",
+                  "detail": "Role 999 not found",
+                  "meta": {
+                    "id": 999
+                  },
+                  "status": 404
+                },
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "description": "Machine-readable domain error code.",
+                      "type": "string"
+                    },
+                    "detail": {
+                      "description": "Human-readable error message.",
+                      "type": "string"
+                    },
+                    "meta": {
+                      "description": "Optional structured error metadata."
+                    },
+                    "status": {
+                      "description": "HTTP status code.",
+                      "type": "integer"
+                    }
+                  },
+                  "required": ["detail", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Role does not exist."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "internal_error",
+                  "detail": "Internal server error",
+                  "status": 500
+                },
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "description": "Machine-readable domain error code.",
+                      "type": "string"
+                    },
+                    "detail": {
+                      "description": "Human-readable error message.",
+                      "type": "string"
+                    },
+                    "meta": {
+                      "description": "Optional structured error metadata."
+                    },
+                    "status": {
+                      "description": "HTTP status code.",
+                      "type": "integer"
+                    }
+                  },
+                  "required": ["detail", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Unhandled internal server error."
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List users assigned to a role",
+        "tags": ["rbac"]
+      }
+    },
+    "/v1/rbac/users": {
+      "get": {
+        "description": "List all users managed by RBAC admin APIs. Requires `users:manage`.",
+        "operationId": "list_users_v1_rbac_users_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": [
+                  {
+                    "disabled": false,
+                    "id": 3,
+                    "role_ids": [2],
+                    "username": "reader_user"
+                  }
+                ],
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AdminUserResponse"
+                  },
+                  "title": "Response List Users V1 Rbac Users Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Users fetched successfully."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "unauthorized",
+                  "detail": "Could not validate credentials",
+                  "status": 401
+                },
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "description": "Machine-readable domain error code.",
+                      "type": "string"
+                    },
+                    "detail": {
+                      "description": "Human-readable error message.",
+                      "type": "string"
+                    },
+                    "meta": {
+                      "description": "Optional structured error metadata."
+                    },
+                    "status": {
+                      "description": "HTTP status code.",
+                      "type": "integer"
+                    }
+                  },
+                  "required": ["detail", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Missing, expired, or invalid token.",
+            "headers": {
+              "WWW-Authenticate": {
+                "description": "Bearer authentication challenge.",
+                "schema": {
+                  "example": "Bearer",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "forbidden",
+                  "detail": "Missing required permission: users:manage",
+                  "meta": {
+                    "permission_id": "users:manage"
+                  },
+                  "status": 403
+                },
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "description": "Machine-readable domain error code.",
+                      "type": "string"
+                    },
+                    "detail": {
+                      "description": "Human-readable error message.",
+                      "type": "string"
+                    },
+                    "meta": {
+                      "description": "Optional structured error metadata."
+                    },
+                    "status": {
+                      "description": "HTTP status code.",
+                      "type": "integer"
+                    }
+                  },
+                  "required": ["detail", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "User lacks permission to read users."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "internal_error",
+                  "detail": "Internal server error",
+                  "status": 500
+                },
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "description": "Machine-readable domain error code.",
+                      "type": "string"
+                    },
+                    "detail": {
+                      "description": "Human-readable error message.",
+                      "type": "string"
+                    },
+                    "meta": {
+                      "description": "Optional structured error metadata."
+                    },
+                    "status": {
+                      "description": "HTTP status code.",
+                      "type": "integer"
+                    }
+                  },
+                  "required": ["detail", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Unhandled internal server error."
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List users",
+        "tags": ["rbac"]
+      },
+      "post": {
+        "description": "Create an administrative user. Requires `users:manage`.",
+        "operationId": "create_user_v1_rbac_users_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAdminUserRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "disabled": false,
+                  "id": 3,
+                  "role_ids": [2],
+                  "username": "reader_user"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserResponse"
+                }
+              }
+            },
+            "description": "User created successfully."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "invalid_input",
+                  "detail": "Password does not meet policy",
+                  "meta": {
+                    "violations": [
+                      "Password must include at least one uppercase letter"
+                    ]
+                  },
+                  "status": 400
+                },
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "description": "Machine-readable domain error code.",
+                      "type": "string"
+                    },
+                    "detail": {
+                      "description": "Human-readable error message.",
+                      "type": "string"
+                    },
+                    "meta": {
+                      "description": "Optional structured error metadata."
+                    },
+                    "status": {
+                      "description": "HTTP status code.",
+                      "type": "integer"
+                    }
+                  },
+                  "required": ["detail", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Invalid payload."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "unauthorized",
+                  "detail": "Could not validate credentials",
+                  "status": 401
+                },
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "description": "Machine-readable domain error code.",
+                      "type": "string"
+                    },
+                    "detail": {
+                      "description": "Human-readable error message.",
+                      "type": "string"
+                    },
+                    "meta": {
+                      "description": "Optional structured error metadata."
+                    },
+                    "status": {
+                      "description": "HTTP status code.",
+                      "type": "integer"
+                    }
+                  },
+                  "required": ["detail", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Missing, expired, or invalid token.",
+            "headers": {
+              "WWW-Authenticate": {
+                "description": "Bearer authentication challenge.",
+                "schema": {
+                  "example": "Bearer",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "forbidden",
+                  "detail": "Missing required permission: users:manage",
+                  "meta": {
+                    "permission_id": "users:manage"
+                  },
+                  "status": 403
+                },
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "description": "Machine-readable domain error code.",
+                      "type": "string"
+                    },
+                    "detail": {
+                      "description": "Human-readable error message.",
+                      "type": "string"
+                    },
+                    "meta": {
+                      "description": "Optional structured error metadata."
+                    },
+                    "status": {
+                      "description": "HTTP status code.",
+                      "type": "integer"
+                    }
+                  },
+                  "required": ["detail", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "User lacks permission to create users."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "not_found",
+                  "detail": "Role 999 not found",
+                  "meta": {
+                    "id": 999
+                  },
+                  "status": 404
+                },
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "description": "Machine-readable domain error code.",
+                      "type": "string"
+                    },
+                    "detail": {
+                      "description": "Human-readable error message.",
+                      "type": "string"
+                    },
+                    "meta": {
+                      "description": "Optional structured error metadata."
+                    },
+                    "status": {
+                      "description": "HTTP status code.",
+                      "type": "integer"
+                    }
+                  },
+                  "required": ["detail", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "A provided role does not exist."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "conflict",
+                  "detail": "Username already exists",
+                  "meta": {
+                    "username": "reader_user"
+                  },
+                  "status": 409
+                },
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "description": "Machine-readable domain error code.",
+                      "type": "string"
+                    },
+                    "detail": {
+                      "description": "Human-readable error message.",
+                      "type": "string"
+                    },
+                    "meta": {
+                      "description": "Optional structured error metadata."
+                    },
+                    "status": {
+                      "description": "HTTP status code.",
+                      "type": "integer"
+                    }
+                  },
+                  "required": ["detail", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Username already exists."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "internal_error",
+                  "detail": "Internal server error",
+                  "status": 500
+                },
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "description": "Machine-readable domain error code.",
+                      "type": "string"
+                    },
+                    "detail": {
+                      "description": "Human-readable error message.",
+                      "type": "string"
+                    },
+                    "meta": {
+                      "description": "Optional structured error metadata."
+                    },
+                    "status": {
+                      "description": "HTTP status code.",
+                      "type": "integer"
+                    }
+                  },
+                  "required": ["detail", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Unhandled internal server error."
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Create user",
+        "tags": ["rbac"]
+      }
+    },
+    "/v1/rbac/users/{user_id}": {
+      "delete": {
+        "description": "Soft-delete user by setting `disabled=true` (idempotent). Requires `users:manage`.",
+        "operationId": "delete_user_v1_rbac_users__user_id__delete",
+        "parameters": [
+          {
+            "description": "User ID.",
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "description": "User ID.",
+              "examples": [1],
+              "minimum": 1,
+              "title": "User Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "User soft-deleted successfully."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "invalid_input",
+                  "detail": "Request validation error",
+                  "meta": [
+                    {
+                      "loc": ["path", "user_id"],
+                      "msg": "Input should be greater than or equal to 1"
+                    }
+                  ],
+                  "status": 400
+                },
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "description": "Machine-readable domain error code.",
+                      "type": "string"
+                    },
+                    "detail": {
+                      "description": "Human-readable error message.",
+                      "type": "string"
+                    },
+                    "meta": {
+                      "description": "Optional structured error metadata."
+                    },
+                    "status": {
+                      "description": "HTTP status code.",
+                      "type": "integer"
+                    }
+                  },
+                  "required": ["detail", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Invalid user ID."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "unauthorized",
+                  "detail": "Could not validate credentials",
+                  "status": 401
+                },
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "description": "Machine-readable domain error code.",
+                      "type": "string"
+                    },
+                    "detail": {
+                      "description": "Human-readable error message.",
+                      "type": "string"
+                    },
+                    "meta": {
+                      "description": "Optional structured error metadata."
+                    },
+                    "status": {
+                      "description": "HTTP status code.",
+                      "type": "integer"
+                    }
+                  },
+                  "required": ["detail", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Missing, expired, or invalid token.",
+            "headers": {
+              "WWW-Authenticate": {
+                "description": "Bearer authentication challenge.",
+                "schema": {
+                  "example": "Bearer",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "forbidden",
+                  "detail": "Missing required permission: users:manage",
+                  "meta": {
+                    "permission_id": "users:manage"
+                  },
+                  "status": 403
+                },
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "description": "Machine-readable domain error code.",
+                      "type": "string"
+                    },
+                    "detail": {
+                      "description": "Human-readable error message.",
+                      "type": "string"
+                    },
+                    "meta": {
+                      "description": "Optional structured error metadata."
+                    },
+                    "status": {
+                      "description": "HTTP status code.",
+                      "type": "integer"
+                    }
+                  },
+                  "required": ["detail", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "User lacks permission to delete users."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "not_found",
+                  "detail": "User 999 not found",
+                  "meta": {
+                    "id": 999
+                  },
+                  "status": 404
+                },
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "description": "Machine-readable domain error code.",
+                      "type": "string"
+                    },
+                    "detail": {
+                      "description": "Human-readable error message.",
+                      "type": "string"
+                    },
+                    "meta": {
+                      "description": "Optional structured error metadata."
+                    },
+                    "status": {
+                      "description": "HTTP status code.",
+                      "type": "integer"
+                    }
+                  },
+                  "required": ["detail", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "User does not exist."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "internal_error",
+                  "detail": "Internal server error",
+                  "status": 500
+                },
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "description": "Machine-readable domain error code.",
+                      "type": "string"
+                    },
+                    "detail": {
+                      "description": "Human-readable error message.",
+                      "type": "string"
+                    },
+                    "meta": {
+                      "description": "Optional structured error metadata."
+                    },
+                    "status": {
+                      "description": "HTTP status code.",
+                      "type": "integer"
+                    }
+                  },
+                  "required": ["detail", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Unhandled internal server error."
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Soft-delete user",
+        "tags": ["rbac"]
+      },
+      "get": {
+        "description": "Get a user by ID for administrative management. Requires `users:manage`.",
+        "operationId": "get_user_v1_rbac_users__user_id__get",
+        "parameters": [
+          {
+            "description": "User ID.",
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "description": "User ID.",
+              "examples": [1],
+              "minimum": 1,
+              "title": "User Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "disabled": false,
+                  "id": 3,
+                  "role_ids": [2],
+                  "username": "reader_user"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserResponse"
+                }
+              }
+            },
+            "description": "User fetched successfully."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "invalid_input",
+                  "detail": "Request validation error",
+                  "meta": [
+                    {
+                      "loc": ["path", "user_id"],
+                      "msg": "Input should be greater than or equal to 1"
+                    }
+                  ],
+                  "status": 400
+                },
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "description": "Machine-readable domain error code.",
+                      "type": "string"
+                    },
+                    "detail": {
+                      "description": "Human-readable error message.",
+                      "type": "string"
+                    },
+                    "meta": {
+                      "description": "Optional structured error metadata."
+                    },
+                    "status": {
+                      "description": "HTTP status code.",
+                      "type": "integer"
+                    }
+                  },
+                  "required": ["detail", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Invalid user ID."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "unauthorized",
+                  "detail": "Could not validate credentials",
+                  "status": 401
+                },
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "description": "Machine-readable domain error code.",
+                      "type": "string"
+                    },
+                    "detail": {
+                      "description": "Human-readable error message.",
+                      "type": "string"
+                    },
+                    "meta": {
+                      "description": "Optional structured error metadata."
+                    },
+                    "status": {
+                      "description": "HTTP status code.",
+                      "type": "integer"
+                    }
+                  },
+                  "required": ["detail", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Missing, expired, or invalid token.",
+            "headers": {
+              "WWW-Authenticate": {
+                "description": "Bearer authentication challenge.",
+                "schema": {
+                  "example": "Bearer",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "forbidden",
+                  "detail": "Missing required permission: users:manage",
+                  "meta": {
+                    "permission_id": "users:manage"
+                  },
+                  "status": 403
+                },
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "description": "Machine-readable domain error code.",
+                      "type": "string"
+                    },
+                    "detail": {
+                      "description": "Human-readable error message.",
+                      "type": "string"
+                    },
+                    "meta": {
+                      "description": "Optional structured error metadata."
+                    },
+                    "status": {
+                      "description": "HTTP status code.",
+                      "type": "integer"
+                    }
+                  },
+                  "required": ["detail", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "User lacks permission to read users."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "not_found",
+                  "detail": "User 999 not found",
+                  "meta": {
+                    "id": 999
+                  },
+                  "status": 404
+                },
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "description": "Machine-readable domain error code.",
+                      "type": "string"
+                    },
+                    "detail": {
+                      "description": "Human-readable error message.",
+                      "type": "string"
+                    },
+                    "meta": {
+                      "description": "Optional structured error metadata."
+                    },
+                    "status": {
+                      "description": "HTTP status code.",
+                      "type": "integer"
+                    }
+                  },
+                  "required": ["detail", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "User does not exist."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "internal_error",
+                  "detail": "Internal server error",
+                  "status": 500
+                },
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "description": "Machine-readable domain error code.",
+                      "type": "string"
+                    },
+                    "detail": {
+                      "description": "Human-readable error message.",
+                      "type": "string"
+                    },
+                    "meta": {
+                      "description": "Optional structured error metadata."
+                    },
+                    "status": {
+                      "description": "HTTP status code.",
+                      "type": "integer"
+                    }
+                  },
+                  "required": ["detail", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Unhandled internal server error."
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Get user",
+        "tags": ["rbac"]
+      },
+      "put": {
+        "description": "Update an administrative user. Requires `users:manage`.",
+        "operationId": "update_user_v1_rbac_users__user_id__put",
+        "parameters": [
+          {
+            "description": "User ID.",
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "description": "User ID.",
+              "examples": [1],
+              "minimum": 1,
+              "title": "User Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAdminUserRequest",
+                "description": "Payload to update an administrative user.",
+                "examples": {
+                  "disable_user": {
+                    "summary": "Disable user account",
+                    "value": {
+                      "disabled": true
+                    }
+                  },
+                  "update_roles": {
+                    "summary": "Replace role assignments",
+                    "value": {
+                      "role_ids": [1, 2]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "disabled": false,
+                  "id": 3,
+                  "role_ids": [2],
+                  "username": "reader_user"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserResponse"
+                }
+              }
+            },
+            "description": "User updated successfully."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "invalid_input",
+                  "detail": "At least one field must be provided to update the user",
+                  "status": 400
+                },
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "description": "Machine-readable domain error code.",
+                      "type": "string"
+                    },
+                    "detail": {
+                      "description": "Human-readable error message.",
+                      "type": "string"
+                    },
+                    "meta": {
+                      "description": "Optional structured error metadata."
+                    },
+                    "status": {
+                      "description": "HTTP status code.",
+                      "type": "integer"
+                    }
+                  },
+                  "required": ["detail", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Invalid payload."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "unauthorized",
+                  "detail": "Could not validate credentials",
+                  "status": 401
+                },
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "description": "Machine-readable domain error code.",
+                      "type": "string"
+                    },
+                    "detail": {
+                      "description": "Human-readable error message.",
+                      "type": "string"
+                    },
+                    "meta": {
+                      "description": "Optional structured error metadata."
+                    },
+                    "status": {
+                      "description": "HTTP status code.",
+                      "type": "integer"
+                    }
+                  },
+                  "required": ["detail", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Missing, expired, or invalid token.",
+            "headers": {
+              "WWW-Authenticate": {
+                "description": "Bearer authentication challenge.",
+                "schema": {
+                  "example": "Bearer",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "forbidden",
+                  "detail": "Missing required permission: users:manage",
+                  "meta": {
+                    "permission_id": "users:manage"
+                  },
+                  "status": 403
+                },
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "description": "Machine-readable domain error code.",
+                      "type": "string"
+                    },
+                    "detail": {
+                      "description": "Human-readable error message.",
+                      "type": "string"
+                    },
+                    "meta": {
+                      "description": "Optional structured error metadata."
+                    },
+                    "status": {
+                      "description": "HTTP status code.",
+                      "type": "integer"
+                    }
+                  },
+                  "required": ["detail", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "User lacks permission to update users."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "not_found",
+                  "detail": "User 999 not found",
+                  "meta": {
+                    "id": 999
+                  },
+                  "status": 404
+                },
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "description": "Machine-readable domain error code.",
+                      "type": "string"
+                    },
+                    "detail": {
+                      "description": "Human-readable error message.",
+                      "type": "string"
+                    },
+                    "meta": {
+                      "description": "Optional structured error metadata."
+                    },
+                    "status": {
+                      "description": "HTTP status code.",
+                      "type": "integer"
+                    }
+                  },
+                  "required": ["detail", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "User or role does not exist."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "conflict",
+                  "detail": "Username already exists",
+                  "meta": {
+                    "username": "admin"
+                  },
+                  "status": 409
+                },
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "description": "Machine-readable domain error code.",
+                      "type": "string"
+                    },
+                    "detail": {
+                      "description": "Human-readable error message.",
+                      "type": "string"
+                    },
+                    "meta": {
+                      "description": "Optional structured error metadata."
+                    },
+                    "status": {
+                      "description": "HTTP status code.",
+                      "type": "integer"
+                    }
+                  },
+                  "required": ["detail", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Username already exists."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "internal_error",
+                  "detail": "Internal server error",
+                  "status": 500
+                },
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "description": "Machine-readable domain error code.",
+                      "type": "string"
+                    },
+                    "detail": {
+                      "description": "Human-readable error message.",
+                      "type": "string"
+                    },
+                    "meta": {
+                      "description": "Optional structured error metadata."
+                    },
+                    "status": {
+                      "description": "HTTP status code.",
+                      "type": "integer"
+                    }
+                  },
+                  "required": ["detail", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Unhandled internal server error."
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Update user",
+        "tags": ["rbac"]
+      }
+    },
+    "/v1/rbac/users/{user_id}/roles": {
+      "get": {
+        "description": "List roles directly assigned to a user (does not include inherited parent roles). Requires `user_roles:manage`.",
+        "operationId": "list_user_roles_v1_rbac_users__user_id__roles_get",
+        "parameters": [
+          {
+            "description": "User ID.",
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "description": "User ID.",
+              "examples": [1],
+              "minimum": 1,
+              "title": "User Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": [
+                  {
+                    "id": 2,
+                    "name": "reader_role"
+                  }
+                ],
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AssignedRole"
+                  },
+                  "title": "Response List User Roles V1 Rbac Users  User Id  Roles Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "User roles fetched successfully."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "invalid_input",
+                  "detail": "Request validation error",
+                  "meta": [
+                    {
+                      "loc": ["path", "user_id"],
+                      "msg": "Input should be greater than or equal to 1"
+                    }
+                  ],
+                  "status": 400
+                },
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "description": "Machine-readable domain error code.",
+                      "type": "string"
+                    },
+                    "detail": {
+                      "description": "Human-readable error message.",
+                      "type": "string"
+                    },
+                    "meta": {
+                      "description": "Optional structured error metadata."
+                    },
+                    "status": {
+                      "description": "HTTP status code.",
+                      "type": "integer"
+                    }
+                  },
+                  "required": ["detail", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Invalid user ID."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "unauthorized",
+                  "detail": "Could not validate credentials",
+                  "status": 401
+                },
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "description": "Machine-readable domain error code.",
+                      "type": "string"
+                    },
+                    "detail": {
+                      "description": "Human-readable error message.",
+                      "type": "string"
+                    },
+                    "meta": {
+                      "description": "Optional structured error metadata."
+                    },
+                    "status": {
+                      "description": "HTTP status code.",
+                      "type": "integer"
+                    }
+                  },
+                  "required": ["detail", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Missing, expired, or invalid token.",
+            "headers": {
+              "WWW-Authenticate": {
+                "description": "Bearer authentication challenge.",
+                "schema": {
+                  "example": "Bearer",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "forbidden",
+                  "detail": "Missing required permission: user_roles:manage",
+                  "meta": {
+                    "permission_id": "user_roles:manage"
+                  },
+                  "status": 403
+                },
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "description": "Machine-readable domain error code.",
+                      "type": "string"
+                    },
+                    "detail": {
+                      "description": "Human-readable error message.",
+                      "type": "string"
+                    },
+                    "meta": {
+                      "description": "Optional structured error metadata."
+                    },
+                    "status": {
+                      "description": "HTTP status code.",
+                      "type": "integer"
+                    }
+                  },
+                  "required": ["detail", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "User lacks permission to read user role assignments."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "not_found",
+                  "detail": "User 999 not found",
+                  "meta": {
+                    "id": 999
+                  },
+                  "status": 404
+                },
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "description": "Machine-readable domain error code.",
+                      "type": "string"
+                    },
+                    "detail": {
+                      "description": "Human-readable error message.",
+                      "type": "string"
+                    },
+                    "meta": {
+                      "description": "Optional structured error metadata."
+                    },
+                    "status": {
+                      "description": "HTTP status code.",
+                      "type": "integer"
+                    }
+                  },
+                  "required": ["detail", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "User does not exist."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "internal_error",
+                  "detail": "Internal server error",
+                  "status": 500
+                },
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "description": "Machine-readable domain error code.",
+                      "type": "string"
+                    },
+                    "detail": {
+                      "description": "Human-readable error message.",
+                      "type": "string"
+                    },
+                    "meta": {
+                      "description": "Optional structured error metadata."
+                    },
+                    "status": {
+                      "description": "HTTP status code.",
+                      "type": "integer"
+                    }
+                  },
+                  "required": ["detail", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Unhandled internal server error."
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List roles assigned to a user",
         "tags": ["rbac"]
       }
     },

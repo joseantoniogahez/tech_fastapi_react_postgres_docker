@@ -18,6 +18,12 @@ describe("mutation policy", () => {
     expect(shouldRetryDefaultMutation(0, new ApiError("Conflict", 409, "conflict"))).toBe(false);
   });
 
+  it("retries network-like and unknown runtime failures once", () => {
+    expect(shouldRetryDefaultMutation(0, new ApiError("Network", 0, "network_error"))).toBe(true);
+    expect(shouldRetryDefaultMutation(0, new Error("Browser canceled request"))).toBe(true);
+    expect(shouldRetryDefaultMutation(1, new Error("Browser canceled request"))).toBe(false);
+  });
+
   it("keeps auth mutation policies as explicit no-retry contracts", () => {
     expect(MUTATION_POLICY_MATRIX.authLoginMutation.retry).toBe(false);
     expect(MUTATION_POLICY_MATRIX.authLogoutMutation.retry).toBe(false);

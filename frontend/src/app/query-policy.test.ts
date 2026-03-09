@@ -16,6 +16,11 @@ describe("query policy", () => {
     expect(shouldRetryDefaultQuery(1, new ApiError("Network error", 0, "network_error"))).toBe(false);
   });
 
+  it("retries unknown runtime errors once", () => {
+    expect(shouldRetryDefaultQuery(0, new Error("Runtime aborted request"))).toBe(true);
+    expect(shouldRetryDefaultQuery(1, new Error("Runtime aborted request"))).toBe(false);
+  });
+
   it("session policy keeps explicit no-retry behavior", () => {
     expect(sessionQueryPolicy.retry).toBe(false);
     expect(sessionQueryPolicy.staleTime).toBe(QUERY_POLICY_MATRIX.sessionQuery.staleTimeMs);

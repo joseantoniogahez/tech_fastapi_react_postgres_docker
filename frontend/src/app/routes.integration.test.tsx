@@ -7,6 +7,16 @@ import { createQueryClient } from "@/app/query-client";
 import { t } from "@/shared/i18n/ui-text";
 import { setAccessToken, getAccessToken } from "@/shared/auth/storage";
 
+const toRequestPathname = (input: RequestInfo | URL): string => {
+  if (input instanceof URL) {
+    return input.pathname;
+  }
+  if (typeof input === "string") {
+    return new URL(input).pathname;
+  }
+  return new URL(input.url).pathname;
+};
+
 describe("routing integration", () => {
   it("clears expired token and redirects to login from protected route", async () => {
     setAccessToken("expired-token");
@@ -91,5 +101,58 @@ describe("routing integration", () => {
 
     expect(await screen.findByRole("heading", { name: t("routing.notFound.title") })).toBeInTheDocument();
     expect(screen.getByText(t("routing.notFound.body"))).toBeInTheDocument();
+  });
+
+  it("renders admin users route when session is valid", async () => {
+    setAccessToken("valid-admin-token");
+
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const pathname = toRequestPathname(input);
+
+      if (pathname === "/v1/users/me") {
+        return {
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve({
+              id: 1,
+              username: "admin",
+              disabled: false,
+            }),
+        } satisfies Partial<Response>;
+      }
+
+      if (pathname === "/v1/rbac/users") {
+        return {
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve([]),
+        } satisfies Partial<Response>;
+      }
+
+      if (pathname === "/v1/rbac/roles") {
+        return {
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve([]),
+        } satisfies Partial<Response>;
+      }
+
+      throw new Error(`Unhandled route integration request: ${pathname}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const queryClient = createQueryClient();
+    const router = createMemoryRouter(appRoutes, {
+      initialEntries: ["/admin/users"],
+    });
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByRole("heading", { name: t("admin.users.title") })).toBeInTheDocument();
   });
 });

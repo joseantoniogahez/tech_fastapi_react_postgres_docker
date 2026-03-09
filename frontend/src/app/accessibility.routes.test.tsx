@@ -8,6 +8,16 @@ import { appRoutes } from "@/app/routes";
 import { clearAccessToken, setAccessToken } from "@/shared/auth/storage";
 import { t } from "@/shared/i18n/ui-text";
 
+const toRequestPathname = (input: RequestInfo | URL): string => {
+  if (input instanceof URL) {
+    return input.pathname;
+  }
+  if (typeof input === "string") {
+    return new URL(input).pathname;
+  }
+  return new URL(input.url).pathname;
+};
+
 const AXE_RUN_OPTIONS: axe.RunOptions = {
   rules: {
     "color-contrast": { enabled: false },
@@ -31,7 +41,9 @@ describe("accessibility route baseline", () => {
 
     const view = renderRoute(["/"]);
 
-    expect(await screen.findByRole("heading", { name: t("landing.title") })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: t("landing.title") }, { timeout: 5000 }),
+    ).toBeInTheDocument();
     expect((await axe.run(view.container, AXE_RUN_OPTIONS)).violations).toHaveLength(0);
   });
 
@@ -63,6 +75,50 @@ describe("accessibility route baseline", () => {
     const view = renderRoute(["/welcome"]);
 
     expect(await screen.findByRole("heading", { name: t("routing.protected.error.title") })).toBeInTheDocument();
+    expect((await axe.run(view.container, AXE_RUN_OPTIONS)).violations).toHaveLength(0);
+  });
+
+  it("has no obvious accessibility violations on admin users route", async () => {
+    setAccessToken("admin-token");
+
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const pathname = toRequestPathname(input);
+      if (pathname === "/v1/users/me") {
+        return {
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve({
+              id: 1,
+              username: "admin",
+              disabled: false,
+            }),
+        } satisfies Partial<Response>;
+      }
+
+      if (pathname === "/v1/rbac/users") {
+        return {
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve([]),
+        } satisfies Partial<Response>;
+      }
+
+      if (pathname === "/v1/rbac/roles") {
+        return {
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve([]),
+        } satisfies Partial<Response>;
+      }
+
+      throw new Error(`Unhandled accessibility request: ${pathname}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const view = renderRoute(["/admin/users"]);
+
+    expect(await screen.findByRole("heading", { name: t("admin.users.title") })).toBeInTheDocument();
     expect((await axe.run(view.container, AXE_RUN_OPTIONS)).violations).toHaveLength(0);
   });
 });

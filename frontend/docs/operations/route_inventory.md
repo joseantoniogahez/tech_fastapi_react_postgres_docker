@@ -4,12 +4,14 @@ This document is the canonical inventory of runtime routes, access policies, and
 
 ## Route Catalog
 
-| Path       | Access Policy | Owner Module                      | Notes                                         |
-| ---------- | ------------- | --------------------------------- | --------------------------------------------- |
-| `/`        | `public`      | `features/landing/LandingPage`    | Root index route.                             |
-| `/login`   | `public`      | `features/auth/LoginPage`         | User authentication page.                     |
-| `/welcome` | `protected`   | `features/welcome/WelcomePage`    | Protected by `shared/routing/ProtectedRoute`. |
-| `/*`       | `public`      | `features/not-found/NotFoundPage` | Explicit catch-all for unknown routes.        |
+| Path           | Access Policy | Owner Module                          | Notes                                          |
+| -------------- | ------------- | ------------------------------------- | ---------------------------------------------- |
+| `/`            | `public`      | `features/landing/LandingPage`        | Root index route.                              |
+| `/login`       | `public`      | `features/auth/LoginPage`             | User authentication page.                      |
+| `/welcome`     | `protected`   | `features/welcome/WelcomePage`        | Protected by `shared/routing/ProtectedRoute`.  |
+| `/admin/users` | `protected`   | `features/admin-users/AdminUsersPage` | Admin user CRUD + soft delete management.      |
+| `/admin/roles` | `protected`   | `features/admin-roles/AdminRolesPage` | Admin role hierarchy + permissions management. |
+| `/*`           | `public`      | `features/not-found/NotFoundPage`     | Explicit catch-all for unknown routes.         |
 
 ## Route-Level Error Handling
 

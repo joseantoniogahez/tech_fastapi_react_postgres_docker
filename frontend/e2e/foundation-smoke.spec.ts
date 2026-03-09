@@ -100,4 +100,61 @@ test.describe("frontend foundation smoke", () => {
     await expect(page.getByRole("heading", { name: t("routing.protected.error.title") })).toBeVisible();
     await expect(page.getByText(/request_id=req-e2e-500/)).toBeVisible();
   });
+
+  test("renders admin-users error diagnostics on forbidden RBAC access", async ({ page }) => {
+    await page.addInitScript((storageKey) => {
+      window.sessionStorage.setItem(storageKey, "seed-token");
+    }, ACCESS_TOKEN_STORAGE_KEY);
+
+    await page.route("**/v1/**", async (route) => {
+      const request = route.request();
+      const method = request.method();
+      const pathname = new URL(request.url()).pathname;
+
+      if (method === "GET" && pathname === "/v1/users/me") {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            id: 1,
+            username: SMOKE_USERNAME,
+            disabled: false,
+          }),
+        });
+        return;
+      }
+
+      if (method === "GET" && pathname === "/v1/rbac/users") {
+        await route.fulfill({
+          status: 403,
+          headers: {
+            "Content-Type": "application/json",
+            "X-Request-ID": "req-admin-403",
+          },
+          body: JSON.stringify({
+            detail: "Missing users:manage",
+            code: "forbidden",
+            request_id: "req-admin-403",
+          }),
+        });
+        return;
+      }
+
+      if (method === "GET" && pathname === "/v1/rbac/roles") {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify([]),
+        });
+        return;
+      }
+
+      throw new Error(`Unhandled API request in admin-users forbidden smoke: ${method} ${pathname}`);
+    });
+
+    await page.goto("/admin/users");
+
+    await expect(page.getByRole("heading", { name: t("admin.common.error.title") })).toBeVisible();
+    await expect(page.getByText(/request_id=req-admin-403/)).toBeVisible();
+  });
 });

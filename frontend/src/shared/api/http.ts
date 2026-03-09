@@ -1,6 +1,6 @@
 import { buildApiUrl } from "@/shared/api/env";
 import { ApiError, parseApiError } from "@/shared/api/errors";
-import { getAccessToken } from "@/shared/auth/storage";
+import { clearAccessToken, getAccessToken } from "@/shared/auth/storage";
 import { emitObservabilityEvent } from "@/shared/observability/events";
 
 type ResponseParser<T> = (payload: unknown) => T;
@@ -45,6 +45,9 @@ export const apiRequest = async <T>(path: string, options: RequestOptions<T> = {
 
   if (!response.ok) {
     const apiError = await parseApiError(response);
+    if (withAuth && apiError.status === 401) {
+      clearAccessToken();
+    }
     emitObservabilityEvent({
       event_name: "api.request.response_error",
       level: "error",

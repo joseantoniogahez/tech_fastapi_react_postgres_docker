@@ -7,6 +7,7 @@ This document defines the deterministic end-to-end smoke baseline for the fronte
 - Critical login journey.
 - Protected route navigation behavior.
 - Error fallback behavior for protected session validation.
+- Admin protected route error diagnostics for RBAC `403 forbidden` responses.
 
 ## Runner Contract
 
