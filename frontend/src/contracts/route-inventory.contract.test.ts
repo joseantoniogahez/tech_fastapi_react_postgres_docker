@@ -126,6 +126,8 @@ describe("route inventory contracts", () => {
     expect(markdown).toContain("## Route-Level Error Handling");
     expect(markdown).toContain("## 404 Behavior");
     expect(markdown).toContain("`/*`");
+    expect(markdown).toContain("Requires `users:manage`; missing permission redirects to `/welcome`.");
+    expect(markdown).toContain("Requires `roles:manage`; missing permission redirects to `/welcome`.");
   });
 
   it("keeps root route error boundary ownership explicit in route tree", () => {

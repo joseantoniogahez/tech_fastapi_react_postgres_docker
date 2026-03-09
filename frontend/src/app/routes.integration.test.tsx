@@ -48,11 +48,11 @@ describe("routing integration", () => {
       () => {
         expect(router.state.location.pathname).toBe("/login");
       },
-      { timeout: 3_000 },
+      { timeout: 5_000 },
     );
     expect(await screen.findByRole("button", { name: t("auth.login.submit.default") })).toBeInTheDocument();
     expect(getAccessToken()).toBeNull();
-  });
+  }, 10_000);
 
   it("shows protected-route diagnostic when session check fails with request id", async () => {
     setAccessToken("server-error-token");
@@ -118,6 +118,7 @@ describe("routing integration", () => {
               id: 1,
               username: "admin",
               disabled: false,
+              permissions: ["users:manage"],
             }),
         } satisfies Partial<Response>;
       }

@@ -48,7 +48,7 @@ def build_service(
     repo = repository or _build_repository_mock()
     unit_of_work = _build_unit_of_work_mock()
     settings = AuthSettings(
-        JWT_SECRET_KEY="unit-test-secret",
+        JWT_SECRET_KEY="unit-test-secret",  # pragma: allowlist secret
         JWT_ALGORITHM="HS256",
         JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30,
         JWT_ISSUER="unit-test-issuer",

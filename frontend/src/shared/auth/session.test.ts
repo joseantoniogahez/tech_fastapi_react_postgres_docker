@@ -60,11 +60,12 @@ describe("session client", () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
-      json: () =>
-        Promise.resolve({
+        json: () =>
+          Promise.resolve({
           id: "1",
           username: "admin",
           disabled: false,
+          permissions: [],
         }),
     } satisfies Partial<Response>);
     vi.stubGlobal("fetch", fetchMock);

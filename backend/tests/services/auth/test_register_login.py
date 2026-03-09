@@ -1,5 +1,5 @@
 import asyncio
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -110,6 +110,7 @@ def test_register_creates_user_and_returns_authenticated_user() -> None:
         assert authenticated_user.id == 42
         assert authenticated_user.username == "john"
         assert authenticated_user.disabled is False
+        assert authenticated_user.permissions == ()
         repository.username_exists.assert_awaited_once_with("john")
         repository.create_user.assert_awaited_once()
         assert_unit_of_work_scope_committed(service.unit_of_work)
@@ -120,6 +121,34 @@ def test_register_creates_user_and_returns_authenticated_user() -> None:
         assert (
             service.password_service.verify_password(registration.password, created_kwargs["hashed_password"]) is True
         )
+
+    asyncio.run(run_test())
+
+
+def test_register_maps_effective_permissions_into_authenticated_user_result() -> None:
+    service, repository = build_service()
+    repository.get_user_effective_permission_ids = AsyncMock(
+        return_value=("users:manage", "roles:manage", "users:manage")
+    )
+    registration = RegisterUserCommand(username="john", password="StrongPass1")
+
+    async def create_user(**kwargs: str | bool):
+        from app.features.auth.models import User
+
+        return User(
+            id=42,
+            username=str(kwargs["username"]),
+            hashed_password=str(kwargs["hashed_password"]),
+            disabled=bool(kwargs["disabled"]),
+        )
+
+    repository.create_user.side_effect = create_user
+
+    async def run_test() -> None:
+        authenticated_user = await service.register(registration)
+
+        assert authenticated_user.permissions == ("roles:manage", "users:manage")
+        repository.get_user_effective_permission_ids.assert_awaited_once_with(42)
 
     asyncio.run(run_test())
 

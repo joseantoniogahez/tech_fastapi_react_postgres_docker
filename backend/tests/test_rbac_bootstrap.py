@@ -26,7 +26,7 @@ def test_bootstrap_rbac_is_idempotent() -> None:
                 first_run = await bootstrap_rbac(
                     mock_db.Session,
                     admin_username="admin",
-                    admin_password="StrongSeed9",
+                    admin_password="StrongSeed9",  # pragma: allowlist secret
                 )
                 second_run = await bootstrap_rbac(
                     mock_db.Session,
@@ -60,7 +60,7 @@ def test_bootstrap_rbac_is_idempotent() -> None:
                     admin = await session.scalar(select(User).where(User.username == "admin"))
                     assert admin is not None
                     assert admin.disabled is False
-                    assert admin.hashed_password != "StrongSeed9"
+                    assert admin.hashed_password != "StrongSeed9"  # pragma: allowlist secret
             finally:
                 await mock_db.close()
 

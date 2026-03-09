@@ -6,6 +6,7 @@ from typing import Any
 import jwt
 from starlette.testclient import TestClient
 
+from app.core.authorization import PERMISSION_SPECS
 from app.core.config.settings import AuthSettings
 from utils.testing_support.api_assertions import assert_error_response
 
@@ -41,7 +42,7 @@ def test_token_success(mock_client: TestClient) -> None:
         "/v1/token",
         data={
             "username": "admin",
-            "password": "admin123",
+            "password": "admin123",  # pragma: allowlist secret
         },
     )
 
@@ -54,8 +55,8 @@ def test_token_success(mock_client: TestClient) -> None:
 
 def test_token_rejects_invalid_credentials_variants(mock_client: TestClient) -> None:
     for credentials in (
-        {"username": "admin", "password": "wrong-password"},
-        {"username": "unknown", "password": "admin123"},
+        {"username": "admin", "password": "wrong-password"},  # pragma: allowlist secret
+        {"username": "unknown", "password": "admin123"},  # pragma: allowlist secret
     ):
         response = mock_client.post("/v1/token", data=credentials)
 
@@ -69,7 +70,7 @@ def test_token_disabled_user(mock_client: TestClient) -> None:
         "/v1/token",
         data={
             "username": "disabled_user",
-            "password": "admin123",
+            "password": "admin123",  # pragma: allowlist secret
         },
     )
 
@@ -82,7 +83,7 @@ def test_get_current_active_user(mock_client: TestClient) -> None:
         "/v1/token",
         data={
             "username": "admin",
-            "password": "admin123",
+            "password": "admin123",  # pragma: allowlist secret
         },
     )
     access_token = token_response.json()["access_token"]
@@ -90,10 +91,12 @@ def test_get_current_active_user(mock_client: TestClient) -> None:
     response = mock_client.get("/v1/users/me", headers={"Authorization": f"Bearer {access_token}"})
 
     assert response.status_code == HTTPStatus.OK
+    expected_permissions = sorted(permission_id for permission_id, _ in PERMISSION_SPECS)
     assert response.json() == {
         "id": 1,
         "username": "admin",
         "disabled": False,
+        "permissions": expected_permissions,
     }
 
 
@@ -125,7 +128,7 @@ def test_register_user_success(mock_client: TestClient) -> None:
         "/v1/users/register",
         json={
             "username": " new_user ",
-            "password": "StrongPass1",
+            "password": "StrongPass1",  # pragma: allowlist secret
         },
     )
 
@@ -134,12 +137,13 @@ def test_register_user_success(mock_client: TestClient) -> None:
     assert isinstance(payload["id"], int)
     assert payload["username"] == "new_user"
     assert payload["disabled"] is False
+    assert payload["permissions"] == []
 
     token_response = mock_client.post(
         "/v1/token",
         data={
             "username": "NEW_USER",
-            "password": "StrongPass1",
+            "password": "StrongPass1",  # pragma: allowlist secret
         },
     )
     assert token_response.status_code == HTTPStatus.OK
@@ -147,9 +151,9 @@ def test_register_user_success(mock_client: TestClient) -> None:
 
 def test_register_user_rejects_common_error_cases(mock_client: TestClient) -> None:
     payloads = (
-        {"username": "invalid user!", "password": "StrongPass1"},
-        {"username": "admin", "password": "StrongPass1"},
-        {"username": "policy_user", "password": "onlylowercase1"},
+        {"username": "invalid user!", "password": "StrongPass1"},  # pragma: allowlist secret
+        {"username": "admin", "password": "StrongPass1"},  # pragma: allowlist secret
+        {"username": "policy_user", "password": "onlylowercase1"},  # pragma: allowlist secret
     )
     status_codes = (HTTPStatus.BAD_REQUEST, HTTPStatus.CONFLICT, HTTPStatus.BAD_REQUEST)
     error_types = ("invalid_input", "conflict", "invalid_input")
@@ -179,7 +183,7 @@ def test_update_current_user_username_and_password(mock_client: TestClient) -> N
         "/v1/users/register",
         json={
             "username": "profile_user",
-            "password": "ProfilePass1",
+            "password": "ProfilePass1",  # pragma: allowlist secret
         },
     )
     assert register_response.status_code == HTTPStatus.CREATED
@@ -189,7 +193,7 @@ def test_update_current_user_username_and_password(mock_client: TestClient) -> N
         "/v1/token",
         data={
             "username": "profile_user",
-            "password": "ProfilePass1",
+            "password": "ProfilePass1",  # pragma: allowlist secret
         },
     )
     assert login_response.status_code == HTTPStatus.OK
@@ -200,8 +204,8 @@ def test_update_current_user_username_and_password(mock_client: TestClient) -> N
         headers=headers,
         json={
             "username": " profile_user_v2 ",
-            "current_password": "ProfilePass1",
-            "new_password": "ProfilePass2",
+            "current_password": "ProfilePass1",  # pragma: allowlist secret
+            "new_password": "ProfilePass2",  # pragma: allowlist secret
         },
     )
 
@@ -210,13 +214,14 @@ def test_update_current_user_username_and_password(mock_client: TestClient) -> N
         "id": user_id,
         "username": "profile_user_v2",
         "disabled": False,
+        "permissions": [],
     }
 
     old_login = mock_client.post(
         "/v1/token",
         data={
             "username": "profile_user",
-            "password": "ProfilePass1",
+            "password": "ProfilePass1",  # pragma: allowlist secret
         },
     )
     assert old_login.status_code == HTTPStatus.UNAUTHORIZED
@@ -225,7 +230,7 @@ def test_update_current_user_username_and_password(mock_client: TestClient) -> N
         "/v1/token",
         data={
             "username": "PROFILE_USER_V2",
-            "password": "ProfilePass2",
+            "password": "ProfilePass2",  # pragma: allowlist secret
         },
     )
     assert new_login.status_code == HTTPStatus.OK
@@ -236,16 +241,16 @@ def test_update_current_user_rejects_invalid_update_payloads(mock_client: TestCl
         "/v1/token",
         data={
             "username": "admin",
-            "password": "admin123",
+            "password": "admin123",  # pragma: allowlist secret
         },
     )
     assert login_response.status_code == HTTPStatus.OK
     headers = {"Authorization": f"Bearer {login_response.json()['access_token']}"}
     payloads = (
-        {"new_password": "AdminPass9"},
-        {"current_password": "admin123"},
+        {"new_password": "AdminPass9"},  # pragma: allowlist secret
+        {"current_password": "admin123"},  # pragma: allowlist secret
         {"username": " ADMIN "},
-        {"current_password": "admin123", "new_password": "admin123"},
+        {"current_password": "admin123", "new_password": "admin123"},  # pragma: allowlist secret
     )
     expected_messages = (
         "current_password is required to update password",
@@ -271,7 +276,7 @@ def test_update_current_user_rejects_invalid_current_password(mock_client: TestC
         "/v1/token",
         data={
             "username": "admin",
-            "password": "admin123",
+            "password": "admin123",  # pragma: allowlist secret
         },
     )
     assert login_response.status_code == HTTPStatus.OK
@@ -281,8 +286,8 @@ def test_update_current_user_rejects_invalid_current_password(mock_client: TestC
         "/v1/users/me",
         headers=headers,
         json={
-            "current_password": "wrong-password",
-            "new_password": "AdminPass9",
+            "current_password": "wrong-password",  # pragma: allowlist secret
+            "new_password": "AdminPass9",  # pragma: allowlist secret
         },
     )
 
@@ -296,7 +301,7 @@ def test_update_current_user_username_conflict(mock_client: TestClient) -> None:
         "/v1/token",
         data={
             "username": "reader_user",
-            "password": "reader123",
+            "password": "reader123",  # pragma: allowlist secret
         },
     )
     assert login_response.status_code == HTTPStatus.OK

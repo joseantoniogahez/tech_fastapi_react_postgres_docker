@@ -21,6 +21,7 @@ class AuthenticatedUserResponse(ApiSchema):
     id: int
     username: str = Field(min_length=1, max_length=255)
     disabled: bool
+    permissions: list[str] = Field(default_factory=list)
 
     model_config = ConfigDict(from_attributes=True)
 

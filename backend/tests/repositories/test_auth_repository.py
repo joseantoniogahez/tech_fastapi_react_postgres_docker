@@ -51,6 +51,33 @@ def test_auth_repository_get_rbac_version_returns_stable_digest_for_effective_pe
     asyncio.run(run_test())
 
 
+def test_auth_repository_get_user_effective_permission_ids_returns_sorted_unique_ids() -> None:
+    session = build_session_mock()
+    repository = AuthRepository(session=session)
+    result = MagicMock()
+    scalars_result = MagicMock()
+    scalars_result.all.return_value = [
+        "users:manage",
+        "roles:manage",
+        "users:manage",
+        "role_permissions:manage",
+    ]
+    result.scalars.return_value = scalars_result
+    session.execute.return_value = result
+
+    async def run_test() -> None:
+        permission_ids = await repository.get_user_effective_permission_ids(user_id=7)
+
+        assert permission_ids == (
+            "role_permissions:manage",
+            "roles:manage",
+            "users:manage",
+        )
+        session.execute.assert_awaited_once()
+
+    asyncio.run(run_test())
+
+
 def test_auth_repository_create_user_translates_integrity_error_to_repository_conflict() -> None:
     session = build_session_mock()
     session.flush.side_effect = IntegrityError("insert", {}, Exception("duplicate"))
@@ -60,7 +87,7 @@ def test_auth_repository_create_user_translates_integrity_error_to_repository_co
         with pytest.raises(RepositoryConflictError) as exc_info:
             await repository.create_user(
                 username="john",
-                hashed_password="hash",
+                hashed_password="hash",  # pragma: allowlist secret
                 disabled=False,
             )
 
@@ -80,7 +107,7 @@ def test_auth_repository_create_user_translates_non_username_integrity_error_to_
         with pytest.raises(RepositoryInternalError) as exc_info:
             await repository.create_user(
                 username=None,
-                hashed_password="hash",
+                hashed_password="hash",  # pragma: allowlist secret
                 disabled=False,
             )
 
@@ -119,7 +146,7 @@ def test_auth_repository_update_user_translates_other_integrity_errors_to_reposi
 
     async def run_test() -> None:
         with pytest.raises(RepositoryInternalError) as exc_info:
-            await repository.update_user(3, hashed_password="new-hash")
+            await repository.update_user(3, hashed_password="new-hash")  # pragma: allowlist secret
 
         assert "Internal server error" in str(exc_info.value)
         session.refresh.assert_not_awaited()

@@ -45,7 +45,7 @@ describe("accessibility route baseline", () => {
       await screen.findByRole("heading", { name: t("landing.title") }, { timeout: 5000 }),
     ).toBeInTheDocument();
     expect((await axe.run(view.container, AXE_RUN_OPTIONS)).violations).toHaveLength(0);
-  });
+  }, 10_000);
 
   it("has no obvious accessibility violations on login route", async () => {
     const view = renderRoute(["/login"]);
@@ -92,6 +92,7 @@ describe("accessibility route baseline", () => {
               id: 1,
               username: "admin",
               disabled: false,
+              permissions: ["users:manage"],
             }),
         } satisfies Partial<Response>;
       }

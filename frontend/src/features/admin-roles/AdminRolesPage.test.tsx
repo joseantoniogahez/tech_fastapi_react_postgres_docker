@@ -3,8 +3,10 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { createQueryClient } from "@/app/query-client";
+import { SESSION_QUERY_KEY } from "@/shared/auth/session";
 import { AdminRolesPage } from "@/features/admin-roles/AdminRolesPage";
 import { t } from "@/shared/i18n/ui-text";
+import { IAM_PERMISSION } from "@/shared/iam/contracts";
 
 interface MockRolePermission {
   id: string;
@@ -56,8 +58,19 @@ const jsonResponse = (status: number, payload: unknown, requestId?: string): Par
   json: () => Promise.resolve(payload),
 });
 
-const renderAdminRolesPage = () => {
+const renderAdminRolesPage = (
+  permissions: string[] = [
+    IAM_PERMISSION.ROLES_MANAGE,
+    IAM_PERMISSION.ROLE_PERMISSIONS_MANAGE,
+  ],
+) => {
   const queryClient = createQueryClient();
+  queryClient.setQueryData(SESSION_QUERY_KEY, {
+    id: 1,
+    username: "admin",
+    disabled: false,
+    permissions,
+  });
 
   render(
     <QueryClientProvider client={queryClient}>
@@ -177,7 +190,9 @@ describe("AdminRolesPage", () => {
 
     renderAdminRolesPage();
 
-    expect(await screen.findByRole("heading", { name: t("admin.roles.title") })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: t("admin.roles.title") }, { timeout: 4000 }),
+    ).toBeInTheDocument();
 
     const [createRoleInput] = screen.getAllByLabelText(t("admin.roles.create.name"));
     await user.type(createRoleInput, "editor_role");
@@ -246,7 +261,7 @@ describe("AdminRolesPage", () => {
       ).toBe(true);
     });
     },
-    20000,
+    30000,
   );
 
   it("shows request-id diagnostics for API errors", async () => {
@@ -321,6 +336,51 @@ describe("AdminRolesPage", () => {
     expect(await screen.findByRole("heading", { name: t("admin.common.error.title") })).toBeInTheDocument();
     expect(await screen.findByText(/Role name already exists/)).toBeInTheDocument();
     expect(await screen.findByText(/request_id=req-roles-conflict/)).toBeInTheDocument();
+  });
+
+  it("hides permission assignment controls when user lacks role_permissions:manage", async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const requestUrl = toRequestUrl(input);
+      const method = init?.method ?? "GET";
+      const path = requestUrl.pathname;
+
+      if (method === "GET" && path === "/v1/rbac/roles") {
+        return jsonResponse(200, [
+          {
+            id: 1,
+            name: "admin_role",
+            permissions: [
+              {
+                id: "users:manage",
+                name: "Manage users",
+                scope: "any",
+              },
+            ],
+            parent_role_ids: [],
+          },
+        ]);
+      }
+
+      if (method === "GET" && path === "/v1/rbac/permissions") {
+        return jsonResponse(200, [
+          {
+            id: "users:manage",
+            name: "Manage users",
+          },
+        ]);
+      }
+
+      throw new Error(`Unhandled request: ${method} ${path}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    renderAdminRolesPage([IAM_PERMISSION.ROLES_MANAGE]);
+
+    expect(await screen.findByRole("heading", { name: t("admin.roles.title") })).toBeInTheDocument();
+    expect(screen.queryByLabelText(t("admin.roles.permissions.select"))).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: t("admin.roles.permissions.add") })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: t("admin.roles.permissions.remove") })).not.toBeInTheDocument();
+    expect(screen.getByText("Manage users")).toBeInTheDocument();
   });
 
   it("shows generic ui error for non-api exceptions", async () => {

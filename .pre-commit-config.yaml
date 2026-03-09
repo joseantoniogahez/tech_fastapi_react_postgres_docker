@@ -67,7 +67,7 @@ repos:
     hooks:
       - id: detect-secrets
         args: [--baseline, .secrets.baseline]
-        exclude: ^(frontend/package-lock\.json|backend/alembic/versions/.*\.py|\.secrets\.baseline)$
+        exclude: ^(frontend/package-lock\.json|backend/alembic/versions/.*\.py|\.secrets\.baseline|\.mypy_cache/.*)$
 
   # Fast spelling checks on source and docs, with generated artifacts excluded.
   - repo: https://github.com/codespell-project/codespell

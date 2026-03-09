@@ -2,6 +2,9 @@ import { FormEvent, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { appendRequestIdDiagnostic, ApiError, getApiErrorRequestId } from "@/shared/api/errors";
+import { useSession } from "@/shared/auth/session";
+import { userHasPermission } from "@/shared/iam/api";
+import { IAM_PERMISSION } from "@/shared/iam/contracts";
 import { t } from "@/shared/i18n/ui-text";
 import {
   createAdminUser,
@@ -50,18 +53,28 @@ const formatUiError = (error: unknown): string => {
   return t("admin.common.error.generic");
 };
 
-const toCreateUserPayload = (formState: CreateUserFormState): CreateAdminUserPayload => ({
-  username: formState.username,
-  password: formState.password,
-  role_ids: formState.roleIds,
-});
+const toCreateUserPayload = (
+  formState: CreateUserFormState,
+  includeRoleAssignments: boolean,
+): CreateAdminUserPayload => {
+  const payload: CreateAdminUserPayload = {
+    username: formState.username,
+    password: formState.password,
+  };
+  if (includeRoleAssignments) {
+    payload.role_ids = formState.roleIds;
+  }
+  return payload;
+};
 
-const toUpdateUserPayload = (formState: EditUserFormState): UpdateAdminUserPayload => {
+const toUpdateUserPayload = (formState: EditUserFormState, includeRoleAssignments: boolean): UpdateAdminUserPayload => {
   const payload: UpdateAdminUserPayload = {
     username: formState.username,
     disabled: formState.disabled,
-    role_ids: formState.roleIds,
   };
+  if (includeRoleAssignments) {
+    payload.role_ids = formState.roleIds;
+  }
 
   if (formState.currentPassword.trim() || formState.newPassword.trim()) {
     payload.current_password = formState.currentPassword;
@@ -81,9 +94,11 @@ const toEditFormState = (user: AdminUser): EditUserFormState => ({
 
 export const AdminUsersPage = () => {
   const queryClient = useQueryClient();
+  const session = useSession();
   const [createFormState, setCreateFormState] = useState<CreateUserFormState>(INITIAL_CREATE_USER_FORM_STATE);
   const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
   const [editFormState, setEditFormState] = useState<EditUserFormState | null>(null);
+  const canManageUserRoles = userHasPermission(session.data, IAM_PERMISSION.USER_ROLES_MANAGE);
 
   const usersQuery = useQuery({
     queryKey: RBAC_USERS_QUERY_KEY,
@@ -137,7 +152,7 @@ export const AdminUsersPage = () => {
   const submitCreateForm = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     createMutation.reset();
-    createMutation.mutate(toCreateUserPayload(createFormState));
+    createMutation.mutate(toCreateUserPayload(createFormState, canManageUserRoles));
   };
 
   const submitEditForm = (event: FormEvent<HTMLFormElement>) => {
@@ -148,7 +163,7 @@ export const AdminUsersPage = () => {
     updateMutation.reset();
     updateMutation.mutate({
       userId: editingUser.id,
-      payload: toUpdateUserPayload(editFormState),
+      payload: toUpdateUserPayload(editFormState, canManageUserRoles),
     });
   };
 
@@ -217,27 +232,29 @@ export const AdminUsersPage = () => {
             />
           </label>
 
-          <label className="block md:col-span-2">
-            <span className="mb-2 block text-sm font-medium">{t("admin.users.create.roles")}</span>
-            <select
-              className="min-h-28 w-full rounded-xl border border-[var(--app-border)] px-3 py-2"
-              multiple
-              onChange={(event) => {
-                const selectedRoleIds = getRoleIdsFromMultiSelect(event.currentTarget);
-                setCreateFormState((previous) => ({
-                  ...previous,
-                  roleIds: selectedRoleIds,
-                }));
-              }}
-              value={createFormState.roleIds.map(String)}
-            >
-              {roles.map((role) => (
-                <option key={role.id} value={role.id}>
-                  {role.name}
-                </option>
-              ))}
-            </select>
-          </label>
+          {canManageUserRoles ? (
+            <label className="block md:col-span-2">
+              <span className="mb-2 block text-sm font-medium">{t("admin.users.create.roles")}</span>
+              <select
+                className="min-h-28 w-full rounded-xl border border-[var(--app-border)] px-3 py-2"
+                multiple
+                onChange={(event) => {
+                  const selectedRoleIds = getRoleIdsFromMultiSelect(event.currentTarget);
+                  setCreateFormState((previous) => ({
+                    ...previous,
+                    roleIds: selectedRoleIds,
+                  }));
+                }}
+                value={createFormState.roleIds.map(String)}
+              >
+                {roles.map((role) => (
+                  <option key={role.id} value={role.id}>
+                    {role.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
 
           <div className="md:col-span-2">
             <button
@@ -363,27 +380,29 @@ export const AdminUsersPage = () => {
               <span className="text-sm font-medium">{t("admin.users.edit.disabled")}</span>
             </label>
 
-            <label className="block md:col-span-2">
-              <span className="mb-2 block text-sm font-medium">{t("admin.users.edit.roles")}</span>
-              <select
-                className="min-h-28 w-full rounded-xl border border-[var(--app-border)] px-3 py-2"
-                multiple
-                onChange={(event) => {
-                  const selectedRoleIds = getRoleIdsFromMultiSelect(event.currentTarget);
-                  setEditFormState((previous) => ({
-                    ...previous!,
-                    roleIds: selectedRoleIds,
-                  }));
-                }}
-                value={editFormState.roleIds.map(String)}
-              >
-                {roles.map((role) => (
-                  <option key={role.id} value={role.id}>
-                    {role.name}
-                  </option>
-                ))}
-              </select>
-            </label>
+            {canManageUserRoles ? (
+              <label className="block md:col-span-2">
+                <span className="mb-2 block text-sm font-medium">{t("admin.users.edit.roles")}</span>
+                <select
+                  className="min-h-28 w-full rounded-xl border border-[var(--app-border)] px-3 py-2"
+                  multiple
+                  onChange={(event) => {
+                    const selectedRoleIds = getRoleIdsFromMultiSelect(event.currentTarget);
+                    setEditFormState((previous) => ({
+                      ...previous!,
+                      roleIds: selectedRoleIds,
+                    }));
+                  }}
+                  value={editFormState.roleIds.map(String)}
+                >
+                  {roles.map((role) => (
+                    <option key={role.id} value={role.id}>
+                      {role.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
 
             <div className="flex gap-3 md:col-span-2">
               <button

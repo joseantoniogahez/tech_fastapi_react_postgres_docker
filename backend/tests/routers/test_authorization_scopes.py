@@ -34,7 +34,7 @@ def _build_scoped_auth_service(
     unit_of_work.__aenter__ = AsyncMock(return_value=unit_of_work)
     unit_of_work.__aexit__ = AsyncMock(return_value=None)
     settings = AuthSettings(
-        JWT_SECRET_KEY="unit-test-secret",
+        JWT_SECRET_KEY="unit-test-secret",  # pragma: allowlist secret
         JWT_ALGORITHM="HS256",
         JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30,
     )

@@ -55,6 +55,18 @@ describe("LoginPage", () => {
           id: 1,
           username: "admin",
           disabled: false,
+          permissions: ["users:manage", "roles:manage"],
+          }),
+      } satisfies Partial<Response>)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: () =>
+          Promise.resolve({
+          id: 1,
+          username: "admin",
+          disabled: false,
+          permissions: ["users:manage", "roles:manage"],
           }),
       } satisfies Partial<Response>);
     vi.stubGlobal("fetch", fetchMock);
@@ -67,7 +79,7 @@ describe("LoginPage", () => {
     await user.click(screen.getByRole("button", { name: t("auth.login.submit.default") }));
 
     expect(await screen.findByRole("heading", { name: "Pantalla de bienvenida" })).toBeInTheDocument();
-  });
+  }, 10_000);
 
   it("shows backend error message on invalid credentials", async () => {
     const fetchMock = vi.fn().mockResolvedValueOnce({

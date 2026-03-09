@@ -40,6 +40,8 @@ class AuthRepositoryPort(Protocol):
 
     async def get_rbac_version(self, user_id: int) -> str: ...
 
+    async def get_user_effective_permission_ids(self, user_id: int) -> tuple[str, ...]: ...
+
     async def get_user_permission_scope(self, user_id: int, permission_id: str) -> str | None: ...
 
     async def user_has_permission(self, user_id: int, permission_id: str) -> bool: ...
@@ -55,6 +57,8 @@ class AuthServicePort(Protocol):
         current_user: CurrentPrincipal,
         update_data: UpdateCurrentUserCommand,
     ) -> AuthenticatedUserResult: ...
+
+    async def get_authenticated_user(self, current_user: CurrentPrincipal) -> AuthenticatedUserResult: ...
 
     async def get_user_from_token(self, token: str) -> CurrentPrincipal: ...
 
@@ -156,7 +160,31 @@ class AuthService:
                 disabled=False,
             )
 
-        return AuthenticatedUserResult.from_domain(user)
+        return await self._build_authenticated_user_result(user)
+
+    @staticmethod
+    def _normalize_permissions(permission_ids: tuple[str, ...] | list[str]) -> tuple[str, ...]:
+        return tuple(sorted(set(permission_ids)))
+
+    async def _load_effective_permission_ids(self, user_id: int) -> tuple[str, ...]:
+        repository_attributes = getattr(self.auth_repository, "__dict__", {})
+        instance_loader = repository_attributes.get("get_user_effective_permission_ids")
+        if instance_loader is not None:
+            return self._normalize_permissions(await instance_loader(user_id))
+
+        if not hasattr(type(self.auth_repository), "get_user_effective_permission_ids"):
+            return ()
+
+        return await self.auth_repository.get_user_effective_permission_ids(user_id)
+
+    async def _build_authenticated_user_result(self, user: UserRecord | CurrentPrincipal) -> AuthenticatedUserResult:
+        permission_ids = await self._load_effective_permission_ids(user.id)
+        return AuthenticatedUserResult(
+            id=user.id,
+            username=user.username,
+            disabled=user.disabled,
+            permissions=permission_ids,
+        )
 
     def _validate_update_request(self, update_data: UpdateCurrentUserCommand) -> None:
         self._profile_updates.validate_update_request(update_data)
@@ -189,7 +217,10 @@ class AuthService:
             raise UnauthorizedError(message="Could not validate credentials")
 
         updated_user = await self._profile_updates.update_current_user(persisted_user, update_data)
-        return AuthenticatedUserResult.from_domain(updated_user)
+        return await self._build_authenticated_user_result(updated_user)
+
+    async def get_authenticated_user(self, current_user: CurrentPrincipal) -> AuthenticatedUserResult:
+        return await self._build_authenticated_user_result(current_user)
 
     async def get_user_from_token(self, token: str) -> CurrentPrincipal:
         payload = self.token_service.decode_access_token(token)

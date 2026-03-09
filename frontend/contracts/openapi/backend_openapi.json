@@ -95,6 +95,13 @@
             "title": "Id",
             "type": "integer"
           },
+          "permissions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Permissions",
+            "type": "array"
+          },
           "username": {
             "maxLength": 255,
             "minLength": 1,
@@ -5030,6 +5037,12 @@
                 "example": {
                   "disabled": false,
                   "id": 1,
+                  "permissions": [
+                    "role_permissions:manage",
+                    "roles:manage",
+                    "user_roles:manage",
+                    "users:manage"
+                  ],
                   "username": "admin"
                 },
                 "schema": {
@@ -5176,6 +5189,7 @@
                 "example": {
                   "disabled": false,
                   "id": 1,
+                  "permissions": [],
                   "username": "profile_user_v2"
                 },
                 "schema": {
@@ -5403,6 +5417,12 @@
                 "example": {
                   "disabled": false,
                   "id": 1,
+                  "permissions": [
+                    "role_permissions:manage",
+                    "roles:manage",
+                    "user_roles:manage",
+                    "users:manage"
+                  ],
                   "username": "admin"
                 },
                 "schema": {

@@ -116,7 +116,13 @@ curl -X GET http://localhost:8000/v1/users/me \
 {
   "id": 1,
   "username": "admin",
-  "disabled": false
+  "disabled": false,
+  "permissions": [
+    "role_permissions:manage",
+    "roles:manage",
+    "user_roles:manage",
+    "users:manage"
+  ]
 }
 ```
 
@@ -147,6 +153,13 @@ Transactional behavior:
 - `POST /v1/users/register` and `PATCH /v1/users/me` run inside Unit of Work transaction scopes.
 - On failure, pending account writes are rolled back.
 - See `../architecture/unit_of_work.md` for transaction details.
+
+Authenticated user payload behavior:
+
+- `POST /v1/users/register`, `GET /v1/users/me`, and `PATCH /v1/users/me` return
+  `{ id, username, disabled, permissions }`.
+- `permissions` is derived at read time from effective RBAC grants (direct + inherited roles), deduplicated, and
+  sorted for deterministic responses.
 
 ## Common Auth Errors
 

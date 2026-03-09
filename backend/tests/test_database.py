@@ -18,7 +18,7 @@ def test_build_network_database_url() -> None:
     settings = DatabaseSettings(
         DB_TYPE="postgresql+asyncpg",
         DB_USER="user",
-        DB_PASSWORD="password",
+        DB_PASSWORD="password",  # pragma: allowlist secret
         DB_HOST="localhost",
         DB_PORT=5432,
         DB_NAME="app_data",
@@ -28,7 +28,7 @@ def test_build_network_database_url() -> None:
 
     assert url.drivername == "postgresql+asyncpg"
     assert url.username == "user"
-    assert url.password == "password"
+    assert url.password == "password"  # pragma: allowlist secret
     assert url.host == "localhost"
     assert url.port == 5432
     assert url.database == "app_data"
@@ -71,7 +71,7 @@ def test_build_database_url_raises_database_config_error_when_settings_fail() ->
 def test_build_network_database_url_raises_on_missing_required_fields() -> None:
     settings = DatabaseSettings(
         DB_TYPE="postgresql+asyncpg",
-        DB_PASSWORD="password",
+        DB_PASSWORD="password",  # pragma: allowlist secret
         DB_HOST="localhost",
         DB_PORT=5432,
         DB_NAME="app_data",
@@ -96,7 +96,7 @@ def test_build_database_url_returns_network_url_for_network_settings() -> None:
     settings = DatabaseSettings(
         DB_TYPE="postgresql+asyncpg",
         DB_USER="user",
-        DB_PASSWORD="password",
+        DB_PASSWORD="password",  # pragma: allowlist secret
         DB_HOST="localhost",
         DB_PORT=5432,
         DB_NAME="app_data",
@@ -107,7 +107,7 @@ def test_build_database_url_returns_network_url_for_network_settings() -> None:
 
     assert url.drivername == "postgresql+asyncpg"
     assert url.username == "user"
-    assert url.password == "password"
+    assert url.password == "password"  # pragma: allowlist secret
     assert url.host == "localhost"
     assert url.port == 5432
     assert url.database == "app_data"

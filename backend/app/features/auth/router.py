@@ -41,8 +41,12 @@ async def register_user(
 
 
 @router.get("/users/me", response_model=AuthenticatedUserResponse, **READ_CURRENT_USER_DOC)
-async def read_current_user(current_user: AuthenticatedReadAccessDependency) -> AuthenticatedUserResponse:
-    return AuthenticatedUserResponse.from_application(current_user)
+async def read_current_user(
+    current_user: AuthenticatedReadAccessDependency,
+    auth_service: AuthServiceDependency,
+) -> AuthenticatedUserResponse:
+    authenticated_user = await auth_service.get_authenticated_user(current_user)
+    return AuthenticatedUserResponse.from_application(authenticated_user)
 
 
 @router.patch("/users/me", response_model=AuthenticatedUserResponse, **UPDATE_CURRENT_USER_DOC)

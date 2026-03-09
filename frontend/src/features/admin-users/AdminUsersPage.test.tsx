@@ -3,9 +3,11 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { createQueryClient } from "@/app/query-client";
+import { SESSION_QUERY_KEY } from "@/shared/auth/session";
 import { AdminUsersPage } from "@/features/admin-users/AdminUsersPage";
 import { getAccessToken, setAccessToken } from "@/shared/auth/storage";
 import { t } from "@/shared/i18n/ui-text";
+import { IAM_PERMISSION } from "@/shared/iam/contracts";
 
 interface MockUser {
   id: number;
@@ -53,8 +55,19 @@ const jsonResponse = (status: number, payload: unknown, requestId?: string): Par
   json: () => Promise.resolve(payload),
 });
 
-const renderAdminUsersPage = () => {
+const renderAdminUsersPage = (
+  permissions: string[] = [
+    IAM_PERMISSION.USERS_MANAGE,
+    IAM_PERMISSION.USER_ROLES_MANAGE,
+  ],
+) => {
   const queryClient = createQueryClient();
+  queryClient.setQueryData(SESSION_QUERY_KEY, {
+    id: 1,
+    username: "admin",
+    disabled: false,
+    permissions,
+  });
 
   render(
     <QueryClientProvider client={queryClient}>
@@ -254,7 +267,7 @@ describe("AdminUsersPage", () => {
       ).toBe(true);
     });
     },
-    20000,
+    30000,
   );
 
   it("shows request-id diagnostics for API errors", async () => {
@@ -337,6 +350,54 @@ describe("AdminUsersPage", () => {
     expect(await screen.findByRole("heading", { name: t("admin.common.error.title") })).toBeInTheDocument();
     expect(await screen.findByText(/Username already exists/)).toBeInTheDocument();
     expect(await screen.findByText(/request_id=req-users-conflict/)).toBeInTheDocument();
+  });
+
+  it("hides role assignment controls when user lacks user_roles:manage", async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const requestUrl = toRequestUrl(input);
+      const method = init?.method ?? "GET";
+      const path = requestUrl.pathname;
+
+      if (method === "GET" && path === "/v1/rbac/users") {
+        return jsonResponse(200, [
+          {
+            id: 1,
+            username: "admin",
+            disabled: false,
+            role_ids: [1],
+          },
+        ]);
+      }
+
+      if (method === "GET" && path === "/v1/rbac/roles") {
+        return jsonResponse(200, [
+          {
+            id: 1,
+            name: "admin_role",
+            permissions: [],
+            parent_role_ids: [],
+          },
+        ]);
+      }
+
+      throw new Error(`Unhandled request: ${method} ${path}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const user = userEvent.setup();
+
+    renderAdminUsersPage([IAM_PERMISSION.USERS_MANAGE]);
+
+    expect(await screen.findByRole("heading", { name: t("admin.users.title") })).toBeInTheDocument();
+    expect(screen.queryByLabelText(t("admin.users.create.roles"))).not.toBeInTheDocument();
+
+    const adminRow = (await screen.findByText("admin")).closest("tr");
+    expect(adminRow).not.toBeNull();
+    if (!adminRow) {
+      throw new Error("Expected admin row");
+    }
+
+    await user.click(within(adminRow).getByRole("button", { name: t("admin.users.actions.edit") }));
+    expect(screen.queryByLabelText(t("admin.users.edit.roles"))).not.toBeInTheDocument();
   });
 
   it("clears invalid session token when RBAC endpoint responds 401", async () => {

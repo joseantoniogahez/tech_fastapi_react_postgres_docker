@@ -7,8 +7,10 @@ import { LandingPage } from "@/features/landing/LandingPage";
 import { NotFoundPage } from "@/features/not-found/NotFoundPage";
 import { WelcomePage } from "@/features/welcome/WelcomePage";
 import { ProtectedRoute } from "@/shared/routing/ProtectedRoute";
+import { PermissionRoute } from "@/shared/routing/PermissionRoute";
 import { RootLayout } from "@/shared/routing/RootLayout";
 import { RouteErrorBoundary } from "@/shared/routing/RouteErrorBoundary";
+import { IAM_PERMISSION } from "@/shared/iam/contracts";
 
 export const appRoutes: RouteObject[] = [
   {
@@ -32,12 +34,22 @@ export const appRoutes: RouteObject[] = [
             element: <WelcomePage />,
           },
           {
-            path: "admin/users",
-            element: <AdminUsersPage />,
+            element: <PermissionRoute requiredPermission={IAM_PERMISSION.USERS_MANAGE} />,
+            children: [
+              {
+                path: "admin/users",
+                element: <AdminUsersPage />,
+              },
+            ],
           },
           {
-            path: "admin/roles",
-            element: <AdminRolesPage />,
+            element: <PermissionRoute requiredPermission={IAM_PERMISSION.ROLES_MANAGE} />,
+            children: [
+              {
+                path: "admin/roles",
+                element: <AdminRolesPage />,
+              },
+            ],
           },
         ],
       },

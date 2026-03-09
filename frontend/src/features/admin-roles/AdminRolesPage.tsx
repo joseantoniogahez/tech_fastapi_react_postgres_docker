@@ -2,6 +2,9 @@ import { FormEvent, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { appendRequestIdDiagnostic, ApiError, getApiErrorRequestId } from "@/shared/api/errors";
+import { useSession } from "@/shared/auth/session";
+import { userHasPermission } from "@/shared/iam/api";
+import { IAM_PERMISSION } from "@/shared/iam/contracts";
 import { t } from "@/shared/i18n/ui-text";
 import {
   assignRbacRoleInheritance,
@@ -28,6 +31,7 @@ const formatUiError = (error: unknown): string => {
 
 export const AdminRolesPage = () => {
   const queryClient = useQueryClient();
+  const session = useSession();
 
   const [createRoleName, setCreateRoleName] = useState("");
   const [roleNameDraftById, setRoleNameDraftById] = useState<Record<number, string>>({});
@@ -99,6 +103,7 @@ export const AdminRolesPage = () => {
 
   const roles = rolesQuery.data ?? [];
   const permissions = permissionsQuery.data ?? [];
+  const canManageRolePermissions = userHasPermission(session.data, IAM_PERMISSION.ROLE_PERMISSIONS_MANAGE);
 
   const roleNameById = useMemo(
     () => new Map((rolesQuery.data ?? []).map((role) => [role.id, role.name])),
@@ -299,45 +304,47 @@ export const AdminRolesPage = () => {
 
                 <article className="rounded-xl border border-[var(--app-border)] p-4">
                   <h3 className="text-sm font-semibold">{t("admin.roles.card.permissions")}</h3>
-                  <div className="mt-3 flex flex-wrap items-end gap-2">
-                    <label className="min-w-52 flex-1">
-                      <span className="mb-1 block text-xs font-medium">{t("admin.roles.permissions.select")}</span>
-                      <select
-                        className="w-full rounded-xl border border-[var(--app-border)] px-3 py-2 text-sm"
-                        onChange={(event) =>
-                          setSelectedPermissionByRoleId((previous) => ({
-                            ...previous,
-                            [role.id]: event.target.value,
-                          }))
-                        }
-                        value={currentPermissionSelection}
+                  {canManageRolePermissions ? (
+                    <div className="mt-3 flex flex-wrap items-end gap-2">
+                      <label className="min-w-52 flex-1">
+                        <span className="mb-1 block text-xs font-medium">{t("admin.roles.permissions.select")}</span>
+                        <select
+                          className="w-full rounded-xl border border-[var(--app-border)] px-3 py-2 text-sm"
+                          onChange={(event) =>
+                            setSelectedPermissionByRoleId((previous) => ({
+                              ...previous,
+                              [role.id]: event.target.value,
+                            }))
+                          }
+                          value={currentPermissionSelection}
+                        >
+                          <option value="">-</option>
+                          {permissions
+                            .filter((permission) => !assignedPermissionIds.has(permission.id))
+                            .map((permission) => (
+                              <option key={permission.id} value={permission.id}>
+                                {permission.name}
+                              </option>
+                            ))}
+                        </select>
+                      </label>
+                      <button
+                        className="rounded-full border border-[var(--app-border)] px-3 py-2 text-xs font-semibold disabled:opacity-70"
+                        disabled={!currentPermissionSelection || addPermissionMutation.isPending}
+                        onClick={() => {
+                          addPermissionMutation.reset();
+                          addPermissionMutation.mutate({
+                            roleId: role.id,
+                            permissionId: currentPermissionSelection,
+                          });
+                          setSelectedPermissionByRoleId((previous) => ({ ...previous, [role.id]: "" }));
+                        }}
+                        type="button"
                       >
-                        <option value="">-</option>
-                        {permissions
-                          .filter((permission) => !assignedPermissionIds.has(permission.id))
-                          .map((permission) => (
-                            <option key={permission.id} value={permission.id}>
-                              {permission.name}
-                            </option>
-                          ))}
-                      </select>
-                    </label>
-                    <button
-                      className="rounded-full border border-[var(--app-border)] px-3 py-2 text-xs font-semibold disabled:opacity-70"
-                      disabled={!currentPermissionSelection || addPermissionMutation.isPending}
-                      onClick={() => {
-                        addPermissionMutation.reset();
-                        addPermissionMutation.mutate({
-                          roleId: role.id,
-                          permissionId: currentPermissionSelection,
-                        });
-                        setSelectedPermissionByRoleId((previous) => ({ ...previous, [role.id]: "" }));
-                      }}
-                      type="button"
-                    >
-                      {t("admin.roles.permissions.add")}
-                    </button>
-                  </div>
+                        {t("admin.roles.permissions.add")}
+                      </button>
+                    </div>
+                  ) : null}
 
                   {role.permissions.length === 0 ? (
                     <p className="mt-3 text-sm text-[var(--app-subtle)]">{t("admin.roles.card.noPermissions")}</p>
@@ -351,12 +358,13 @@ export const AdminRolesPage = () => {
                           <div className="text-xs">
                             <p className="font-semibold">{permission.name}</p>
                             <p className="text-[var(--app-subtle)]">
-                              {permission.id} · {t("admin.roles.permissions.scope.label")}: {permission.scope}
+                              {permission.id} - {t("admin.roles.permissions.scope.label")}: {permission.scope}
                             </p>
                           </div>
                           <button
                             className="text-xs font-semibold text-red-700 disabled:opacity-70"
                             disabled={removePermissionMutation.isPending}
+                            hidden={!canManageRolePermissions}
                             onClick={() => {
                               removePermissionMutation.reset();
                               removePermissionMutation.mutate({

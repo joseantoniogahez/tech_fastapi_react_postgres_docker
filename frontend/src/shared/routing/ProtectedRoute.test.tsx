@@ -50,6 +50,7 @@ describe("ProtectedRoute", () => {
       id: 1,
       username: "admin",
       disabled: false,
+      permissions: [],
     });
 
     expect(await screen.findByRole("heading", { name: "Pantalla privada" })).toBeInTheDocument();

@@ -28,6 +28,7 @@ class AuthenticatedUserResult(ApplicationSchema):
     id: int
     username: str
     disabled: bool
+    permissions: tuple[str, ...] = Field(default_factory=tuple)
 
     model_config = ConfigDict(frozen=True, from_attributes=True)
 

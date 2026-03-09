@@ -8,7 +8,7 @@ from app.core.security.service import JwtTokenService
 
 def _build_token_service() -> JwtTokenService:
     settings = AuthSettings(
-        JWT_SECRET_KEY="unit-test-secret",
+        JWT_SECRET_KEY="unit-test-secret",  # pragma: allowlist secret
         JWT_ALGORITHM="HS256",
         JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30,
         JWT_ISSUER="unit-test-issuer",

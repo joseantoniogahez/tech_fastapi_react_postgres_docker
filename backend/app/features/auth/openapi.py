@@ -14,6 +14,12 @@ AUTHENTICATED_USER_EXAMPLE: dict[str, Any] = {
     "id": 1,
     "username": "admin",
     "disabled": False,
+    "permissions": [
+        "role_permissions:manage",
+        "roles:manage",
+        "user_roles:manage",
+        "users:manage",
+    ],
 }
 
 REGISTER_USER_BODY_EXAMPLES: dict[str, Any] = {
@@ -205,6 +211,7 @@ UPDATE_CURRENT_USER_DOC: dict[str, Any] = {
                         "id": 1,
                         "username": "profile_user_v2",
                         "disabled": False,
+                        "permissions": [],
                     }
                 }
             },

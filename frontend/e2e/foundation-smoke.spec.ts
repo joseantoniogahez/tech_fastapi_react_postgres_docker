@@ -39,6 +39,12 @@ test.describe("frontend foundation smoke", () => {
             id: 1,
             username: SMOKE_USERNAME,
             disabled: false,
+            permissions: [
+              "role_permissions:manage",
+              "roles:manage",
+              "user_roles:manage",
+              "users:manage",
+            ],
           }),
         });
         return;
@@ -119,6 +125,7 @@ test.describe("frontend foundation smoke", () => {
             id: 1,
             username: SMOKE_USERNAME,
             disabled: false,
+            permissions: ["users:manage"],
           }),
         });
         return;
@@ -156,5 +163,41 @@ test.describe("frontend foundation smoke", () => {
 
     await expect(page.getByRole("heading", { name: t("admin.common.error.title") })).toBeVisible();
     await expect(page.getByText(/request_id=req-admin-403/)).toBeVisible();
+  });
+
+  test("redirects unauthorized direct admin routes to /welcome", async ({ page }) => {
+    await page.addInitScript((storageKey) => {
+      window.sessionStorage.setItem(storageKey, "seed-token");
+    }, ACCESS_TOKEN_STORAGE_KEY);
+
+    await page.route("**/v1/**", async (route) => {
+      const request = route.request();
+      const method = request.method();
+      const pathname = new URL(request.url()).pathname;
+
+      if (method === "GET" && pathname === "/v1/users/me") {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            id: 1,
+            username: SMOKE_USERNAME,
+            disabled: false,
+            permissions: [],
+          }),
+        });
+        return;
+      }
+
+      throw new Error(`Unhandled API request in permission-redirect smoke: ${method} ${pathname}`);
+    });
+
+    await page.goto("/admin/users");
+    await expect(page).toHaveURL(/\/welcome$/);
+    await expect(page.getByRole("heading", { name: t("welcome.greeting", { username: SMOKE_USERNAME }) })).toBeVisible();
+
+    await page.goto("/admin/roles");
+    await expect(page).toHaveURL(/\/welcome$/);
+    await expect(page.getByRole("heading", { name: t("welcome.greeting", { username: SMOKE_USERNAME }) })).toBeVisible();
   });
 });

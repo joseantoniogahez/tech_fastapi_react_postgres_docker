@@ -95,6 +95,16 @@ class AuthRepository(BaseRepository[User]):
         )
         return hashlib.sha256(serialized_scopes.encode("utf-8")).hexdigest()
 
+    async def get_user_effective_permission_ids(self, user_id: int) -> tuple[str, ...]:
+        effective_roles = self._build_effective_roles_cte(user_id)
+        query = select(RolePermission.permission_id).join(
+            effective_roles,
+            RolePermission.role_id == effective_roles.c.role_id,
+        )
+        result = await self.session.execute(query)
+        permission_ids = sorted(set(result.scalars().all()))
+        return tuple(permission_ids)
+
     async def get_user_permission_scope(self, user_id: int, permission_id: str) -> str | None:
         effective_roles = self._build_effective_roles_cte(user_id)
         query = (

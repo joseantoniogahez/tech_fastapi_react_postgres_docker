@@ -70,6 +70,7 @@ describe("api consumer matrix contracts", () => {
     expect(markdown).toContain("| `/users/me`");
     expect(markdown).toContain("X-Request-ID");
     expect(markdown).toContain("request_id");
+    expect(markdown).toContain("permissions[]");
     expect(markdown).toContain("unauthorized");
     expect(markdown).toContain("forbidden");
     expect(markdown).toContain("conflict");

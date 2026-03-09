@@ -64,6 +64,9 @@ This table classifies each `GET` endpoint as `public`, `authenticated`, or `perm
 - `POST /v1/token` uses FastAPI `OAuth2PasswordRequestForm`.
 - `POST /v1/users/register` normalizes usernames and enforces password policy.
 - `PATCH /v1/users/me` supports username/password updates.
+- `POST /v1/users/register`, `GET /v1/users/me`, and `PATCH /v1/users/me` return
+  `AuthenticatedUserResponse` with deterministic `permissions` (sorted unique effective permission ids from direct
+  and inherited roles).
 
 ### RBAC
 

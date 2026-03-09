@@ -6,7 +6,7 @@ def test_hash_and_verify_password_round_trip() -> None:
 
     hashed_password = password_service.hash_password("StrongPass1")
 
-    assert hashed_password != "StrongPass1"
+    assert hashed_password != "StrongPass1"  # pragma: allowlist secret
     assert password_service.verify_password("StrongPass1", hashed_password) is True
 
 

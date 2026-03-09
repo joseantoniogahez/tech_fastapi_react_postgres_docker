@@ -4,24 +4,24 @@ This document is the canonical consumer-side inventory of backend endpoints used
 
 ## Endpoint Consumer Catalog
 
-| Endpoint                                            | Method   | Consumer Module          | Consumer Function           | Auth Mode | Success Contract              |
-| --------------------------------------------------- | -------- | ------------------------ | --------------------------- | --------- | ----------------------------- |
-| `/token`                                            | `POST`   | `shared/auth/session.ts` | `loginWithCredentials`      | `public`  | `access_token` + `token_type` |
-| `/users/me`                                         | `GET`    | `shared/auth/session.ts` | `readCurrentUser`           | `bearer`  | authenticated user payload    |
-| `/rbac/users`                                       | `GET`    | `shared/rbac/admin.ts`   | `readAdminUsers`            | `bearer`  | `AdminUser[]`                 |
-| `/rbac/users/{user_id}`                             | `GET`    | `shared/rbac/admin.ts`   | `readAdminUser`             | `bearer`  | `AdminUser`                   |
-| `/rbac/users`                                       | `POST`   | `shared/rbac/admin.ts`   | `createAdminUser`           | `bearer`  | `AdminUser`                   |
-| `/rbac/users/{user_id}`                             | `PUT`    | `shared/rbac/admin.ts`   | `updateAdminUser`           | `bearer`  | `AdminUser`                   |
-| `/rbac/users/{user_id}`                             | `DELETE` | `shared/rbac/admin.ts`   | `softDeleteAdminUser`       | `bearer`  | `204 no-content`              |
-| `/rbac/roles`                                       | `GET`    | `shared/rbac/admin.ts`   | `readRbacRoles`             | `bearer`  | `RbacRole[]`                  |
-| `/rbac/roles`                                       | `POST`   | `shared/rbac/admin.ts`   | `createRbacRole`            | `bearer`  | `RbacRole`                    |
-| `/rbac/roles/{role_id}`                             | `PUT`    | `shared/rbac/admin.ts`   | `updateRbacRole`            | `bearer`  | `RbacRole`                    |
-| `/rbac/roles/{role_id}`                             | `DELETE` | `shared/rbac/admin.ts`   | `deleteRbacRole`            | `bearer`  | `204 no-content`              |
-| `/rbac/roles/{role_id}/inherits/{parent_role_id}`   | `PUT`    | `shared/rbac/admin.ts`   | `assignRbacRoleInheritance` | `bearer`  | `204 no-content`              |
-| `/rbac/roles/{role_id}/inherits/{parent_role_id}`   | `DELETE` | `shared/rbac/admin.ts`   | `removeRbacRoleInheritance` | `bearer`  | `204 no-content`              |
-| `/rbac/permissions`                                 | `GET`    | `shared/rbac/admin.ts`   | `readRbacPermissions`       | `bearer`  | `RbacPermission[]`            |
-| `/rbac/roles/{role_id}/permissions/{permission_id}` | `PUT`    | `shared/rbac/admin.ts`   | `assignRbacRolePermission`  | `bearer`  | `RbacRolePermission`          |
-| `/rbac/roles/{role_id}/permissions/{permission_id}` | `DELETE` | `shared/rbac/admin.ts`   | `removeRbacRolePermission`  | `bearer`  | `204 no-content`              |
+| Endpoint                                            | Method   | Consumer Module          | Consumer Function           | Auth Mode | Success Contract                              |
+| --------------------------------------------------- | -------- | ------------------------ | --------------------------- | --------- | --------------------------------------------- |
+| `/token`                                            | `POST`   | `shared/auth/session.ts` | `loginWithCredentials`      | `public`  | `access_token` + `token_type`                 |
+| `/users/me`                                         | `GET`    | `shared/auth/session.ts` | `readCurrentUser`           | `bearer`  | authenticated user + `permissions[]` snapshot |
+| `/rbac/users`                                       | `GET`    | `shared/rbac/admin.ts`   | `readAdminUsers`            | `bearer`  | `AdminUser[]`                                 |
+| `/rbac/users/{user_id}`                             | `GET`    | `shared/rbac/admin.ts`   | `readAdminUser`             | `bearer`  | `AdminUser`                                   |
+| `/rbac/users`                                       | `POST`   | `shared/rbac/admin.ts`   | `createAdminUser`           | `bearer`  | `AdminUser`                                   |
+| `/rbac/users/{user_id}`                             | `PUT`    | `shared/rbac/admin.ts`   | `updateAdminUser`           | `bearer`  | `AdminUser`                                   |
+| `/rbac/users/{user_id}`                             | `DELETE` | `shared/rbac/admin.ts`   | `softDeleteAdminUser`       | `bearer`  | `204 no-content`                              |
+| `/rbac/roles`                                       | `GET`    | `shared/rbac/admin.ts`   | `readRbacRoles`             | `bearer`  | `RbacRole[]`                                  |
+| `/rbac/roles`                                       | `POST`   | `shared/rbac/admin.ts`   | `createRbacRole`            | `bearer`  | `RbacRole`                                    |
+| `/rbac/roles/{role_id}`                             | `PUT`    | `shared/rbac/admin.ts`   | `updateRbacRole`            | `bearer`  | `RbacRole`                                    |
+| `/rbac/roles/{role_id}`                             | `DELETE` | `shared/rbac/admin.ts`   | `deleteRbacRole`            | `bearer`  | `204 no-content`                              |
+| `/rbac/roles/{role_id}/inherits/{parent_role_id}`   | `PUT`    | `shared/rbac/admin.ts`   | `assignRbacRoleInheritance` | `bearer`  | `204 no-content`                              |
+| `/rbac/roles/{role_id}/inherits/{parent_role_id}`   | `DELETE` | `shared/rbac/admin.ts`   | `removeRbacRoleInheritance` | `bearer`  | `204 no-content`                              |
+| `/rbac/permissions`                                 | `GET`    | `shared/rbac/admin.ts`   | `readRbacPermissions`       | `bearer`  | `RbacPermission[]`                            |
+| `/rbac/roles/{role_id}/permissions/{permission_id}` | `PUT`    | `shared/rbac/admin.ts`   | `assignRbacRolePermission`  | `bearer`  | `RbacRolePermission`                          |
+| `/rbac/roles/{role_id}/permissions/{permission_id}` | `DELETE` | `shared/rbac/admin.ts`   | `removeRbacRolePermission`  | `bearer`  | `204 no-content`                              |
 
 ## Error Contract Matrix
 
