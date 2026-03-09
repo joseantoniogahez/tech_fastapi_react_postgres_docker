@@ -8,6 +8,7 @@ For implementation rules and extension workflows, see `../backend_playbook.md`.
 - `POST /v1/users/register`
 - `GET /v1/users/me`
 - `PATCH /v1/users/me`
+- `DELETE /v1/rbac/users/{user_id}` (admin soft delete, sets `disabled=true`)
 
 ## Bootstrap Admin User (Fresh Environments)
 
@@ -173,6 +174,8 @@ Transactional behavior:
   "code": "forbidden"
 }
 ```
+
+Inactive users can be produced by admin soft-delete via `DELETE /v1/rbac/users/{user_id}`.
 
 `403 Forbidden` (missing permission):
 

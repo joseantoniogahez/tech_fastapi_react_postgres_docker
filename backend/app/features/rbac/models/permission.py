@@ -8,4 +8,4 @@ class Permission(BaseModel):
     __tablename__ = "permissions"
 
     id: Mapped[str] = mapped_column(String(100), primary_key=True)
-    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    name: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)

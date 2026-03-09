@@ -1,4 +1,12 @@
 from app.features.rbac.schemas import (
+    AdminUserResponse,
+    AdminUserResult,
+    AssignedRole,
+    AssignedRoleResult,
+    AssignedUser,
+    AssignedUserResult,
+    CreateAdminUserCommand,
+    CreateAdminUserRequest,
     CreateRoleCommand,
     CreateRoleRequest,
     PermissionResult,
@@ -9,6 +17,8 @@ from app.features.rbac.schemas import (
     RoleResult,
     SetRolePermissionCommand,
     SetRolePermissionRequest,
+    UpdateAdminUserCommand,
+    UpdateAdminUserRequest,
     UpdateRoleCommand,
     UpdateRoleRequest,
     UserRoleAssignmentResponse,
@@ -20,8 +30,16 @@ def to_create_role_command(role_data: CreateRoleRequest) -> CreateRoleCommand:
     return CreateRoleCommand.from_api(role_data)
 
 
+def to_create_admin_user_command(user_data: CreateAdminUserRequest) -> CreateAdminUserCommand:
+    return CreateAdminUserCommand.from_api(user_data)
+
+
 def to_update_role_command(role_data: UpdateRoleRequest) -> UpdateRoleCommand:
     return UpdateRoleCommand.from_api(role_data)
+
+
+def to_update_admin_user_command(user_data: UpdateAdminUserRequest) -> UpdateAdminUserCommand:
+    return UpdateAdminUserCommand.from_api(user_data)
 
 
 def to_set_role_permission_command(
@@ -54,3 +72,27 @@ def to_user_role_assignment_response(
     assignment: UserRoleAssignmentResult,
 ) -> UserRoleAssignmentResponse:
     return UserRoleAssignmentResponse.from_application(assignment)
+
+
+def to_admin_user_response(user: AdminUserResult) -> AdminUserResponse:
+    return AdminUserResponse.from_application(user)
+
+
+def to_admin_user_response_list(users: list[AdminUserResult]) -> list[AdminUserResponse]:
+    return [to_admin_user_response(user) for user in users]
+
+
+def to_assigned_role_response(role: AssignedRoleResult) -> AssignedRole:
+    return AssignedRole.from_application(role)
+
+
+def to_assigned_role_response_list(roles: list[AssignedRoleResult]) -> list[AssignedRole]:
+    return [to_assigned_role_response(role) for role in roles]
+
+
+def to_assigned_user_response(user: AssignedUserResult) -> AssignedUser:
+    return AssignedUser.from_application(user)
+
+
+def to_assigned_user_response_list(users: list[AssignedUserResult]) -> list[AssignedUser]:
+    return [to_assigned_user_response(user) for user in users]

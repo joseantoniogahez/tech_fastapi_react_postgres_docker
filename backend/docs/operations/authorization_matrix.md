@@ -12,6 +12,7 @@ Permission IDs follow `<resource>:<action>` with lowercase letters, numbers, and
 | `roles:manage`            | Manage roles                 | `roles`            | manage |
 | `role_permissions:manage` | Manage role permissions      | `role_permissions` | manage |
 | `user_roles:manage`       | Manage user role assignments | `user_roles`       | manage |
+| `users:manage`            | Manage users                 | `users`            | manage |
 
 ## Protected Endpoint Inventory
 
@@ -23,6 +24,11 @@ This table is contract-checked by `tests/routers/test_authorization_policy_cover
 | -------- | ------------------------------------------------------ | ------------------------- | -------------- | ----------------------------- |
 | `GET`    | `/v1/rbac/roles`                                       | `roles:manage`            | `any`          | `RBACRoleAdminAuth`           |
 | `GET`    | `/v1/rbac/permissions`                                 | `role_permissions:manage` | `any`          | `RBACRolePermissionAdminAuth` |
+| `GET`    | `/v1/rbac/users`                                       | `users:manage`            | `any`          | `RBACUserAdminAuth`           |
+| `GET`    | `/v1/rbac/users/{user_id}`                             | `users:manage`            | `any`          | `RBACUserAdminAuth`           |
+| `POST`   | `/v1/rbac/users`                                       | `users:manage`            | `any`          | `RBACUserAdminAuth`           |
+| `PUT`    | `/v1/rbac/users/{user_id}`                             | `users:manage`            | `any`          | `RBACUserAdminAuth`           |
+| `DELETE` | `/v1/rbac/users/{user_id}`                             | `users:manage`            | `any`          | `RBACUserAdminAuth`           |
 | `POST`   | `/v1/rbac/roles`                                       | `roles:manage`            | `any`          | `RBACRoleAdminAuth`           |
 | `PUT`    | `/v1/rbac/roles/{role_id}`                             | `roles:manage`            | `any`          | `RBACRoleAdminAuth`           |
 | `DELETE` | `/v1/rbac/roles/{role_id}`                             | `roles:manage`            | `any`          | `RBACRoleAdminAuth`           |
@@ -32,6 +38,8 @@ This table is contract-checked by `tests/routers/test_authorization_policy_cover
 | `DELETE` | `/v1/rbac/roles/{role_id}/permissions/{permission_id}` | `role_permissions:manage` | `any`          | `RBACRolePermissionAdminAuth` |
 | `PUT`    | `/v1/rbac/users/{user_id}/roles/{role_id}`             | `user_roles:manage`       | `any`          | `RBACUserRoleAdminAuth`       |
 | `DELETE` | `/v1/rbac/users/{user_id}/roles/{role_id}`             | `user_roles:manage`       | `any`          | `RBACUserRoleAdminAuth`       |
+| `GET`    | `/v1/rbac/users/{user_id}/roles`                       | `user_roles:manage`       | `any`          | `RBACUserRoleAdminAuth`       |
+| `GET`    | `/v1/rbac/roles/{role_id}/users`                       | `user_roles:manage`       | `any`          | `RBACUserRoleAdminAuth`       |
 
 ## Permission Scope Semantics
 
@@ -66,21 +74,25 @@ Canonical read-access definitions live in `READ_ACCESS_POLICY_CATALOG` in
 `app/core/authorization/catalog.py`.
 This table is contract-checked by `tests/routers/test_authorization_policy_coverage.py`.
 
-| Method | Path                   | Access Level    | Permission                |
-| ------ | ---------------------- | --------------- | ------------------------- |
-| `GET`  | `/v1/health`           | `public`        | No                        |
-| `GET`  | `/v1/users/me`         | `authenticated` | No                        |
-| `GET`  | `/v1/rbac/roles`       | `permission`    | `roles:manage`            |
-| `GET`  | `/v1/rbac/permissions` | `permission`    | `role_permissions:manage` |
+| Method | Path                             | Access Level    | Permission                |
+| ------ | -------------------------------- | --------------- | ------------------------- |
+| `GET`  | `/v1/health`                     | `public`        | No                        |
+| `GET`  | `/v1/users/me`                   | `authenticated` | No                        |
+| `GET`  | `/v1/rbac/roles`                 | `permission`    | `roles:manage`            |
+| `GET`  | `/v1/rbac/permissions`           | `permission`    | `role_permissions:manage` |
+| `GET`  | `/v1/rbac/users`                 | `permission`    | `users:manage`            |
+| `GET`  | `/v1/rbac/users/{user_id}`       | `permission`    | `users:manage`            |
+| `GET`  | `/v1/rbac/users/{user_id}/roles` | `permission`    | `user_roles:manage`       |
+| `GET`  | `/v1/rbac/roles/{role_id}/users` | `permission`    | `user_roles:manage`       |
 
 ## Base Role Catalog (Bootstrap)
 
 Seed source: `utils/rbac_bootstrap.py`
 
-| Role          | Base Permissions                                               |
-| ------------- | -------------------------------------------------------------- |
-| `admin_role`  | `roles:manage`, `role_permissions:manage`, `user_roles:manage` |
-| `reader_role` | none                                                           |
+| Role          | Base Permissions                                                               |
+| ------------- | ------------------------------------------------------------------------------ |
+| `admin_role`  | `roles:manage`, `role_permissions:manage`, `user_roles:manage`, `users:manage` |
+| `reader_role` | none                                                                           |
 
 ## Notes
 

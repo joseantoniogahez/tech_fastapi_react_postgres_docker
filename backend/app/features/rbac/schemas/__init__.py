@@ -1,18 +1,28 @@
 from app.features.rbac.schemas.api import (
+    AdminUserResponse,
+    AssignedRole,
+    AssignedUser,
+    CreateAdminUserRequest,
     CreateRoleRequest,
     RBACPermission,
     RBACRole,
     RBACRolePermission,
     SetRolePermissionRequest,
+    UpdateAdminUserRequest,
     UpdateRoleRequest,
     UserRoleAssignmentResponse,
 )
 from app.features.rbac.schemas.app import (
+    AdminUserResult,
+    AssignedRoleResult,
+    AssignedUserResult,
+    CreateAdminUserCommand,
     CreateRoleCommand,
     PermissionResult,
     RolePermissionResult,
     RoleResult,
     SetRolePermissionCommand,
+    UpdateAdminUserCommand,
     UpdateRoleCommand,
     UserRoleAssignmentResult,
 )

@@ -1,43 +1,120 @@
 from fastapi import APIRouter
 
 from app.core.setup.dependencies import RBACServiceDependency
-from app.features.rbac.dependencies import RBACRoleAdminAuth, RBACRolePermissionAdminAuth, RBACUserRoleAdminAuth
+from app.features.rbac.dependencies import (
+    RBACRoleAdminAuth,
+    RBACRolePermissionAdminAuth,
+    RBACUserAdminAuth,
+    RBACUserRoleAdminAuth,
+)
 from app.features.rbac.openapi import (
     ASSIGN_USER_ROLE_DOC,
+    CREATE_ADMIN_USER_DOC,
     CREATE_ROLE_DOC,
+    DELETE_ADMIN_USER_DOC,
     DELETE_ROLE_DOC,
     DELETE_ROLE_INHERITANCE_DOC,
     DELETE_ROLE_PERMISSION_DOC,
+    GET_ADMIN_USER_DOC,
+    GET_ADMIN_USERS_DOC,
     GET_PERMISSIONS_DOC,
+    GET_ROLE_USERS_DOC,
     GET_ROLES_DOC,
+    GET_USER_ROLES_DOC,
     REMOVE_USER_ROLE_DOC,
+    UPDATE_ADMIN_USER_DOC,
     UPDATE_ROLE_DOC,
     UPSERT_ROLE_INHERITANCE_DOC,
     UPSERT_ROLE_PERMISSION_DOC,
+    CreateAdminUserPayload,
     CreateRolePayload,
     ParentRoleIdPath,
     PermissionIdPath,
     RoleIdPath,
     SetRolePermissionPayload,
+    UpdateAdminUserPayload,
     UpdateRolePayload,
     UserIdPath,
 )
 from app.features.rbac.router_mappers import (
+    to_admin_user_response,
+    to_admin_user_response_list,
+    to_assigned_role_response_list,
+    to_assigned_user_response_list,
+    to_create_admin_user_command,
     to_create_role_command,
     to_permission_response_list,
     to_role_permission_response,
     to_role_response,
     to_role_response_list,
     to_set_role_permission_command,
+    to_update_admin_user_command,
     to_update_role_command,
     to_user_role_assignment_response,
 )
-from app.features.rbac.schemas import RBACPermission, RBACRole, RBACRolePermission, UserRoleAssignmentResponse
+from app.features.rbac.schemas import (
+    AdminUserResponse,
+    AssignedRole,
+    AssignedUser,
+    RBACPermission,
+    RBACRole,
+    RBACRolePermission,
+    UserRoleAssignmentResponse,
+)
 
 router = APIRouter(
     prefix="/rbac",
     tags=["rbac"],
 )
+
+
+@router.get("/users", response_model=list[AdminUserResponse], **GET_ADMIN_USERS_DOC)
+async def list_users(
+    rbac_service: RBACServiceDependency,
+    _authorized_user: RBACUserAdminAuth,
+) -> list[AdminUserResponse]:
+    users = await rbac_service.list_users()
+    return to_admin_user_response_list(users)
+
+
+@router.get("/users/{user_id}", response_model=AdminUserResponse, **GET_ADMIN_USER_DOC)
+async def get_user(
+    rbac_service: RBACServiceDependency,
+    _authorized_user: RBACUserAdminAuth,
+    user_id: UserIdPath,
+) -> AdminUserResponse:
+    user = await rbac_service.get_user(user_id)
+    return to_admin_user_response(user)
+
+
+@router.post("/users", response_model=AdminUserResponse, **CREATE_ADMIN_USER_DOC)
+async def create_user(
+    rbac_service: RBACServiceDependency,
+    _authorized_user: RBACUserAdminAuth,
+    user_data: CreateAdminUserPayload,
+) -> AdminUserResponse:
+    user = await rbac_service.create_user(to_create_admin_user_command(user_data))
+    return to_admin_user_response(user)
+
+
+@router.put("/users/{user_id}", response_model=AdminUserResponse, **UPDATE_ADMIN_USER_DOC)
+async def update_user(
+    rbac_service: RBACServiceDependency,
+    _authorized_user: RBACUserAdminAuth,
+    user_id: UserIdPath,
+    user_data: UpdateAdminUserPayload,
+) -> AdminUserResponse:
+    user = await rbac_service.update_user(user_id, to_update_admin_user_command(user_data))
+    return to_admin_user_response(user)
+
+
+@router.delete("/users/{user_id}", **DELETE_ADMIN_USER_DOC)
+async def delete_user(
+    rbac_service: RBACServiceDependency,
+    _authorized_user: RBACUserAdminAuth,
+    user_id: UserIdPath,
+) -> None:
+    await rbac_service.delete_user(user_id)
 
 
 @router.get("/roles", response_model=list[RBACRole], **GET_ROLES_DOC)
@@ -160,6 +237,26 @@ async def assign_user_role(
 ) -> UserRoleAssignmentResponse:
     assignment = await rbac_service.assign_user_role(user_id, role_id)
     return to_user_role_assignment_response(assignment)
+
+
+@router.get("/users/{user_id}/roles", response_model=list[AssignedRole], **GET_USER_ROLES_DOC)
+async def list_user_roles(
+    rbac_service: RBACServiceDependency,
+    _authorized_user: RBACUserRoleAdminAuth,
+    user_id: UserIdPath,
+) -> list[AssignedRole]:
+    roles = await rbac_service.list_user_roles(user_id)
+    return to_assigned_role_response_list(roles)
+
+
+@router.get("/roles/{role_id}/users", response_model=list[AssignedUser], **GET_ROLE_USERS_DOC)
+async def list_role_users(
+    rbac_service: RBACServiceDependency,
+    _authorized_user: RBACUserRoleAdminAuth,
+    role_id: RoleIdPath,
+) -> list[AssignedUser]:
+    users = await rbac_service.list_role_users(role_id)
+    return to_assigned_user_response_list(users)
 
 
 @router.delete("/users/{user_id}/roles/{role_id}", **REMOVE_USER_ROLE_DOC)

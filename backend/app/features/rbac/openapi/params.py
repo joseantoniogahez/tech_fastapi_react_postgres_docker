@@ -3,7 +3,13 @@ from typing import Annotated
 from fastapi import Body, Path
 
 from app.core.authorization import PERMISSION_ID_PATTERN, PermissionId, PermissionScope
-from app.features.rbac.schemas import CreateRoleRequest, SetRolePermissionRequest, UpdateRoleRequest
+from app.features.rbac.schemas import (
+    CreateAdminUserRequest,
+    CreateRoleRequest,
+    SetRolePermissionRequest,
+    UpdateAdminUserRequest,
+    UpdateRoleRequest,
+)
 
 RoleIdPath = Annotated[
     int,
@@ -78,6 +84,40 @@ SetRolePermissionPayload = Annotated[
                 "summary": "Grant tenant-scoped access",
                 "value": {"scope": PermissionScope.TENANT},
             }
+        },
+    ),
+]
+
+CreateAdminUserPayload = Annotated[
+    CreateAdminUserRequest,
+    Body(
+        description="Payload to create an administrative user.",
+        examples={
+            "default": {
+                "summary": "Create admin-managed user",
+                "value": {
+                    "username": "ops_user",
+                    "password": "StrongPass1",  # pragma: allowlist secret
+                    "role_ids": [2],
+                },
+            }
+        },
+    ),
+]
+
+UpdateAdminUserPayload = Annotated[
+    UpdateAdminUserRequest,
+    Body(
+        description="Payload to update an administrative user.",
+        examples={
+            "disable_user": {
+                "summary": "Disable user account",
+                "value": {"disabled": True},
+            },
+            "update_roles": {
+                "summary": "Replace role assignments",
+                "value": {"role_ids": [1, 2]},
+            },
         },
     ),
 ]

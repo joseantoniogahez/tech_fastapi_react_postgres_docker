@@ -23,6 +23,10 @@ class RBACRepository(BaseRepository[Role]):
         roles = await self.list(sort="name")
         return self._to_records(roles)
 
+    async def list_users(self) -> list[UserRecord]:
+        users = await self.session.execute(select(User).order_by(User.username.asc()))
+        return self._to_records(list(users.scalars().all()), UserRecord)
+
     async def list_permissions(self) -> list[PermissionRecord]:
         result = await self.session.execute(select(Permission).order_by(Permission.id.asc()))
         permissions = list(result.scalars().all())
@@ -67,6 +71,14 @@ class RBACRepository(BaseRepository[Role]):
         if role is None:
             return None
         return self._to_record(role)
+
+    async def username_exists(self, username: str, *, exclude_user_id: int | None = None) -> bool:
+        query = select(User.id).where(User.username == username)
+        if exclude_user_id is not None:
+            query = query.where(User.id != exclude_user_id)
+
+        result = await self.session.execute(query.limit(1))
+        return result.scalar_one_or_none() is not None
 
     async def role_name_exists(self, name: str, *, exclude_role_id: int | None = None) -> bool:
         query = select(Role.id).where(Role.name == name)
@@ -167,6 +179,47 @@ class RBACRepository(BaseRepository[Role]):
             return None
         return self._to_record(user, UserRecord)
 
+    async def create_user(self, **kwargs: object) -> UserRecord:
+        try:
+            user = User(**kwargs)
+            self.session.add(user)
+            await self.session.flush()
+            await self.session.refresh(user)
+            return self._to_record(user, UserRecord)
+        except IntegrityError as exc:
+            username = kwargs.get("username")
+            if isinstance(username, str):
+                raise RepositoryConflictError(
+                    message="Username already exists",
+                    details={"username": username},
+                ) from exc
+            raise RepositoryError("Failed to create user") from exc
+
+    async def update_user(self, user_id: int, **changes: object) -> UserRecord:
+        user = await self.session.get(User, user_id)
+        if user is None:
+            raise RepositoryError(f"User {user_id} not found")
+
+        for field, value in changes.items():
+            column = getattr(User, field, None)
+            if column is None:
+                raise RepositoryError(f"Column '{field}' does not exist on 'User'")
+            setattr(user, field, value)
+
+        try:
+            updated_user = await self.session.merge(user)
+            await self.session.flush()
+            await self.session.refresh(updated_user)
+            return self._to_record(updated_user, UserRecord)
+        except IntegrityError as exc:
+            username = changes.get("username")
+            if isinstance(username, str):
+                raise RepositoryConflictError(
+                    message="Username already exists",
+                    details={"username": username},
+                ) from exc
+            raise RepositoryError("Failed to update user") from exc
+
     async def assign_user_role(self, *, user_id: int, role_id: int) -> bool:
         user_role = await self.session.get(
             UserRole,
@@ -190,6 +243,34 @@ class RBACRepository(BaseRepository[Role]):
         await self.session.delete(user_role)
         await self.session.flush()
         return True
+
+    async def list_user_role_ids(self, *, user_id: int) -> list[int]:
+        result = await self.session.execute(
+            select(UserRole.role_id).where(UserRole.user_id == user_id).order_by(UserRole.role_id.asc())
+        )
+        return list(result.scalars().all())
+
+    async def list_user_roles(self, *, user_id: int) -> list[RoleRecord]:
+        query = (
+            select(Role)
+            .join(UserRole, UserRole.role_id == Role.id)
+            .where(UserRole.user_id == user_id)
+            .order_by(Role.name.asc())
+        )
+        result = await self.session.execute(query)
+        roles = list(result.scalars().all())
+        return self._to_records(roles, RoleRecord)
+
+    async def list_role_users(self, *, role_id: int) -> list[UserRecord]:
+        query = (
+            select(User)
+            .join(UserRole, UserRole.user_id == User.id)
+            .where(UserRole.role_id == role_id)
+            .order_by(User.username.asc())
+        )
+        result = await self.session.execute(query)
+        users = list(result.scalars().all())
+        return self._to_records(users, UserRecord)
 
     async def assign_role_inheritance(self, *, role_id: int, parent_role_id: int) -> bool:
         role_inheritance = await self.session.get(

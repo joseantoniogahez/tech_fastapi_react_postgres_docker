@@ -8,19 +8,31 @@ from app.core.common.records import (
     UserRecord,
 )
 from app.core.db.ports import UnitOfWorkPort
-from app.features.rbac.operations import RBACEntityLookup, RBACRoleOperations, RBACUserRoleAssignments
+from app.features.rbac.operations import (
+    RBACEntityLookup,
+    RBACRoleOperations,
+    RBACUserManagement,
+    RBACUserRoleAssignments,
+)
 from app.features.rbac.schemas import (
+    AdminUserResult,
+    AssignedRoleResult,
+    AssignedUserResult,
+    CreateAdminUserCommand,
     CreateRoleCommand,
     PermissionResult,
     RolePermissionResult,
     RoleResult,
     SetRolePermissionCommand,
+    UpdateAdminUserCommand,
     UpdateRoleCommand,
     UserRoleAssignmentResult,
 )
 
 
 class RBACRepositoryPort(Protocol):
+    async def list_users(self) -> list[UserRecord]: ...
+
     async def list_roles(self) -> list[RoleRecord]: ...
 
     async def list_permissions(self) -> list[PermissionRecord]: ...
@@ -61,9 +73,21 @@ class RBACRepositoryPort(Protocol):
 
     async def get_user(self, user_id: int) -> UserRecord | None: ...
 
+    async def username_exists(self, username: str, *, exclude_user_id: int | None = None) -> bool: ...
+
+    async def create_user(self, **kwargs: object) -> UserRecord: ...
+
+    async def update_user(self, user_id: int, **changes: object) -> UserRecord: ...
+
+    async def list_user_role_ids(self, *, user_id: int) -> list[int]: ...
+
     async def assign_user_role(self, *, user_id: int, role_id: int) -> bool: ...
 
     async def remove_user_role(self, *, user_id: int, role_id: int) -> bool: ...
+
+    async def list_user_roles(self, *, user_id: int) -> list[RoleRecord]: ...
+
+    async def list_role_users(self, *, role_id: int) -> list[UserRecord]: ...
 
     async def assign_role_inheritance(self, *, role_id: int, parent_role_id: int) -> bool: ...
 
@@ -71,6 +95,16 @@ class RBACRepositoryPort(Protocol):
 
 
 class RBACServicePort(Protocol):
+    async def list_users(self) -> list[AdminUserResult]: ...
+
+    async def get_user(self, user_id: int) -> AdminUserResult: ...
+
+    async def create_user(self, user_data: CreateAdminUserCommand) -> AdminUserResult: ...
+
+    async def update_user(self, user_id: int, user_data: UpdateAdminUserCommand) -> AdminUserResult: ...
+
+    async def delete_user(self, user_id: int) -> None: ...
+
     async def list_roles(self) -> list[RoleResult]: ...
 
     async def list_permissions(self) -> list[PermissionResult]: ...
@@ -98,6 +132,10 @@ class RBACServicePort(Protocol):
 
     async def remove_user_role(self, user_id: int, role_id: int) -> None: ...
 
+    async def list_user_roles(self, user_id: int) -> list[AssignedRoleResult]: ...
+
+    async def list_role_users(self, role_id: int) -> list[AssignedUserResult]: ...
+
 
 class RBACService:
     def __init__(
@@ -111,11 +149,31 @@ class RBACService:
             unit_of_work=unit_of_work,
             entity_lookup=entity_lookup,
         )
+        self._user_management = RBACUserManagement(
+            rbac_repository=rbac_repository,
+            unit_of_work=unit_of_work,
+            entity_lookup=entity_lookup,
+        )
         self._user_role_assignments = RBACUserRoleAssignments(
             rbac_repository=rbac_repository,
             unit_of_work=unit_of_work,
             entity_lookup=entity_lookup,
         )
+
+    async def list_users(self) -> list[AdminUserResult]:
+        return await self._user_management.list_users()
+
+    async def get_user(self, user_id: int) -> AdminUserResult:
+        return await self._user_management.get_user(user_id)
+
+    async def create_user(self, user_data: CreateAdminUserCommand) -> AdminUserResult:
+        return await self._user_management.create_user(user_data)
+
+    async def update_user(self, user_id: int, user_data: UpdateAdminUserCommand) -> AdminUserResult:
+        return await self._user_management.update_user(user_id, user_data)
+
+    async def delete_user(self, user_id: int) -> None:
+        await self._user_management.delete_user(user_id)
 
     async def list_roles(self) -> list[RoleResult]:
         return await self._role_operations.list_roles()
@@ -158,3 +216,9 @@ class RBACService:
 
     async def remove_user_role(self, user_id: int, role_id: int) -> None:
         await self._user_role_assignments.remove_user_role(user_id, role_id)
+
+    async def list_user_roles(self, user_id: int) -> list[AssignedRoleResult]:
+        return await self._user_role_assignments.list_user_roles(user_id)
+
+    async def list_role_users(self, role_id: int) -> list[AssignedUserResult]:
+        return await self._user_role_assignments.list_role_users(role_id)

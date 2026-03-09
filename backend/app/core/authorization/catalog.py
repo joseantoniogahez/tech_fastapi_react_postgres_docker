@@ -9,6 +9,7 @@ PERMISSION_CATALOG: tuple[PermissionDefinition, ...] = (
     PermissionDefinition(resource="roles", action="manage", name="Manage roles"),
     PermissionDefinition(resource="role_permissions", action="manage", name="Manage role permissions"),
     PermissionDefinition(resource="user_roles", action="manage", name="Manage user role assignments"),
+    PermissionDefinition(resource="users", action="manage", name="Manage users"),
 )
 
 validate_permission_catalog(PERMISSION_CATALOG)
@@ -30,6 +31,7 @@ class PermissionId:
     ROLE_MANAGE = _PERMISSION_IDS_BY_RESOURCE_ACTION[("roles", "manage")]
     ROLE_PERMISSION_MANAGE = _PERMISSION_IDS_BY_RESOURCE_ACTION[("role_permissions", "manage")]
     USER_ROLE_MANAGE = _PERMISSION_IDS_BY_RESOURCE_ACTION[("user_roles", "manage")]
+    USER_MANAGE = _PERMISSION_IDS_BY_RESOURCE_ACTION[("users", "manage")]
 
 
 READ_ACCESS_POLICY_CATALOG: tuple[ReadAccessPolicyDefinition, ...] = (
@@ -46,6 +48,30 @@ READ_ACCESS_POLICY_CATALOG: tuple[ReadAccessPolicyDefinition, ...] = (
         path="/v1/rbac/permissions",
         access_level=ReadAccessLevel.PERMISSION,
         permission_id=PermissionId.ROLE_PERMISSION_MANAGE,
+    ),
+    ReadAccessPolicyDefinition(
+        method="GET",
+        path="/v1/rbac/users/{user_id}/roles",
+        access_level=ReadAccessLevel.PERMISSION,
+        permission_id=PermissionId.USER_ROLE_MANAGE,
+    ),
+    ReadAccessPolicyDefinition(
+        method="GET",
+        path="/v1/rbac/roles/{role_id}/users",
+        access_level=ReadAccessLevel.PERMISSION,
+        permission_id=PermissionId.USER_ROLE_MANAGE,
+    ),
+    ReadAccessPolicyDefinition(
+        method="GET",
+        path="/v1/rbac/users",
+        access_level=ReadAccessLevel.PERMISSION,
+        permission_id=PermissionId.USER_MANAGE,
+    ),
+    ReadAccessPolicyDefinition(
+        method="GET",
+        path="/v1/rbac/users/{user_id}",
+        access_level=ReadAccessLevel.PERMISSION,
+        permission_id=PermissionId.USER_MANAGE,
     ),
 )
 

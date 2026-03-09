@@ -240,6 +240,10 @@ def test_app_registers_routes_from_dynamic_catalog() -> None:
         "/v1/users/register",
         "/v1/rbac/roles",
         "/v1/rbac/permissions",
+        "/v1/rbac/users",
+        "/v1/rbac/users/{user_id}",
+        "/v1/rbac/users/{user_id}/roles",
+        "/v1/rbac/roles/{role_id}/users",
     }
     assert expected_paths.issubset(paths)
 

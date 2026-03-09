@@ -84,7 +84,10 @@ def test_admin_can_list_roles_and_permission_catalog(mock_client: TestClient) ->
     assert admin_permissions[PermissionId.ROLE_MANAGE] == "any"
     assert admin_permissions[PermissionId.ROLE_PERMISSION_MANAGE] == "any"
     assert admin_permissions[PermissionId.USER_ROLE_MANAGE] == "any"
+    assert admin_permissions[PermissionId.USER_MANAGE] == "any"
+    assert by_name["admin_role"]["parent_role_ids"] == []
     assert by_name["reader_role"]["permissions"] == []
+    assert by_name["reader_role"]["parent_role_ids"] == []
 
     permissions_response = mock_client.get("/v1/rbac/permissions", headers=_admin_headers(mock_client))
     assert permissions_response.status_code == HTTPStatus.OK
@@ -101,6 +104,11 @@ def test_rbac_admin_endpoints_require_expected_permissions(mock_client: TestClie
             "permission_id": PermissionId.ROLE_MANAGE,
         },
         {
+            "method": "GET",
+            "path": "/v1/rbac/users",
+            "permission_id": PermissionId.USER_MANAGE,
+        },
+        {
             "method": "PUT",
             "path": f"/v1/rbac/roles/1/permissions/{PermissionId.ROLE_MANAGE}",
             "json": {"scope": "any"},
@@ -108,7 +116,23 @@ def test_rbac_admin_endpoints_require_expected_permissions(mock_client: TestClie
         },
         {
             "method": "PUT",
+            "path": "/v1/rbac/users/3",
+            "json": {"disabled": True},
+            "permission_id": PermissionId.USER_MANAGE,
+        },
+        {
+            "method": "PUT",
             "path": "/v1/rbac/users/3/roles/2",
+            "permission_id": PermissionId.USER_ROLE_MANAGE,
+        },
+        {
+            "method": "GET",
+            "path": "/v1/rbac/users/3/roles",
+            "permission_id": PermissionId.USER_ROLE_MANAGE,
+        },
+        {
+            "method": "GET",
+            "path": "/v1/rbac/roles/2/users",
             "permission_id": PermissionId.USER_ROLE_MANAGE,
         },
     )
@@ -376,6 +400,7 @@ def test_role_inheritance_management_happy_path(
         permission["id"]: permission["scope"] for permission in by_name["catalog_child"]["permissions"]
     }
     assert child_permissions[PermissionId.ROLE_PERMISSION_MANAGE] == "tenant"
+    assert by_name["catalog_child"]["parent_role_ids"] == [parent_role_id]
 
     remove_inheritance_response = mock_client.delete(
         f"/v1/rbac/roles/{child_role_id}/inherits/{parent_role_id}",
@@ -479,31 +504,186 @@ def test_user_role_management_happy_path(
     assert asyncio.run(_user_role_exists(mock_database, user_id=3, role_id=role_id)) is False
 
 
+def test_user_role_assignment_visibility_endpoints(mock_client: TestClient) -> None:
+    create_response = mock_client.post(
+        "/v1/rbac/roles",
+        json={"name": "assignment_visible_role"},
+        headers=_admin_headers(mock_client),
+    )
+    assert create_response.status_code == HTTPStatus.CREATED
+    role_id = create_response.json()["id"]
+
+    assign_response = mock_client.put(
+        f"/v1/rbac/users/3/roles/{role_id}",
+        headers=_admin_headers(mock_client),
+    )
+    assert assign_response.status_code == HTTPStatus.OK
+
+    list_user_roles_response = mock_client.get(
+        "/v1/rbac/users/3/roles",
+        headers=_admin_headers(mock_client),
+    )
+    assert list_user_roles_response.status_code == HTTPStatus.OK
+    assert list_user_roles_response.json() == [
+        {"id": role_id, "name": "assignment_visible_role"},
+        {"id": 2, "name": "reader_role"},
+    ]
+
+    list_role_users_response = mock_client.get(
+        f"/v1/rbac/roles/{role_id}/users",
+        headers=_admin_headers(mock_client),
+    )
+    assert list_role_users_response.status_code == HTTPStatus.OK
+    assert list_role_users_response.json() == [
+        {"id": 3, "username": "reader_user", "disabled": False},
+    ]
+
+
+def test_admin_user_management_crud_soft_delete(mock_client: TestClient) -> None:
+    create_response = mock_client.post(
+        "/v1/rbac/users",
+        json={
+            "username": " ops_user ",
+            "password": "OpsUser123",  # pragma: allowlist secret
+            "role_ids": [2],
+        },
+        headers=_admin_headers(mock_client),
+    )
+    assert create_response.status_code == HTTPStatus.CREATED
+    created_user = create_response.json()
+    assert created_user["username"] == "ops_user"
+    assert created_user["disabled"] is False
+    assert created_user["role_ids"] == [2]
+    user_id = created_user["id"]
+
+    list_response = mock_client.get(
+        "/v1/rbac/users",
+        headers=_admin_headers(mock_client),
+    )
+    assert list_response.status_code == HTTPStatus.OK
+    by_id = {user["id"]: user for user in list_response.json()}
+    assert by_id[user_id]["username"] == "ops_user"
+    assert by_id[user_id]["role_ids"] == [2]
+
+    get_response = mock_client.get(
+        f"/v1/rbac/users/{user_id}",
+        headers=_admin_headers(mock_client),
+    )
+    assert get_response.status_code == HTTPStatus.OK
+    assert get_response.json() == created_user
+
+    update_response = mock_client.put(
+        f"/v1/rbac/users/{user_id}",
+        json={
+            "username": "ops_user_v2",
+            "current_password": "OpsUser123",  # pragma: allowlist secret
+            "new_password": "OpsUser456",  # pragma: allowlist secret
+            "role_ids": [1],
+        },
+        headers=_admin_headers(mock_client),
+    )
+    assert update_response.status_code == HTTPStatus.OK
+    assert update_response.json() == {
+        "id": user_id,
+        "username": "ops_user_v2",
+        "disabled": False,
+        "role_ids": [1],
+    }
+
+    delete_response = mock_client.delete(
+        f"/v1/rbac/users/{user_id}",
+        headers=_admin_headers(mock_client),
+    )
+    assert delete_response.status_code == HTTPStatus.NO_CONTENT
+
+    delete_again_response = mock_client.delete(
+        f"/v1/rbac/users/{user_id}",
+        headers=_admin_headers(mock_client),
+    )
+    assert delete_again_response.status_code == HTTPStatus.NO_CONTENT
+
+    disabled_user_response = mock_client.get(
+        f"/v1/rbac/users/{user_id}",
+        headers=_admin_headers(mock_client),
+    )
+    assert disabled_user_response.status_code == HTTPStatus.OK
+    assert disabled_user_response.json()["disabled"] is True
+
+    login_disabled_response = mock_client.post(
+        "/v1/token",
+        data={"username": "ops_user_v2", "password": "OpsUser456"},  # pragma: allowlist secret
+    )
+    assert login_disabled_response.status_code == HTTPStatus.FORBIDDEN
+
+
 def test_rbac_admin_not_found_matrix(mock_client: TestClient) -> None:
     headers = _admin_headers(mock_client)
     cases: tuple[dict[str, Any], ...] = (
         {
+            "method": "PUT",
             "path": "/v1/rbac/roles/999",
             "json": {"name": "missing_role"},
             "detail": "Role 999 not found",
             "meta": {"id": 999},
         },
         {
+            "method": "PUT",
             "path": "/v1/rbac/users/999/roles/1",
             "json": None,
             "detail": "User 999 not found",
             "meta": {"id": 999},
         },
         {
+            "method": "PUT",
             "path": "/v1/rbac/roles/1/permissions/resources:read",
             "json": {"scope": "any"},
             "detail": "Permission resources:read not found",
             "meta": {"permission_id": "resources:read"},
         },
+        {
+            "method": "GET",
+            "path": "/v1/rbac/users/999/roles",
+            "json": None,
+            "detail": "User 999 not found",
+            "meta": {"id": 999},
+        },
+        {
+            "method": "GET",
+            "path": "/v1/rbac/roles/999/users",
+            "json": None,
+            "detail": "Role 999 not found",
+            "meta": {"id": 999},
+        },
+        {
+            "method": "GET",
+            "path": "/v1/rbac/users/999",
+            "json": None,
+            "detail": "User 999 not found",
+            "meta": {"id": 999},
+        },
+        {
+            "method": "PUT",
+            "path": "/v1/rbac/users/999",
+            "json": {"disabled": True},
+            "detail": "User 999 not found",
+            "meta": {"id": 999},
+        },
+        {
+            "method": "DELETE",
+            "path": "/v1/rbac/users/999",
+            "json": None,
+            "detail": "User 999 not found",
+            "meta": {"id": 999},
+        },
     )
 
     for case in cases:
-        response = mock_client.put(case["path"], headers=headers, json=case["json"])
+        if case["method"] == "GET":
+            response = mock_client.get(case["path"], headers=headers)
+        elif case["method"] == "DELETE":
+            response = mock_client.delete(case["path"], headers=headers)
+        else:
+            response = mock_client.put(case["path"], headers=headers, json=case["json"])
         assert response.status_code == HTTPStatus.NOT_FOUND
         assert_error_response(
             response,
