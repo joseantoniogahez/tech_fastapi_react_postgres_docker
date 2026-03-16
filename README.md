@@ -1,6 +1,6 @@
-# Books App (FastAPI + React + PostgreSQL)
+# FastAPI + React + PostgreSQL Docker Template
 
-Full-stack sample application with JWT authentication and RBAC.
+Full-stack template application with JWT authentication and RBAC.
 
 - Backend: FastAPI + SQLAlchemy (async) + Alembic
 - Frontend: Vite + React 19 + TypeScript
@@ -90,7 +90,7 @@ The repository includes a GitHub Actions workflow at `.github/workflows/ci.yaml`
 It runs three independent quality gates:
 
 - `pre-commit`: runs repository hooks in CI for both `pre-commit` and `pre-push` stages
-- `backend`: runs `pytest backend/tests` with coverage enabled and a minimum threshold of `100%`
+- `backend`: runs `python -m pytest backend/tests --cov=app --cov-report=term-missing:skip-covered --cov-fail-under=100`
 - `frontend`: runs frontend quality gate (`npm --prefix frontend run check`), smoke e2e (`npm --prefix frontend run test:e2e:ci`), and production build
 
 ## Run Production Profile (Docker Compose)

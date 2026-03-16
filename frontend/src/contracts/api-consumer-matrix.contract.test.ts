@@ -5,7 +5,7 @@ import path from "node:path";
 
 import { FRONTEND_DIR } from "@/contracts/docs";
 import { RBAC_PERMISSIONS_ENDPOINT_PATH, RBAC_ROLES_ENDPOINT_PATH, RBAC_USERS_ENDPOINT_PATH } from "@/shared/rbac/admin";
-import { CURRENT_USER_ENDPOINT_PATH, TOKEN_ENDPOINT_PATH } from "@/shared/auth/session";
+import { CURRENT_USER_ENDPOINT_PATH, REGISTER_USER_ENDPOINT_PATH, TOKEN_ENDPOINT_PATH } from "@/shared/auth/session";
 
 const MATRIX_PATH = path.join(FRONTEND_DIR, "docs", "operations", "api_consumer_matrix.md");
 const CATALOG_ROW_PATTERN =
@@ -55,7 +55,9 @@ describe("api consumer matrix contracts", () => {
     const endpointKeys = rows.map((row) => `${row.endpoint}|${row.method}|${row.consumer}`).sort();
 
     expect(endpointKeys).toContain(`${TOKEN_ENDPOINT_PATH}|POST|loginWithCredentials`);
+    expect(endpointKeys).toContain(`${REGISTER_USER_ENDPOINT_PATH}|POST|registerUser`);
     expect(endpointKeys).toContain(`${CURRENT_USER_ENDPOINT_PATH}|GET|readCurrentUser`);
+    expect(endpointKeys).toContain(`${CURRENT_USER_ENDPOINT_PATH}|PATCH|updateCurrentUser`);
     expect(endpointKeys).toContain(`${RBAC_USERS_ENDPOINT_PATH}|GET|readAdminUsers`);
     expect(endpointKeys).toContain(`${RBAC_USERS_ENDPOINT_PATH}|POST|createAdminUser`);
     expect(endpointKeys).toContain(`${RBAC_ROLES_ENDPOINT_PATH}|GET|readRbacRoles`);
@@ -67,6 +69,7 @@ describe("api consumer matrix contracts", () => {
     const markdown = fs.readFileSync(MATRIX_PATH, "utf8");
 
     expect(markdown).toContain("| `/token`");
+    expect(markdown).toContain("| `/users/register`");
     expect(markdown).toContain("| `/users/me`");
     expect(markdown).toContain("X-Request-ID");
     expect(markdown).toContain("request_id");

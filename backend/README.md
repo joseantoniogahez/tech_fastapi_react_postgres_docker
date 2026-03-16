@@ -36,6 +36,7 @@ source .venv/bin/activate
 Install dependencies:
 
 ```bash
+# requirements.txt at repo root is the umbrella manifest used by CI.
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
@@ -131,13 +132,13 @@ Base permissions:
 Run from repo root:
 
 ```bash
-pytest backend/tests
+python -m pytest backend/tests
 ```
 
 CI-equivalent coverage gate:
 
 ```bash
-pytest backend/tests --cov=app --cov-report=term-missing:skip-covered --cov-fail-under=100
+python -m pytest backend/tests --cov=app --cov-report=term-missing:skip-covered --cov-fail-under=100
 ```
 
 Dockerized backend test run (isolated):

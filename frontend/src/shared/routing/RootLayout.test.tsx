@@ -62,6 +62,7 @@ describe("RootLayout", () => {
 
     expect(menuTrigger).toHaveAttribute("aria-expanded", "true");
     expect(screen.getAllByRole("link", { name: t("routing.nav.home") })).not.toHaveLength(0);
+    expect(screen.getByRole("link", { name: t("routing.nav.profile") })).toBeInTheDocument();
     expect(screen.getByText(t("routing.nav.admin.group"))).toBeInTheDocument();
     expect(screen.getByRole("link", { name: t("routing.nav.admin.users") })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: t("routing.nav.admin.roles") })).not.toBeInTheDocument();

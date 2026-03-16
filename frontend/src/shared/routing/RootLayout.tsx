@@ -12,6 +12,22 @@ interface AdminMenuItem {
   to: "/admin/users" | "/admin/roles";
 }
 
+interface PrimaryMenuItem {
+  key: "routing.nav.home" | "routing.nav.profile";
+  to: "/welcome" | "/profile";
+}
+
+const PRIMARY_MENU_ITEMS: readonly PrimaryMenuItem[] = [
+  {
+    key: "routing.nav.home",
+    to: "/welcome",
+  },
+  {
+    key: "routing.nav.profile",
+    to: "/profile",
+  },
+];
+
 const ADMIN_MENU_ITEMS: readonly AdminMenuItem[] = [
   {
     key: "routing.nav.admin.users",
@@ -74,11 +90,13 @@ export const RootLayout = () => {
           id="app-navigation-panel"
         >
           <ul className="space-y-2">
-            <li>
-              <Link className="block rounded-xl px-3 py-2 text-sm font-medium hover:bg-[var(--app-bg)]" to="/welcome">
-                {t("routing.nav.home")}
-              </Link>
-            </li>
+            {PRIMARY_MENU_ITEMS.map((menuItem) => (
+              <li key={menuItem.to}>
+                <Link className="block rounded-xl px-3 py-2 text-sm font-medium hover:bg-[var(--app-bg)]" to={menuItem.to}>
+                  {t(menuItem.key)}
+                </Link>
+              </li>
+            ))}
             {visibleAdminItems.length > 0 ? (
               <li>
                 <p className="px-3 pt-2 text-xs font-semibold uppercase tracking-wide text-[var(--app-subtle)]">

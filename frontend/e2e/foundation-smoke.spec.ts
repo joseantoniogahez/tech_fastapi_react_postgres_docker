@@ -13,6 +13,41 @@ const mockUnhandledApiRequests = async (page: Page): Promise<void> => {
 };
 
 test.describe("frontend foundation smoke", () => {
+  test("navigates to register and completes the registration flow", async ({ page }) => {
+    await page.route("**/v1/**", async (route) => {
+      const request = route.request();
+      const method = request.method();
+      const pathname = new URL(request.url()).pathname;
+
+      if (method === "POST" && pathname === "/v1/users/register") {
+        await route.fulfill({
+          status: 201,
+          contentType: "application/json",
+          body: JSON.stringify({
+            id: 11,
+            username: "new_user",
+            disabled: false,
+            permissions: [],
+          }),
+        });
+        return;
+      }
+
+      throw new Error(`Unhandled API request in register smoke: ${method} ${pathname}`);
+    });
+
+    await page.goto("/login");
+    await page.getByRole("link", { name: t("auth.login.footer.createAccount") }).click();
+
+    await expect(page).toHaveURL(/\/register$/);
+    await page.getByLabel(t("auth.login.fields.username")).fill(" New_User ");
+    await page.getByLabel(t("auth.login.fields.password")).fill("StrongPass1");
+    await page.getByRole("button", { name: t("auth.register.submit.default") }).click();
+
+    await expect(page.getByRole("heading", { name: t("auth.register.success.title") })).toBeVisible();
+    await expect(page.getByText(t("auth.register.success.body", { username: "new_user" }))).toBeVisible();
+  });
+
   test("completes login flow and lands on welcome page", async ({ page }) => {
     await page.route("**/v1/**", async (route) => {
       const request = route.request();
@@ -105,6 +140,57 @@ test.describe("frontend foundation smoke", () => {
 
     await expect(page.getByRole("heading", { name: t("routing.protected.error.title") })).toBeVisible();
     await expect(page.getByText(/request_id=req-e2e-500/)).toBeVisible();
+  });
+
+  test("loads protected profile route and persists updated account state", async ({ page }) => {
+    await page.addInitScript((storageKey) => {
+      window.sessionStorage.setItem(storageKey, "seed-token");
+    }, ACCESS_TOKEN_STORAGE_KEY);
+
+    await page.route("**/v1/**", async (route) => {
+      const request = route.request();
+      const method = request.method();
+      const pathname = new URL(request.url()).pathname;
+
+      if (method === "GET" && pathname === "/v1/users/me") {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            id: 1,
+            username: SMOKE_USERNAME,
+            disabled: false,
+            permissions: [],
+          }),
+        });
+        return;
+      }
+
+      if (method === "PATCH" && pathname === "/v1/users/me") {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            id: 1,
+            username: "smoke-user-v2",
+            disabled: false,
+            permissions: [],
+          }),
+        });
+        return;
+      }
+
+      throw new Error(`Unhandled API request in profile smoke: ${method} ${pathname}`);
+    });
+
+    await page.goto("/profile");
+
+    await expect(page.getByRole("heading", { name: t("profile.title") })).toBeVisible();
+    await page.getByLabel(t("profile.fields.username")).fill(" smoke-user-v2 ");
+    await page.getByRole("button", { name: t("profile.submit.default") }).click();
+
+    await expect(page.getByText(t("profile.success.body", { username: "smoke-user-v2" }))).toBeVisible();
+    await expect(page.getByText(t("profile.currentUser", { username: "smoke-user-v2" }))).toBeVisible();
   });
 
   test("renders admin-users error diagnostics on forbidden RBAC access", async ({ page }) => {

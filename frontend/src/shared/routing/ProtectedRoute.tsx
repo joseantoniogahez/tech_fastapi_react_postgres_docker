@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 
 import { appendRequestIdDiagnostic, getApiErrorRequestId } from "@/shared/api/errors";
 import { useSession } from "@/shared/auth/session";
@@ -9,6 +9,7 @@ import { CenteredMessage } from "@/shared/ui/CenteredMessage";
 
 export const ProtectedRoute = () => {
   const { data: user, isPending, isError, error } = useSession();
+  const location = useLocation();
 
   useEffect(() => {
     if (!isError) {
@@ -20,10 +21,10 @@ export const ProtectedRoute = () => {
       level: "error",
       request_id: getApiErrorRequestId(error),
       context: {
-        route: "/welcome",
+        route: location.pathname,
       },
     });
-  }, [error, isError]);
+  }, [error, isError, location.pathname]);
 
   if (isPending) {
     return (

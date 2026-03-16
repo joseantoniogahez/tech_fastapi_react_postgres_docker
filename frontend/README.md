@@ -1,6 +1,6 @@
 # frontend (Vite + React)
 
-Frontend SPA for authentication entry flow.
+Frontend SPA for landing, login, session validation, and RBAC admin flows.
 
 For full-stack orchestration and shared environment setup, see `../README.md`.
 For backend API behavior and authentication rules, see `../backend/README.md`.
@@ -69,6 +69,14 @@ npm run dev
 
 Frontend URL: `http://localhost:3000`
 
+## Current Route Surface
+
+- `/`: public landing page
+- `/login`: public credential entry flow
+- `/welcome`: authenticated session entry point
+- `/admin/users`: authenticated RBAC user administration
+- `/admin/roles`: authenticated RBAC role and permission administration
+
 ## Testing and Quality Gates
 
 Run from `frontend/`:
@@ -79,9 +87,12 @@ npm run typecheck
 npm run test
 npm run test:coverage
 npm run test:a11y
+npm run e2e:install
 npm run test:e2e:ci
 npm run check
 ```
+
+Run `npm run e2e:install` once per machine before `npm run test:e2e` or `npm run test:e2e:ci`.
 
 `npm run check` executes:
 
@@ -125,8 +136,13 @@ npm run test           # run unit/integration tests
 npm run test:coverage  # run tests with coverage thresholds
 npm run test:watch     # run tests in watch mode
 npm run test:a11y      # run accessibility route baseline tests
+npm run e2e:install    # install Playwright Chromium locally
 npm run test:e2e       # run Playwright smoke suite
 npm run test:e2e:ci    # CI-equivalent Playwright smoke suite
+npm run openapi:sync   # refresh frontend/contracts/openapi/backend_openapi.json
+npm run openapi:check  # fail when backend OpenAPI artifact is stale
+npm run deps:audit     # enforce dependency audit policy
+npm run perf:check     # enforce bundle budget contract
 npm run check          # lint + typecheck + coverage + openapi drift + dependency audit
 npm run build          # build production bundle + performance budget gate
 npm run preview        # serve production bundle locally

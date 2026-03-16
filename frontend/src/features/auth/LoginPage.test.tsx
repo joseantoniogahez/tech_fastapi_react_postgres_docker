@@ -35,6 +35,15 @@ const renderLogin = () => {
 };
 
 describe("LoginPage", () => {
+  it("offers navigation to registration", async () => {
+    renderLogin();
+
+    expect(await screen.findByRole("link", { name: t("auth.login.footer.createAccount") })).toHaveAttribute(
+      "href",
+      "/register",
+    );
+  });
+
   it("completes login flow and redirects to welcome", async () => {
     const fetchMock = vi
       .fn()

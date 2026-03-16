@@ -12,6 +12,8 @@ services:
       DB_HOST: database
       JWT_ALGORITHM: "${JWT_ALGORITHM:?JWT_ALGORITHM is required in prod}"
       JWT_ACCESS_TOKEN_EXPIRE_MINUTES: "${JWT_ACCESS_TOKEN_EXPIRE_MINUTES:?JWT_ACCESS_TOKEN_EXPIRE_MINUTES is required in prod}"
+      JWT_ISSUER: "${JWT_ISSUER:?JWT_ISSUER is required in prod}"
+      JWT_AUDIENCE: "${JWT_AUDIENCE:?JWT_AUDIENCE is required in prod}"
       JWT_SECRET_KEY: "${JWT_SECRET_KEY:?JWT_SECRET_KEY is required in prod}"
     restart: unless-stopped
     ports:

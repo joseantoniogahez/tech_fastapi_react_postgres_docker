@@ -104,7 +104,10 @@ export const LoginPage = () => {
           </label>
 
           {loginMutation.isError ? (
-            <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <p
+              className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+              role="alert"
+            >
               {mutationError}
             </p>
           ) : null}
@@ -120,8 +123,8 @@ export const LoginPage = () => {
 
         <p className="mt-6 text-sm text-[var(--app-subtle)]">
           {t("auth.login.footer.firstTime")}{" "}
-          <Link className="font-semibold text-[var(--app-ink)] underline underline-offset-4" to="/">
-            {t("auth.login.footer.backToLanding")}
+          <Link className="font-semibold text-[var(--app-ink)] underline underline-offset-4" to="/register">
+            {t("auth.login.footer.createAccount")}
           </Link>
           .
         </p>

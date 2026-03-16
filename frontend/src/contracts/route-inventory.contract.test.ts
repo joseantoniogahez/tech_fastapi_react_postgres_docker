@@ -18,8 +18,10 @@ const ROUTE_OWNER_BY_COMPONENT: Record<string, string> = {
   AdminUsersPage: "features/admin-users/AdminUsersPage",
   LandingPage: "features/landing/LandingPage",
   LoginPage: "features/auth/LoginPage",
-  WelcomePage: "features/welcome/WelcomePage",
   NotFoundPage: "features/not-found/NotFoundPage",
+  ProfilePage: "features/profile/ProfilePage",
+  RegisterPage: "features/auth/RegisterPage",
+  WelcomePage: "features/welcome/WelcomePage",
 };
 
 interface RouteContractRow {
@@ -126,6 +128,8 @@ describe("route inventory contracts", () => {
     expect(markdown).toContain("## Route-Level Error Handling");
     expect(markdown).toContain("## 404 Behavior");
     expect(markdown).toContain("`/*`");
+    expect(markdown).toContain("`/register`");
+    expect(markdown).toContain("`/profile`");
     expect(markdown).toContain("Requires `users:manage`; missing permission redirects to `/welcome`.");
     expect(markdown).toContain("Requires `roles:manage`; missing permission redirects to `/welcome`.");
   });

@@ -3,8 +3,10 @@ import type { RouteObject } from "react-router-dom";
 import { AdminRolesPage } from "@/features/admin-roles/AdminRolesPage";
 import { AdminUsersPage } from "@/features/admin-users/AdminUsersPage";
 import { LoginPage } from "@/features/auth/LoginPage";
+import { RegisterPage } from "@/features/auth/RegisterPage";
 import { LandingPage } from "@/features/landing/LandingPage";
 import { NotFoundPage } from "@/features/not-found/NotFoundPage";
+import { ProfilePage } from "@/features/profile/ProfilePage";
 import { WelcomePage } from "@/features/welcome/WelcomePage";
 import { ProtectedRoute } from "@/shared/routing/ProtectedRoute";
 import { PermissionRoute } from "@/shared/routing/PermissionRoute";
@@ -27,11 +29,19 @@ export const appRoutes: RouteObject[] = [
         element: <LoginPage />,
       },
       {
+        path: "register",
+        element: <RegisterPage />,
+      },
+      {
         element: <ProtectedRoute />,
         children: [
           {
             path: "welcome",
             element: <WelcomePage />,
+          },
+          {
+            path: "profile",
+            element: <ProfilePage />,
           },
           {
             element: <PermissionRoute requiredPermission={IAM_PERMISSION.USERS_MANAGE} />,

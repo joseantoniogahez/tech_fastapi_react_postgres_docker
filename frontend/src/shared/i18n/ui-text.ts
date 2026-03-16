@@ -3,7 +3,7 @@ export const ES_MESSAGES = {
   "admin.common.error.title": "Error del modulo administrador",
   "admin.common.loading": "Cargando modulo administrador...",
   "admin.roles.actions.delete": "Eliminar rol",
-  "admin.roles.actions.delete.confirm": "¿Eliminar el rol {roleName}?",
+  "admin.roles.actions.delete.confirm": "Eliminar el rol {roleName}?",
   "admin.roles.actions.update": "Guardar rol",
   "admin.roles.actions.update.pending": "Guardando...",
   "admin.roles.card.noParents": "Sin roles padre asignados.",
@@ -20,13 +20,13 @@ export const ES_MESSAGES = {
   "admin.roles.parents.select": "Selecciona rol padre",
   "admin.roles.permissions.add": "Asignar permiso",
   "admin.roles.permissions.remove": "Quitar",
-  "admin.roles.permissions.scope.label": "Alcance",
   "admin.roles.permissions.scope.any": "Alcance: any",
+  "admin.roles.permissions.scope.label": "Alcance",
   "admin.roles.permissions.select": "Selecciona permiso",
   "admin.roles.subtitle": "Gestiona roles, jerarquia y permisos predefinidos.",
   "admin.roles.title": "Administracion de roles y permisos",
   "admin.users.actions.delete": "Deshabilitar usuario",
-  "admin.users.actions.delete.confirm": "¿Deshabilitar al usuario {username}?",
+  "admin.users.actions.delete.confirm": "Deshabilitar al usuario {username}?",
   "admin.users.actions.edit": "Editar usuario",
   "admin.users.columns.actions": "Acciones",
   "admin.users.columns.roles": "Roles",
@@ -58,17 +58,61 @@ export const ES_MESSAGES = {
   "auth.login.fields.password": "Contrasena", // pragma: allowlist secret
   "auth.login.fields.username": "Usuario",
   "auth.login.footer.backToLanding": "Regresa a la landing",
-  "auth.login.footer.firstTime": "¿Primera vez aqui?",
+  "auth.login.footer.createAccount": "Crea tu cuenta",
+  "auth.login.footer.firstTime": "Primera vez aqui?",
   "auth.login.submit.default": "Entrar",
   "auth.login.submit.pending": "Validando...",
   "auth.login.subtitle": "Usa tus credenciales para continuar al panel de bienvenida.",
   "auth.login.title": "Inicia sesion",
   "auth.login.validating.title": "Validando sesion...",
+  "auth.register.badge": "Registro",
+  "auth.register.error.generic": "No fue posible crear la cuenta, intenta nuevamente.",
+  "auth.register.footer.haveAccount": "Ya tienes cuenta?",
+  "auth.register.footer.signIn": "Inicia sesion",
+  "auth.register.submit.default": "Crear cuenta",
+  "auth.register.submit.pending": "Creando cuenta...",
+  "auth.register.subtitle": "Crea un acceso local usando el contrato actual de autenticacion.",
+  "auth.register.success.body": "La cuenta {username} quedo lista. Inicia sesion para continuar.",
+  "auth.register.success.title": "Cuenta creada",
+  "auth.register.title": "Crea tu cuenta",
+  "auth.shared.password.hint":
+    "La contrasena requiere al menos 8 caracteres, una minuscula, una mayuscula y un numero, y no puede contener el username.", // pragma: allowlist secret
+  "auth.shared.username.hint":
+    "El username se normaliza a minusculas y solo acepta letras, numeros, punto, guion bajo y guion medio.",
+  "auth.validation.password.containsUsername": "La contrasena no puede contener el username.", // pragma: allowlist secret
+  "auth.validation.password.length": "La contrasena debe tener al menos 8 caracteres.", // pragma: allowlist secret
+  "auth.validation.password.lowercase": "La contrasena debe incluir al menos una letra minuscula.", // pragma: allowlist secret
+  "auth.validation.password.number": "La contrasena debe incluir al menos un numero.", // pragma: allowlist secret
+  "auth.validation.password.uppercase": "La contrasena debe incluir al menos una letra mayuscula.", // pragma: allowlist secret
+  "auth.validation.username.format":
+    "El username solo acepta letras minusculas, numeros, punto, guion bajo y guion medio.",
+  "auth.validation.username.required": "Ingresa un username.",
   "landing.badge.portal": "Portal",
   "landing.cta.login": "Ir a login",
   "landing.loading.title": "Cargando portal...",
   "landing.subtitle": "Inicia sesion para validar tu cuenta y entrar al panel de bienvenida.",
   "landing.title": "Acceso central a tu aplicacion.",
+  "profile.actions.cancel": "Cancelar",
+  "profile.badge": "Perfil",
+  "profile.currentUser": "Sesion activa para {username}",
+  "profile.error.generic": "No fue posible actualizar el perfil, intenta nuevamente.",
+  "profile.fields.currentPassword": "Contrasena actual", // pragma: allowlist secret
+  "profile.fields.newPassword": "Nueva contrasena", // pragma: allowlist secret
+  "profile.fields.username": "Username",
+  "profile.password.optional": "Deja ambos campos de contrasena vacios si solo cambiaras el username.",
+  "profile.submit.default": "Guardar perfil",
+  "profile.submit.pending": "Guardando perfil...",
+  "profile.subtitle": "Actualiza tu username y, si lo necesitas, rota tu contrasena actual.",
+  "profile.success.body": "La sesion local ya refleja los cambios de {username}.",
+  "profile.success.title": "Perfil actualizado",
+  "profile.title": "Administra tu cuenta",
+  "profile.validation.currentPassword.required":
+    "Ingresa la contrasena actual para cambiar la contrasena.", // pragma: allowlist secret
+  "profile.validation.newPassword.different":
+    "La nueva contrasena debe ser diferente a la actual.", // pragma: allowlist secret
+  "profile.validation.newPassword.required":
+    "Ingresa la nueva contrasena para completar el cambio.", // pragma: allowlist secret
+  "profile.validation.noChanges": "No hay cambios para guardar.",
   "routing.error.body": "No fue posible cargar esta ruta.",
   "routing.error.title": "Error de navegacion",
   "routing.notFound.body": "La ruta solicitada no existe.",
@@ -78,6 +122,7 @@ export const ES_MESSAGES = {
   "routing.nav.admin.users": "Usuarios",
   "routing.nav.home": "Inicio",
   "routing.nav.menu.toggle": "Abrir menu de navegacion",
+  "routing.nav.profile": "Perfil",
   "routing.protected.error.body": "Revisa la conexion con la API e intenta nuevamente.",
   "routing.protected.error.title": "No fue posible validar la sesion",
   "routing.protected.validating.body": "Espera un momento.",

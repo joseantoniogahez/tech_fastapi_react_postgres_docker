@@ -32,8 +32,8 @@ Status date: `2026-03-08`
 
 Run these from repository root before delivery:
 
-- `pytest backend/tests`
-- `pytest backend/tests --cov=app --cov-report=term-missing:skip-covered --cov-fail-under=100` (CI-equivalent)
+- `python -m pytest backend/tests`
+- `python -m pytest backend/tests --cov=app --cov-report=term-missing:skip-covered --cov-fail-under=100` (CI-equivalent)
 - `pre-commit run --all-files` (recommended before push)
 
 ## Change Management Rules

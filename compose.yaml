@@ -46,6 +46,8 @@ services:
       DB_USER: "${DB_USER}"
       JWT_ALGORITHM: "${JWT_ALGORITHM:-HS256}"
       JWT_ACCESS_TOKEN_EXPIRE_MINUTES: "${JWT_ACCESS_TOKEN_EXPIRE_MINUTES:-30}"
+      JWT_ISSUER: "${JWT_ISSUER:-fastapi-template}"
+      JWT_AUDIENCE: "${JWT_AUDIENCE:-fastapi-template-api}"
       JWT_SECRET_KEY: "${JWT_SECRET_KEY:-local-dev-jwt-secret}"
       LOG_LEVEL: "${LOG_LEVEL:-INFO}"
       PORT: "${API_PORT}"
