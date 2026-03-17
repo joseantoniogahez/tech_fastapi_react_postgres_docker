@@ -14,6 +14,8 @@ const ROUTE_INVENTORY_PATH = path.join(FRONTEND_DIR, "docs", "operations", "rout
 const ROUTE_ROW_PATTERN = /^\|\s*`(?<path>\/[^`]*)`\s*\|\s*`(?<access>public|protected)`\s*\|\s*`(?<owner>[^`]+)`\s*\|/gm;
 
 const ROUTE_OWNER_BY_COMPONENT: Record<string, string> = {
+  AdminAssignmentsPage: "features/admin-assignments/AdminAssignmentsPage",
+  AdminPermissionsPage: "features/admin-permissions/AdminPermissionsPage",
   AdminRolesPage: "features/admin-roles/AdminRolesPage",
   AdminUsersPage: "features/admin-users/AdminUsersPage",
   LandingPage: "features/landing/LandingPage",
@@ -130,6 +132,8 @@ describe("route inventory contracts", () => {
     expect(markdown).toContain("`/*`");
     expect(markdown).toContain("`/register`");
     expect(markdown).toContain("`/profile`");
+    expect(markdown).toContain("Requires `user_roles:manage`; missing permission redirects to `/welcome`.");
+    expect(markdown).toContain("Requires `role_permissions:manage`; role inventory falls back to manual ID without `roles:manage`.");
     expect(markdown).toContain("Requires `users:manage`; missing permission redirects to `/welcome`.");
     expect(markdown).toContain("Requires `roles:manage`; missing permission redirects to `/welcome`.");
   });

@@ -178,6 +178,22 @@ def test_register_user_rejects_common_error_cases(mock_client: TestClient) -> No
         )
 
 
+def test_register_user_missing_password_returns_normalized_validation_error(mock_client: TestClient) -> None:
+    response = mock_client.post(
+        "/v1/users/register",
+        json={"username": "missing_password"},
+    )
+
+    assert response.status_code == HTTPStatus.BAD_REQUEST
+    payload = response.json()
+    assert payload["detail"] == "Request validation error"
+    assert payload["status"] == HTTPStatus.BAD_REQUEST
+    assert payload["code"] == "invalid_input"
+    assert isinstance(payload.get("request_id"), str)
+    assert response.headers["X-Request-ID"] == payload["request_id"]
+    assert any(error.get("loc") == ["body", "password"] and error.get("type") == "missing" for error in payload["meta"])
+
+
 def test_update_current_user_username_and_password(mock_client: TestClient) -> None:
     register_response = mock_client.post(
         "/v1/users/register",

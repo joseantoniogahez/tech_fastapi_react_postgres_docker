@@ -251,6 +251,123 @@ test.describe("frontend foundation smoke", () => {
     await expect(page.getByText(/request_id=req-admin-403/)).toBeVisible();
   });
 
+  test("loads admin assignments workspace and shows direct-read diagnostics", async ({ page }) => {
+    await page.addInitScript((storageKey) => {
+      window.sessionStorage.setItem(storageKey, "seed-token");
+    }, ACCESS_TOKEN_STORAGE_KEY);
+
+    await page.route("**/v1/**", async (route) => {
+      const request = route.request();
+      const method = request.method();
+      const pathname = new URL(request.url()).pathname;
+
+      if (method === "GET" && pathname === "/v1/users/me") {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            id: 1,
+            username: SMOKE_USERNAME,
+            disabled: false,
+            permissions: ["user_roles:manage"],
+          }),
+        });
+        return;
+      }
+
+      if (method === "GET" && pathname === "/v1/rbac/users/999/roles") {
+        await route.fulfill({
+          status: 404,
+          headers: {
+            "Content-Type": "application/json",
+            "X-Request-ID": "req-assignment-404",
+          },
+          body: JSON.stringify({
+            detail: "User 999 not found",
+            code: "not_found",
+            request_id: "req-assignment-404",
+          }),
+        });
+        return;
+      }
+
+      throw new Error(`Unhandled API request in admin-assignments smoke: ${method} ${pathname}`);
+    });
+
+    await page.goto("/admin/assignments");
+
+    await expect(page.getByRole("heading", { level: 1, name: t("admin.as.title") })).toBeVisible();
+    await page.getByLabel(t("admin.as.uid")).fill("999");
+    await expect(page.getByText(/request_id=req-assignment-404/)).toBeVisible();
+  });
+
+  test("loads admin permissions workspace and shows scope-mutation diagnostics", async ({ page }) => {
+    await page.addInitScript((storageKey) => {
+      window.sessionStorage.setItem(storageKey, "seed-token");
+    }, ACCESS_TOKEN_STORAGE_KEY);
+
+    await page.route("**/v1/**", async (route) => {
+      const request = route.request();
+      const method = request.method();
+      const pathname = new URL(request.url()).pathname;
+
+      if (method === "GET" && pathname === "/v1/users/me") {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            id: 1,
+            username: SMOKE_USERNAME,
+            disabled: false,
+            permissions: ["role_permissions:manage"],
+          }),
+        });
+        return;
+      }
+
+      if (method === "GET" && pathname === "/v1/rbac/permissions") {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify([
+            {
+              id: "users:manage",
+              name: "Manage users",
+            },
+          ]),
+        });
+        return;
+      }
+
+      if (method === "PUT" && pathname === "/v1/rbac/roles/999/permissions/users%3Amanage") {
+        await route.fulfill({
+          status: 404,
+          headers: {
+            "Content-Type": "application/json",
+            "X-Request-ID": "req-permission-404",
+          },
+          body: JSON.stringify({
+            detail: "Role 999 not found",
+            code: "not_found",
+            request_id: "req-permission-404",
+          }),
+        });
+        return;
+      }
+
+      throw new Error(`Unhandled API request in admin-permissions smoke: ${method} ${pathname}`);
+    });
+
+    await page.goto("/admin/permissions");
+
+    await expect(page.getByRole("heading", { name: t("admin.pm.title") })).toBeVisible();
+    await page.getByLabel(t("admin.as.rid")).fill("999");
+    await page.getByLabel(t("admin.roles.permissions.select")).selectOption("users:manage");
+    await page.getByLabel(t("admin.roles.permissions.scope.label")).selectOption("tenant");
+    await page.getByRole("button", { name: t("admin.roles.permissions.add") }).click();
+    await expect(page.getByText(/request_id=req-permission-404/)).toBeVisible();
+  });
+
   test("redirects unauthorized direct admin routes to /welcome", async ({ page }) => {
     await page.addInitScript((storageKey) => {
       window.sessionStorage.setItem(storageKey, "seed-token");
@@ -283,6 +400,14 @@ test.describe("frontend foundation smoke", () => {
     await expect(page.getByRole("heading", { name: t("welcome.greeting", { username: SMOKE_USERNAME }) })).toBeVisible();
 
     await page.goto("/admin/roles");
+    await expect(page).toHaveURL(/\/welcome$/);
+    await expect(page.getByRole("heading", { name: t("welcome.greeting", { username: SMOKE_USERNAME }) })).toBeVisible();
+
+    await page.goto("/admin/assignments");
+    await expect(page).toHaveURL(/\/welcome$/);
+    await expect(page.getByRole("heading", { name: t("welcome.greeting", { username: SMOKE_USERNAME }) })).toBeVisible();
+
+    await page.goto("/admin/permissions");
     await expect(page).toHaveURL(/\/welcome$/);
     await expect(page.getByRole("heading", { name: t("welcome.greeting", { username: SMOKE_USERNAME }) })).toBeVisible();
   });

@@ -1,6 +1,5 @@
 from pydantic import Field
 
-from app.core.authorization import PermissionScope
 from app.core.common.schema import ApplicationSchema
 
 
@@ -13,7 +12,7 @@ class UpdateRoleCommand(ApplicationSchema):
 
 
 class SetRolePermissionCommand(ApplicationSchema):
-    scope: str = PermissionScope.ANY
+    scope: str
 
 
 class PermissionResult(ApplicationSchema):

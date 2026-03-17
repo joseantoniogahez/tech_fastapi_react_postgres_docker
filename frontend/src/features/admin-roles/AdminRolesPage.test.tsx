@@ -21,11 +21,6 @@ interface MockRole {
   parent_role_ids: number[];
 }
 
-interface MockPermission {
-  id: string;
-  name: string;
-}
-
 const toRequestUrl = (input: RequestInfo | URL): URL => {
   if (input instanceof URL) {
     return input;
@@ -81,7 +76,7 @@ const renderAdminRolesPage = (
 
 describe("AdminRolesPage", () => {
   it(
-    "completes role create/update/delete and assignment flows",
+    "completes role create/update/delete and parent assignment flows",
     async () => {
     let roles: MockRole[] = [
       {
@@ -89,12 +84,6 @@ describe("AdminRolesPage", () => {
         name: "admin_role",
         permissions: [],
         parent_role_ids: [],
-      },
-    ];
-    const permissions: MockPermission[] = [
-      {
-        id: "users:manage",
-        name: "Manage users",
       },
     ];
 
@@ -105,10 +94,6 @@ describe("AdminRolesPage", () => {
 
       if (method === "GET" && path === "/v1/rbac/roles") {
         return jsonResponse(200, roles);
-      }
-
-      if (method === "GET" && path === "/v1/rbac/permissions") {
-        return jsonResponse(200, permissions);
       }
 
       if (method === "POST" && path === "/v1/rbac/roles") {
@@ -140,38 +125,6 @@ describe("AdminRolesPage", () => {
         roles = roles.map((role) =>
           role.id === 2
             ? { ...role, parent_role_ids: role.parent_role_ids.filter((parentRoleId) => parentRoleId !== 1) }
-            : role,
-        );
-        return jsonResponse(204, null);
-      }
-
-      if (method === "PUT" && path === "/v1/rbac/roles/2/permissions/users%3Amanage") {
-        roles = roles.map((role) =>
-          role.id === 2
-            ? {
-                ...role,
-                permissions: [
-                  ...role.permissions,
-                  {
-                    id: "users:manage",
-                    name: "Manage users",
-                    scope: "any",
-                  },
-                ],
-              }
-            : role,
-        );
-        return jsonResponse(200, {
-          id: "users:manage",
-          name: "Manage users",
-          scope: "any",
-        });
-      }
-
-      if (method === "DELETE" && path === "/v1/rbac/roles/2/permissions/users%3Amanage") {
-        roles = roles.map((role) =>
-          role.id === 2
-            ? { ...role, permissions: role.permissions.filter((permission) => permission.id !== "users:manage") }
             : role,
         );
         return jsonResponse(204, null);
@@ -215,23 +168,6 @@ describe("AdminRolesPage", () => {
           const requestUrl = toRequestUrl(call[0]);
           const request = call[1];
           return requestUrl.pathname === "/v1/rbac/roles/2/inherits/1" && request?.method === "DELETE";
-        }),
-      ).toBe(true);
-    });
-
-    await user.selectOptions(
-      within(editorRoleCard).getByLabelText(t("admin.roles.permissions.select")),
-      "users:manage",
-    );
-    await user.click(within(editorRoleCard).getByRole("button", { name: t("admin.roles.permissions.add") }));
-    expect(await within(editorRoleCard).findByText("Manage users")).toBeInTheDocument();
-    await user.click(within(editorRoleCard).getByRole("button", { name: t("admin.roles.permissions.remove") }));
-    await waitFor(() => {
-      expect(
-        fetchMock.mock.calls.some((call) => {
-          const requestUrl = toRequestUrl(call[0]);
-          const request = call[1];
-          return requestUrl.pathname === "/v1/rbac/roles/2/permissions/users%3Amanage" && request?.method === "DELETE";
         }),
       ).toBe(true);
     });
@@ -282,10 +218,6 @@ describe("AdminRolesPage", () => {
         );
       }
 
-      if (method === "GET" && path === "/v1/rbac/permissions") {
-        return jsonResponse(200, []);
-      }
-
       throw new Error(`Unhandled request: ${method} ${path}`);
     });
     vi.stubGlobal("fetch", fetchMock);
@@ -303,10 +235,6 @@ describe("AdminRolesPage", () => {
       const path = requestUrl.pathname;
 
       if (method === "GET" && path === "/v1/rbac/roles") {
-        return jsonResponse(200, []);
-      }
-
-      if (method === "GET" && path === "/v1/rbac/permissions") {
         return jsonResponse(200, []);
       }
 
@@ -338,7 +266,7 @@ describe("AdminRolesPage", () => {
     expect(await screen.findByText(/request_id=req-roles-conflict/)).toBeInTheDocument();
   });
 
-  it("hides permission assignment controls when user lacks role_permissions:manage", async () => {
+  it("keeps permission management out of the roles page", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const requestUrl = toRequestUrl(input);
       const method = init?.method ?? "GET";
@@ -361,26 +289,18 @@ describe("AdminRolesPage", () => {
         ]);
       }
 
-      if (method === "GET" && path === "/v1/rbac/permissions") {
-        return jsonResponse(200, [
-          {
-            id: "users:manage",
-            name: "Manage users",
-          },
-        ]);
-      }
-
       throw new Error(`Unhandled request: ${method} ${path}`);
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    renderAdminRolesPage([IAM_PERMISSION.ROLES_MANAGE]);
+    renderAdminRolesPage([IAM_PERMISSION.ROLES_MANAGE, IAM_PERMISSION.ROLE_PERMISSIONS_MANAGE]);
 
     expect(await screen.findByRole("heading", { name: t("admin.roles.title") })).toBeInTheDocument();
+    expect(screen.queryByText(t("admin.roles.card.permissions"))).not.toBeInTheDocument();
     expect(screen.queryByLabelText(t("admin.roles.permissions.select"))).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: t("admin.roles.permissions.add") })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: t("admin.roles.permissions.remove") })).not.toBeInTheDocument();
-    expect(screen.getByText("Manage users")).toBeInTheDocument();
+    expect(screen.queryByText("Manage users")).not.toBeInTheDocument();
   });
 
   it("shows generic ui error for non-api exceptions", async () => {
@@ -391,10 +311,6 @@ describe("AdminRolesPage", () => {
 
       if (method === "GET" && path === "/v1/rbac/roles") {
         return jsonResponse(200, [{ id: "invalid" }]);
-      }
-
-      if (method === "GET" && path === "/v1/rbac/permissions") {
-        return jsonResponse(200, []);
       }
 
       throw new Error(`Unhandled request: ${method} ${path}`);
@@ -411,7 +327,7 @@ describe("AdminRolesPage", () => {
       { timeout: 4000 },
     );
     await waitFor(() => {
-      expect(fetchMock.mock.calls.length).toBeGreaterThanOrEqual(3);
+      expect(fetchMock.mock.calls.length).toBeGreaterThanOrEqual(2);
     });
   });
 });

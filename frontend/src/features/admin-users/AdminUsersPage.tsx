@@ -1,7 +1,6 @@
 import { FormEvent, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { appendRequestIdDiagnostic, ApiError, getApiErrorRequestId } from "@/shared/api/errors";
 import { useSession } from "@/shared/auth/session";
 import { userHasPermission } from "@/shared/iam/api";
 import { IAM_PERMISSION } from "@/shared/iam/contracts";
@@ -16,6 +15,20 @@ import {
   type UpdateAdminUserPayload,
 } from "@/shared/rbac/admin";
 import { type AdminUser } from "@/shared/rbac/contracts";
+import {
+  ADMIN_CARD_CLASS_NAME,
+  ADMIN_COMPACT_DANGER_BUTTON_CLASS_NAME,
+  ADMIN_COMPACT_SECONDARY_BUTTON_CLASS_NAME,
+  ADMIN_FIELD_CLASS_NAME,
+  ADMIN_FORM_GRID_CLASS_NAME,
+  ADMIN_LABEL_CLASS_NAME,
+  ADMIN_MUTED_TEXT_CLASS_NAME,
+  ADMIN_PAGE_CLASS_NAME,
+  ADMIN_PRIMARY_BUTTON_CLASS_NAME,
+  ADMIN_SECONDARY_BUTTON_CLASS_NAME,
+  ADMIN_TITLE_CLASS_NAME,
+  AdminErrorPanel,
+} from "@/shared/rbac/ui";
 import { CenteredMessage } from "@/shared/ui/CenteredMessage";
 
 const RBAC_USERS_QUERY_KEY = ["rbac", "users"] as const;
@@ -45,13 +58,6 @@ const getRoleIdsFromMultiSelect = (selectElement: HTMLSelectElement): number[] =
   Array.from(selectElement.selectedOptions)
     .map((option) => Number(option.value))
     .filter((value) => Number.isInteger(value) && value > 0);
-
-const formatUiError = (error: unknown): string => {
-  if (error instanceof ApiError) {
-    return appendRequestIdDiagnostic(error.message, getApiErrorRequestId(error));
-  }
-  return t("admin.common.error.generic");
-};
 
 const toCreateUserPayload = (
   formState: CreateUserFormState,
@@ -143,7 +149,6 @@ export const AdminUsersPage = () => {
 
   const pageError =
     usersQuery.error ?? rolesQuery.error ?? createMutation.error ?? updateMutation.error ?? deleteMutation.error;
-  const errorMessage = pageError ? formatUiError(pageError) : null;
 
   if (usersQuery.isPending || rolesQuery.isPending) {
     return <CenteredMessage title={t("admin.common.loading")} />;
@@ -189,26 +194,21 @@ export const AdminUsersPage = () => {
   };
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 py-10">
+    <main className={ADMIN_PAGE_CLASS_NAME}>
       <header>
-        <h1 className="text-3xl font-semibold tracking-tight">{t("admin.users.title")}</h1>
-        <p className="mt-2 text-sm text-[var(--app-subtle)]">{t("admin.users.subtitle")}</p>
+        <h1 className={ADMIN_TITLE_CLASS_NAME}>{t("admin.users.title")}</h1>
+        <p className={`mt-2 ${ADMIN_MUTED_TEXT_CLASS_NAME}`}>{t("admin.users.subtitle")}</p>
       </header>
 
-      {errorMessage ? (
-        <section className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3">
-          <h2 className="text-sm font-semibold text-red-800">{t("admin.common.error.title")}</h2>
-          <p className="mt-1 text-sm text-red-700">{errorMessage}</p>
-        </section>
-      ) : null}
+      <AdminErrorPanel error={pageError} />
 
-      <section className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-5">
+      <section className={ADMIN_CARD_CLASS_NAME}>
         <h2 className="text-lg font-semibold">{t("admin.users.create.title")}</h2>
-        <form className="mt-4 grid gap-4 md:grid-cols-2" onSubmit={submitCreateForm}>
+        <form className={ADMIN_FORM_GRID_CLASS_NAME} onSubmit={submitCreateForm}>
           <label className="block">
-            <span className="mb-2 block text-sm font-medium">{t("admin.users.create.username")}</span>
+            <span className={ADMIN_LABEL_CLASS_NAME}>{t("admin.users.create.username")}</span>
             <input
-              className="w-full rounded-xl border border-[var(--app-border)] px-3 py-2"
+              className={ADMIN_FIELD_CLASS_NAME}
               name="username"
               onChange={(event) =>
                 setCreateFormState((previous) => ({ ...previous, username: event.target.value }))
@@ -219,9 +219,9 @@ export const AdminUsersPage = () => {
           </label>
 
           <label className="block">
-            <span className="mb-2 block text-sm font-medium">{t("admin.users.create.password")}</span>
+            <span className={ADMIN_LABEL_CLASS_NAME}>{t("admin.users.create.password")}</span>
             <input
-              className="w-full rounded-xl border border-[var(--app-border)] px-3 py-2"
+              className={ADMIN_FIELD_CLASS_NAME}
               name="password"
               onChange={(event) =>
                 setCreateFormState((previous) => ({ ...previous, password: event.target.value }))
@@ -234,9 +234,9 @@ export const AdminUsersPage = () => {
 
           {canManageUserRoles ? (
             <label className="block md:col-span-2">
-              <span className="mb-2 block text-sm font-medium">{t("admin.users.create.roles")}</span>
+              <span className={ADMIN_LABEL_CLASS_NAME}>{t("admin.users.create.roles")}</span>
               <select
-                className="min-h-28 w-full rounded-xl border border-[var(--app-border)] px-3 py-2"
+                className={`min-h-28 ${ADMIN_FIELD_CLASS_NAME}`}
                 multiple
                 onChange={(event) => {
                   const selectedRoleIds = getRoleIdsFromMultiSelect(event.currentTarget);
@@ -258,7 +258,7 @@ export const AdminUsersPage = () => {
 
           <div className="md:col-span-2">
             <button
-              className="rounded-full bg-[var(--app-ink)] px-5 py-2 text-sm font-semibold text-[var(--app-surface)] disabled:opacity-70"
+              className={ADMIN_PRIMARY_BUTTON_CLASS_NAME}
               disabled={createMutation.isPending}
               type="submit"
             >
@@ -270,10 +270,10 @@ export const AdminUsersPage = () => {
         </form>
       </section>
 
-      <section className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-5">
+      <section className={ADMIN_CARD_CLASS_NAME}>
         <h2 className="text-lg font-semibold">{t("admin.users.list.title")}</h2>
         {users.length === 0 ? (
-          <p className="mt-3 text-sm text-[var(--app-subtle)]">{t("admin.users.list.empty")}</p>
+          <p className={`mt-3 ${ADMIN_MUTED_TEXT_CLASS_NAME}`}>{t("admin.users.list.empty")}</p>
         ) : (
           <div className="mt-3 overflow-x-auto">
             <table className="w-full min-w-[700px] border-collapse text-left text-sm">
@@ -300,14 +300,14 @@ export const AdminUsersPage = () => {
                     <td className="px-2 py-3">
                       <div className="flex flex-wrap gap-2">
                         <button
-                          className="rounded-full border border-[var(--app-border)] px-3 py-1 text-xs font-semibold"
+                          className={ADMIN_COMPACT_SECONDARY_BUTTON_CLASS_NAME}
                           onClick={() => startEditingUser(user)}
                           type="button"
                         >
                           {t("admin.users.actions.edit")}
                         </button>
                         <button
-                          className="rounded-full border border-red-300 px-3 py-1 text-xs font-semibold text-red-700"
+                          className={ADMIN_COMPACT_DANGER_BUTTON_CLASS_NAME}
                           disabled={deleteMutation.isPending}
                           onClick={() => confirmAndDeleteUser(user)}
                           type="button"
@@ -325,15 +325,15 @@ export const AdminUsersPage = () => {
       </section>
 
       {editingUser && editFormState ? (
-        <section className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-5">
+        <section className={ADMIN_CARD_CLASS_NAME}>
           <h2 className="text-lg font-semibold">
             {t("admin.users.edit.title")}: {editingUser.username}
           </h2>
-          <form className="mt-4 grid gap-4 md:grid-cols-2" onSubmit={submitEditForm}>
+          <form className={ADMIN_FORM_GRID_CLASS_NAME} onSubmit={submitEditForm}>
             <label className="block">
-              <span className="mb-2 block text-sm font-medium">{t("admin.users.edit.username")}</span>
+              <span className={ADMIN_LABEL_CLASS_NAME}>{t("admin.users.edit.username")}</span>
               <input
-                className="w-full rounded-xl border border-[var(--app-border)] px-3 py-2"
+                className={ADMIN_FIELD_CLASS_NAME}
                 name="edit-username"
                 onChange={(event) =>
                   setEditFormState((previous) => ({ ...previous!, username: event.target.value }))
@@ -344,9 +344,9 @@ export const AdminUsersPage = () => {
             </label>
 
             <label className="block">
-              <span className="mb-2 block text-sm font-medium">{t("admin.users.edit.currentPassword")}</span>
+              <span className={ADMIN_LABEL_CLASS_NAME}>{t("admin.users.edit.currentPassword")}</span>
               <input
-                className="w-full rounded-xl border border-[var(--app-border)] px-3 py-2"
+                className={ADMIN_FIELD_CLASS_NAME}
                 name="edit-current-password"
                 onChange={(event) =>
                   setEditFormState((previous) => ({ ...previous!, currentPassword: event.target.value }))
@@ -357,9 +357,9 @@ export const AdminUsersPage = () => {
             </label>
 
             <label className="block">
-              <span className="mb-2 block text-sm font-medium">{t("admin.users.edit.newPassword")}</span>
+              <span className={ADMIN_LABEL_CLASS_NAME}>{t("admin.users.edit.newPassword")}</span>
               <input
-                className="w-full rounded-xl border border-[var(--app-border)] px-3 py-2"
+                className={ADMIN_FIELD_CLASS_NAME}
                 name="edit-new-password"
                 onChange={(event) =>
                   setEditFormState((previous) => ({ ...previous!, newPassword: event.target.value }))
@@ -382,9 +382,9 @@ export const AdminUsersPage = () => {
 
             {canManageUserRoles ? (
               <label className="block md:col-span-2">
-                <span className="mb-2 block text-sm font-medium">{t("admin.users.edit.roles")}</span>
+                <span className={ADMIN_LABEL_CLASS_NAME}>{t("admin.users.edit.roles")}</span>
                 <select
-                  className="min-h-28 w-full rounded-xl border border-[var(--app-border)] px-3 py-2"
+                  className={`min-h-28 ${ADMIN_FIELD_CLASS_NAME}`}
                   multiple
                   onChange={(event) => {
                     const selectedRoleIds = getRoleIdsFromMultiSelect(event.currentTarget);
@@ -406,14 +406,14 @@ export const AdminUsersPage = () => {
 
             <div className="flex gap-3 md:col-span-2">
               <button
-                className="rounded-full bg-[var(--app-ink)] px-5 py-2 text-sm font-semibold text-[var(--app-surface)] disabled:opacity-70"
+                className={ADMIN_PRIMARY_BUTTON_CLASS_NAME}
                 disabled={updateMutation.isPending}
                 type="submit"
               >
                 {updateMutation.isPending ? t("admin.users.edit.submit.pending") : t("admin.users.edit.submit")}
               </button>
               <button
-                className="rounded-full border border-[var(--app-border)] px-5 py-2 text-sm font-semibold"
+                className={ADMIN_SECONDARY_BUTTON_CLASS_NAME}
                 onClick={cancelEditingUser}
                 type="button"
               >

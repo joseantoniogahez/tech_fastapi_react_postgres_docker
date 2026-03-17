@@ -7,7 +7,8 @@ All routes are versioned under `/v1`.
 ## Global Conventions
 
 - Bearer auth header: `Authorization: Bearer <access_token>`.
-- Standard error payload: `{ detail, status, code, meta? }`.
+- Standard error payload: `{ detail, status, code, meta?, request_id }`.
+- Normalized error responses echo the same `request_id` in the `X-Request-ID` response header.
 - Request validation errors are normalized to `400 invalid_input` (not exposed as `422`).
 - Write endpoints (`POST`/`PUT`/`PATCH`/`DELETE`) run inside a Unit of Work transaction scope.
 
@@ -77,6 +78,7 @@ This table classifies each `GET` endpoint as `public`, `authenticated`, or `perm
 - `GET /v1/rbac/roles` returns effective permissions (direct + inherited) and direct `parent_role_ids`.
 - `PUT /v1/rbac/roles/{role_id}/inherits/{parent_role_id}` manages role inheritance.
 - `PUT /v1/rbac/roles/{role_id}/permissions/{permission_id}` is an upsert operation.
+- `PUT /v1/rbac/roles/{role_id}/permissions/{permission_id}` requires an explicit `scope` in `SetRolePermissionRequest`; omitted scope is rejected as `400 invalid_input`.
 - `GET /v1/rbac/users/{user_id}/roles` returns direct user-role assignments.
 - `GET /v1/rbac/roles/{role_id}/users` returns direct role-user assignments.
 - `DELETE /v1/rbac/roles/{role_id}` also removes related role links and user-role assignments.

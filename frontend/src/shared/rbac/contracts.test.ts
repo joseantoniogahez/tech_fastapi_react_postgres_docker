@@ -1,10 +1,13 @@
 import { ApiContractError } from "@/shared/api/contracts";
 import {
+  parseAssignedRoleList,
+  parseAssignedUserList,
   parseAdminUser,
   parseAdminUserList,
   parseRbacPermissionList,
   parseRbacRole,
   parseRbacRolePermission,
+  parseUserRoleAssignment,
 } from "@/shared/rbac/contracts";
 
 describe("rbac contracts", () => {
@@ -79,6 +82,18 @@ describe("rbac contracts", () => {
     });
   });
 
+  it("rejects unsupported permission scopes", () => {
+    expect(() =>
+      parseRbacRolePermission({
+        id: "role_permissions:manage",
+        name: "Manage role permissions",
+        scope: "team",
+      }),
+    ).toThrowError(
+      new ApiContractError("RbacRolePermission: field 'scope' must be one of own, tenant, any, received 'team'"),
+    );
+  });
+
   it("parses role and user lists", () => {
     expect(
       parseAdminUserList([
@@ -99,5 +114,47 @@ describe("rbac contracts", () => {
         },
       ]),
     ).toHaveLength(1);
+  });
+
+  it("parses direct assignment payloads", () => {
+    expect(
+      parseAssignedRoleList([
+        {
+          id: 2,
+          name: "reader_role",
+        },
+      ]),
+    ).toEqual([
+      {
+        id: 2,
+        name: "reader_role",
+      },
+    ]);
+
+    expect(
+      parseAssignedUserList([
+        {
+          id: 3,
+          username: "reader_user",
+          disabled: false,
+        },
+      ]),
+    ).toEqual([
+      {
+        id: 3,
+        username: "reader_user",
+        disabled: false,
+      },
+    ]);
+
+    expect(
+      parseUserRoleAssignment({
+        user_id: 3,
+        role_id: 2,
+      }),
+    ).toEqual({
+      user_id: 3,
+      role_id: 2,
+    });
   });
 });

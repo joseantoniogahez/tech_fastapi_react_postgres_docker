@@ -350,6 +350,31 @@ def test_role_permission_rejects_invalid_scope(mock_client: TestClient) -> None:
     )
 
 
+def test_role_permission_requires_explicit_scope(mock_client: TestClient) -> None:
+    create_response = mock_client.post(
+        "/v1/rbac/roles",
+        json={"name": "missing_scope_role"},
+        headers=_admin_headers(mock_client),
+    )
+    assert create_response.status_code == HTTPStatus.CREATED
+    role_id = create_response.json()["id"]
+
+    response = mock_client.put(
+        f"/v1/rbac/roles/{role_id}/permissions/{PermissionId.ROLE_MANAGE}",
+        json={},
+        headers=_admin_headers(mock_client),
+    )
+
+    assert response.status_code == HTTPStatus.BAD_REQUEST
+    payload = response.json()
+    assert payload["detail"] == "Request validation error"
+    assert payload["status"] == HTTPStatus.BAD_REQUEST
+    assert payload["code"] == "invalid_input"
+    assert isinstance(payload.get("request_id"), str)
+    assert response.headers["X-Request-ID"] == payload["request_id"]
+    assert any(error.get("loc") == ["body", "scope"] and error.get("type") == "missing" for error in payload["meta"])
+
+
 def test_role_inheritance_management_happy_path(
     mock_client: TestClient,
     mock_database: MockDatabase,

@@ -122,4 +122,77 @@ describe("accessibility route baseline", () => {
     expect(await screen.findByRole("heading", { name: t("admin.users.title") })).toBeInTheDocument();
     expect((await axe.run(view.container, AXE_RUN_OPTIONS)).violations).toHaveLength(0);
   });
+
+  it("has no obvious accessibility violations on admin assignments route", async () => {
+    setAccessToken("assignment-admin-token");
+
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const pathname = toRequestPathname(input);
+      if (pathname === "/v1/users/me") {
+        return {
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve({
+              id: 1,
+              username: "rbac_admin",
+              disabled: false,
+              permissions: ["user_roles:manage"],
+            }),
+        } satisfies Partial<Response>;
+      }
+
+      throw new Error(`Unhandled accessibility request: ${pathname}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const view = renderRoute(["/admin/assignments"]);
+
+    expect(await screen.findByRole("heading", { name: t("admin.as.title") })).toBeInTheDocument();
+    expect((await axe.run(view.container, AXE_RUN_OPTIONS)).violations).toHaveLength(0);
+  });
+
+  it("has no obvious accessibility violations on admin permissions route", async () => {
+    setAccessToken("permission-admin-token");
+
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const pathname = toRequestPathname(input);
+      if (pathname === "/v1/users/me") {
+        return {
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve({
+              id: 1,
+              username: "permission_admin",
+              disabled: false,
+              permissions: ["role_permissions:manage"],
+            }),
+        } satisfies Partial<Response>;
+      }
+
+      if (pathname === "/v1/rbac/permissions") {
+        return {
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve([
+              {
+                id: "users:manage",
+                name: "Manage users",
+              },
+            ]),
+        } satisfies Partial<Response>;
+      }
+
+      throw new Error(`Unhandled accessibility request: ${pathname}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const view = renderRoute(["/admin/permissions"]);
+
+    expect(await screen.findByRole("heading", { name: t("admin.pm.title") })).toBeInTheDocument();
+    expect(await screen.findByLabelText(t("admin.roles.permissions.select"))).toBeInTheDocument();
+    expect((await axe.run(view.container, AXE_RUN_OPTIONS)).violations).toHaveLength(0);
+  });
 });

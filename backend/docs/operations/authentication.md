@@ -101,7 +101,8 @@ curl -X POST http://localhost:8000/v1/token \
 {
   "detail": "Invalid username or password",
   "status": 401,
-  "code": "unauthorized"
+  "code": "unauthorized",
+  "request_id": "req-example-1234"
 }
 ```
 
@@ -174,7 +175,8 @@ Authenticated user payload behavior:
 {
   "detail": "Could not validate credentials",
   "status": 401,
-  "code": "unauthorized"
+  "code": "unauthorized",
+  "request_id": "req-example-1234"
 }
 ```
 
@@ -184,7 +186,8 @@ Authenticated user payload behavior:
 {
   "detail": "Inactive user",
   "status": 403,
-  "code": "forbidden"
+  "code": "forbidden",
+  "request_id": "req-example-1234"
 }
 ```
 
@@ -197,6 +200,7 @@ Inactive users can be produced by admin soft-delete via `DELETE /v1/rbac/users/{
   "detail": "Missing required permission: role_permissions:manage",
   "status": 403,
   "code": "forbidden",
+  "request_id": "req-example-1234",
   "meta": {
     "permission_id": "role_permissions:manage"
   }

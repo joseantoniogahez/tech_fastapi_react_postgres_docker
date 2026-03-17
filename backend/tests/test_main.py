@@ -19,6 +19,7 @@ from app.core.setup.factory import (
     app_lifespan,
     configure_logging,
     configure_request_context_middleware,
+    create_app,
     validate_auth_settings,
 )
 from app.core.setup.routers import ROUTER_MODULES, _load_router, get_registered_routers
@@ -217,6 +218,31 @@ def test_request_context_middleware_logs_server_errors_and_explicit_500_at_error
     assert len(error_logs) >= 2
     assert any(call_args.args[4] == "/crash" for call_args in error_logs)
     assert any(call_args.args[4] == "/status-500" for call_args in error_logs)
+
+
+def test_generated_openapi_matches_normalized_validation_contracts() -> None:
+    test_app = create_app(ApiSettings())
+    openapi_schema = test_app.openapi()
+
+    register_responses = openapi_schema["paths"]["/v1/users/register"]["post"]["responses"]
+    update_me_responses = openapi_schema["paths"]["/v1/users/me"]["patch"]["responses"]
+    role_permission_operation = openapi_schema["paths"]["/v1/rbac/roles/{role_id}/permissions/{permission_id}"]["put"]
+    error_schema = register_responses["400"]["content"]["application/json"]["schema"]
+    scope_request_schema = openapi_schema["components"]["schemas"]["SetRolePermissionRequest"]
+
+    assert "422" not in register_responses
+    assert "422" not in update_me_responses
+    assert "422" not in role_permission_operation["responses"]
+    assert "HTTPValidationError" not in openapi_schema["components"]["schemas"]
+    assert "ValidationError" not in openapi_schema["components"]["schemas"]
+
+    assert "request_id" in error_schema["required"]
+    assert error_schema["properties"]["request_id"]["type"] == "string"
+    assert REQUEST_ID_HEADER in register_responses["400"]["headers"]
+    assert register_responses["400"]["headers"][REQUEST_ID_HEADER]["schema"]["type"] == "string"
+
+    assert set(scope_request_schema["required"]) == {"scope"}
+    assert "default" not in scope_request_schema["properties"]["scope"]
 
 
 def test_get_registered_routers_loads_catalog_modules_and_supports_fqcn() -> None:

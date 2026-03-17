@@ -1,6 +1,5 @@
 from pydantic import ConfigDict, Field
 
-from app.core.authorization import PermissionScope
 from app.core.common.schema import ApiSchema
 
 
@@ -33,7 +32,7 @@ class UpdateRoleRequest(CreateRoleRequest):
 
 
 class SetRolePermissionRequest(ApiSchema):
-    scope: str = Field(default=PermissionScope.ANY, min_length=1, max_length=20)
+    scope: str = Field(min_length=1, max_length=20)
 
     model_config = ConfigDict(str_strip_whitespace=True)
 

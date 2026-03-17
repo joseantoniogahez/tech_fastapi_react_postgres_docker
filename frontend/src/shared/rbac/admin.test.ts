@@ -1,10 +1,14 @@
 import { buildApiUrl } from "@/shared/api/env";
 import { ApiError } from "@/shared/api/errors";
 import {
+  assignRbacUserRole,
   assignRbacRolePermission,
   createAdminUser,
   readAdminUser,
   readAdminUsers,
+  readRbacRoleUsers,
+  readRbacUserRoles,
+  removeRbacUserRole,
   removeRbacRoleInheritance,
   removeRbacRolePermission,
   softDeleteAdminUser,
@@ -72,6 +76,62 @@ describe("rbac admin client", () => {
     expect(request.method).toBeUndefined();
   });
 
+  it("reads direct role assignments for a user", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () =>
+        Promise.resolve([
+          {
+            id: 2,
+            name: "reader_role",
+          },
+        ]),
+    } satisfies Partial<Response>);
+    vi.stubGlobal("fetch", fetchMock);
+
+    const roles = await readRbacUserRoles(7);
+
+    expect(roles).toEqual([
+      {
+        id: 2,
+        name: "reader_role",
+      },
+    ]);
+    const [url, request] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(buildApiUrl("/rbac/users/7/roles"));
+    expect(request.method).toBeUndefined();
+  });
+
+  it("reads direct user assignments for a role", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () =>
+        Promise.resolve([
+          {
+            id: 3,
+            username: "reader_user",
+            disabled: false,
+          },
+        ]),
+    } satisfies Partial<Response>);
+    vi.stubGlobal("fetch", fetchMock);
+
+    const users = await readRbacRoleUsers(2);
+
+    expect(users).toEqual([
+      {
+        id: 3,
+        username: "reader_user",
+        disabled: false,
+      },
+    ]);
+    const [url, request] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(buildApiUrl("/rbac/roles/2/users"));
+    expect(request.method).toBeUndefined();
+  });
+
   it("creates user with json payload", async () => {
     setAccessToken("valid-token");
     const fetchMock = vi.fn().mockResolvedValue({
@@ -125,7 +185,26 @@ describe("rbac admin client", () => {
     expect(request.body).toBe(JSON.stringify({ name: "editor_role" }));
   });
 
-  it("assigns role permission with default any scope", async () => {
+  it("assigns user role with dedicated endpoint", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () =>
+        Promise.resolve({
+          user_id: 3,
+          role_id: 2,
+        }),
+    } satisfies Partial<Response>);
+    vi.stubGlobal("fetch", fetchMock);
+
+    await assignRbacUserRole(3, 2);
+
+    const [url, request] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(buildApiUrl("/rbac/users/3/roles/2"));
+    expect(request.method).toBe("PUT");
+  });
+
+  it.each(["own", "tenant", "any"] as const)("assigns role permission with explicit %s scope", async (scope) => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
@@ -133,16 +212,16 @@ describe("rbac admin client", () => {
         Promise.resolve({
           id: "users:manage",
           name: "Manage users",
-          scope: "any",
+          scope,
         }),
     } satisfies Partial<Response>);
     vi.stubGlobal("fetch", fetchMock);
 
-    await assignRbacRolePermission(2, "users:manage");
+    await assignRbacRolePermission(2, "users:manage", { scope });
 
     const [, request] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(request.method).toBe("PUT");
-    expect(request.body).toBe(JSON.stringify({ scope: "any" }));
+    expect(request.body).toBe(JSON.stringify({ scope }));
   });
 
   it("sends delete for soft-delete admin user", async () => {
@@ -170,6 +249,20 @@ describe("rbac admin client", () => {
 
     const [url, request] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(url).toBe(buildApiUrl("/rbac/roles/3/inherits/1"));
+    expect(request.method).toBe("DELETE");
+  });
+
+  it("sends delete for user role removal", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 204,
+    } satisfies Partial<Response>);
+    vi.stubGlobal("fetch", fetchMock);
+
+    await removeRbacUserRole(3, 2);
+
+    const [url, request] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(buildApiUrl("/rbac/users/3/roles/2"));
     expect(request.method).toBe("DELETE");
   });
 

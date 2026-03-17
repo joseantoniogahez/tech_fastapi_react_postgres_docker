@@ -156,4 +156,88 @@ describe("routing integration", () => {
 
     expect(await screen.findByRole("heading", { name: t("admin.users.title") })).toBeInTheDocument();
   });
+
+  it("renders admin assignments route when session has user_roles:manage", async () => {
+    setAccessToken("valid-assignment-admin-token");
+
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const pathname = toRequestPathname(input);
+
+      if (pathname === "/v1/users/me") {
+        return {
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve({
+              id: 1,
+              username: "rbac_admin",
+              disabled: false,
+              permissions: ["user_roles:manage"],
+            }),
+        } satisfies Partial<Response>;
+      }
+
+      throw new Error(`Unhandled route integration request: ${pathname}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const queryClient = createQueryClient();
+    const router = createMemoryRouter(appRoutes, {
+      initialEntries: ["/admin/assignments"],
+    });
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByRole("heading", { name: t("admin.as.title") })).toBeInTheDocument();
+  });
+
+  it("renders admin permissions route when session has role_permissions:manage", async () => {
+    setAccessToken("valid-permission-admin-token");
+
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const pathname = toRequestPathname(input);
+
+      if (pathname === "/v1/users/me") {
+        return {
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve({
+              id: 1,
+              username: "permission_admin",
+              disabled: false,
+              permissions: ["role_permissions:manage"],
+            }),
+        } satisfies Partial<Response>;
+      }
+
+      if (pathname === "/v1/rbac/permissions") {
+        return {
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve([]),
+        } satisfies Partial<Response>;
+      }
+
+      throw new Error(`Unhandled route integration request: ${pathname}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const queryClient = createQueryClient();
+    const router = createMemoryRouter(appRoutes, {
+      initialEntries: ["/admin/permissions"],
+    });
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByRole("heading", { name: t("admin.pm.title") })).toBeInTheDocument();
+  });
 });

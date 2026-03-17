@@ -1,5 +1,7 @@
 import type { RouteObject } from "react-router-dom";
 
+import { AdminAssignmentsPage } from "@/features/admin-assignments/AdminAssignmentsPage";
+import { AdminPermissionsPage } from "@/features/admin-permissions/AdminPermissionsPage";
 import { AdminRolesPage } from "@/features/admin-roles/AdminRolesPage";
 import { AdminUsersPage } from "@/features/admin-users/AdminUsersPage";
 import { LoginPage } from "@/features/auth/LoginPage";
@@ -58,6 +60,24 @@ export const appRoutes: RouteObject[] = [
               {
                 path: "admin/roles",
                 element: <AdminRolesPage />,
+              },
+            ],
+          },
+          {
+            element: <PermissionRoute requiredPermission={IAM_PERMISSION.ROLE_PERMISSIONS_MANAGE} />,
+            children: [
+              {
+                path: "admin/permissions",
+                element: <AdminPermissionsPage />,
+              },
+            ],
+          },
+          {
+            element: <PermissionRoute requiredPermission={IAM_PERMISSION.USER_ROLES_MANAGE} />,
+            children: [
+              {
+                path: "admin/assignments",
+                element: <AdminAssignmentsPage />,
               },
             ],
           },

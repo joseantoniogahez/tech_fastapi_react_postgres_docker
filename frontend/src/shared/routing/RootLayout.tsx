@@ -7,9 +7,13 @@ import { userHasPermission } from "@/shared/iam/api";
 import { t } from "@/shared/i18n/ui-text";
 
 interface AdminMenuItem {
-  key: "routing.nav.admin.users" | "routing.nav.admin.roles";
+  key:
+    | "routing.nav.admin.assignments"
+    | "routing.nav.admin.permissions"
+    | "routing.nav.admin.users"
+    | "routing.nav.admin.roles";
   permissionId: string;
-  to: "/admin/users" | "/admin/roles";
+  to: "/admin/assignments" | "/admin/permissions" | "/admin/users" | "/admin/roles";
 }
 
 interface PrimaryMenuItem {
@@ -29,6 +33,16 @@ const PRIMARY_MENU_ITEMS: readonly PrimaryMenuItem[] = [
 ];
 
 const ADMIN_MENU_ITEMS: readonly AdminMenuItem[] = [
+  {
+    key: "routing.nav.admin.permissions",
+    permissionId: IAM_PERMISSION.ROLE_PERMISSIONS_MANAGE,
+    to: "/admin/permissions",
+  },
+  {
+    key: "routing.nav.admin.assignments",
+    permissionId: IAM_PERMISSION.USER_ROLES_MANAGE,
+    to: "/admin/assignments",
+  },
   {
     key: "routing.nav.admin.users",
     permissionId: IAM_PERMISSION.USERS_MANAGE,
