@@ -134,7 +134,9 @@ describe("route inventory contracts", () => {
     expect(markdown).toContain("`/profile`");
     expect(markdown).toContain("Requires `user_roles:manage`; missing permission redirects to `/welcome`.");
     expect(markdown).toContain("Requires `role_permissions:manage`; role inventory falls back to manual ID without `roles:manage`.");
-    expect(markdown).toContain("Requires `users:manage`; missing permission redirects to `/welcome`.");
+    expect(markdown).toContain(
+      "Requires `users:manage`; missing permission redirects to `/welcome`, while role-related controls stay hidden in-page unless the session also has `roles:manage`.",
+    );
     expect(markdown).toContain("Requires `roles:manage`; missing permission redirects to `/welcome`.");
   });
 

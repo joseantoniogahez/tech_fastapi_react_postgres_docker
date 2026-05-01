@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useSession } from "@/shared/auth/session";
@@ -104,7 +104,7 @@ export const AdminUsersPage = () => {
   const [createFormState, setCreateFormState] = useState<CreateUserFormState>(INITIAL_CREATE_USER_FORM_STATE);
   const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
   const [editFormState, setEditFormState] = useState<EditUserFormState | null>(null);
-  const canManageUserRoles = userHasPermission(session.data, IAM_PERMISSION.USER_ROLES_MANAGE);
+  const canReadRoleCatalog = userHasPermission(session.data, IAM_PERMISSION.ROLES_MANAGE);
 
   const usersQuery = useQuery({
     queryKey: RBAC_USERS_QUERY_KEY,
@@ -113,6 +113,7 @@ export const AdminUsersPage = () => {
   const rolesQuery = useQuery({
     queryKey: RBAC_ROLES_QUERY_KEY,
     queryFn: readRbacRoles,
+    enabled: canReadRoleCatalog,
   });
 
   const createMutation = useMutation({
@@ -141,23 +142,22 @@ export const AdminUsersPage = () => {
   });
 
   const users = usersQuery.data ?? [];
-  const roles = rolesQuery.data ?? [];
-  const roleNameById = useMemo(
-    () => new Map((rolesQuery.data ?? []).map((role) => [role.id, role.name])),
-    [rolesQuery.data],
-  );
+  const roles = canReadRoleCatalog ? rolesQuery.data ?? [] : [];
+  const roleNameById = new Map(roles.map((role) => [role.id, role.name]));
+  const showRoleCatalogControls = canReadRoleCatalog && rolesQuery.isSuccess;
+  const isRoleCatalogLoading = canReadRoleCatalog && rolesQuery.isPending;
+  const roleCatalogError = canReadRoleCatalog ? rolesQuery.error : null;
 
-  const pageError =
-    usersQuery.error ?? rolesQuery.error ?? createMutation.error ?? updateMutation.error ?? deleteMutation.error;
+  const pageError = usersQuery.error ?? createMutation.error ?? updateMutation.error ?? deleteMutation.error;
 
-  if (usersQuery.isPending || rolesQuery.isPending) {
+  if (usersQuery.isPending) {
     return <CenteredMessage title={t("admin.common.loading")} />;
   }
 
   const submitCreateForm = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     createMutation.reset();
-    createMutation.mutate(toCreateUserPayload(createFormState, canManageUserRoles));
+    createMutation.mutate(toCreateUserPayload(createFormState, showRoleCatalogControls));
   };
 
   const submitEditForm = (event: FormEvent<HTMLFormElement>) => {
@@ -168,7 +168,7 @@ export const AdminUsersPage = () => {
     updateMutation.reset();
     updateMutation.mutate({
       userId: editingUser.id,
-      payload: toUpdateUserPayload(editFormState, canManageUserRoles),
+      payload: toUpdateUserPayload(editFormState, showRoleCatalogControls),
     });
   };
 
@@ -198,6 +198,16 @@ export const AdminUsersPage = () => {
       <header>
         <h1 className={ADMIN_TITLE_CLASS_NAME}>{t("admin.users.title")}</h1>
         <p className={`mt-2 ${ADMIN_MUTED_TEXT_CLASS_NAME}`}>{t("admin.users.subtitle")}</p>
+        {roleCatalogError ? (
+          <div className="mt-3 space-y-2">
+            <p className={ADMIN_MUTED_TEXT_CLASS_NAME}>{t("admin.users.roles.hidden.error")}</p>
+            <AdminErrorPanel error={roleCatalogError} />
+          </div>
+        ) : !canReadRoleCatalog ? (
+          <p className={`mt-3 ${ADMIN_MUTED_TEXT_CLASS_NAME}`}>{t("admin.users.roles.hidden.permission")}</p>
+        ) : isRoleCatalogLoading ? (
+          <p className={`mt-3 ${ADMIN_MUTED_TEXT_CLASS_NAME}`}>{t("admin.users.roles.loading")}</p>
+        ) : null}
       </header>
 
       <AdminErrorPanel error={pageError} />
@@ -232,7 +242,7 @@ export const AdminUsersPage = () => {
             />
           </label>
 
-          {canManageUserRoles ? (
+          {showRoleCatalogControls ? (
             <label className="block md:col-span-2">
               <span className={ADMIN_LABEL_CLASS_NAME}>{t("admin.users.create.roles")}</span>
               <select
@@ -281,7 +291,9 @@ export const AdminUsersPage = () => {
                 <tr className="border-b border-[var(--app-border)]">
                   <th className="px-2 py-2 font-semibold">{t("admin.users.columns.username")}</th>
                   <th className="px-2 py-2 font-semibold">{t("admin.users.columns.status")}</th>
-                  <th className="px-2 py-2 font-semibold">{t("admin.users.columns.roles")}</th>
+                  {showRoleCatalogControls ? (
+                    <th className="px-2 py-2 font-semibold">{t("admin.users.columns.roles")}</th>
+                  ) : null}
                   <th className="px-2 py-2 font-semibold">{t("admin.users.columns.actions")}</th>
                 </tr>
               </thead>
@@ -292,11 +304,13 @@ export const AdminUsersPage = () => {
                     <td className="px-2 py-3">
                       {user.disabled ? t("admin.users.status.disabled") : t("admin.users.status.active")}
                     </td>
-                    <td className="px-2 py-3">
-                      {user.role_ids.length > 0
-                        ? user.role_ids.map((roleId) => roleNameById.get(roleId) ?? String(roleId)).join(", ")
-                        : "-"}
-                    </td>
+                    {showRoleCatalogControls ? (
+                      <td className="px-2 py-3">
+                        {user.role_ids.length > 0
+                          ? user.role_ids.map((roleId) => roleNameById.get(roleId) ?? String(roleId)).join(", ")
+                          : "-"}
+                      </td>
+                    ) : null}
                     <td className="px-2 py-3">
                       <div className="flex flex-wrap gap-2">
                         <button
@@ -380,7 +394,7 @@ export const AdminUsersPage = () => {
               <span className="text-sm font-medium">{t("admin.users.edit.disabled")}</span>
             </label>
 
-            {canManageUserRoles ? (
+            {showRoleCatalogControls ? (
               <label className="block md:col-span-2">
                 <span className={ADMIN_LABEL_CLASS_NAME}>{t("admin.users.edit.roles")}</span>
                 <select

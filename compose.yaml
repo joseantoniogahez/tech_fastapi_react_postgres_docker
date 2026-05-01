@@ -1,4 +1,4 @@
-name: books-dev
+name: tech-dev
 
 services:
   database:

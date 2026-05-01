@@ -2,6 +2,7 @@ import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from time import perf_counter
+from typing import Any
 from uuid import uuid4
 
 from fastapi import FastAPI, Request, Response
@@ -13,6 +14,35 @@ from app.core.config.settings import ApiSettings, AuthSettings
 from app.core.errors.setup.handlers import REQUEST_ID_HEADER, configure_exception_handlers
 from app.core.setup.cors import configure_cors
 from app.core.setup.routers import configure_routers
+
+
+def _build_openapi_schema(app: FastAPI) -> dict[str, Any]:
+    openapi_schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        openapi_version=app.openapi_version,
+        summary=app.summary,
+        description=app.description,
+        routes=app.routes,
+        webhooks=app.webhooks.routes,
+        tags=app.openapi_tags,
+        servers=app.servers,
+        terms_of_service=app.terms_of_service,
+        contact=app.contact,
+        license_info=app.license_info,
+        separate_input_output_schemas=app.separate_input_output_schemas,
+        external_docs=app.openapi_external_docs,
+    )
+    return normalize_generated_openapi_schema(openapi_schema)
+
+
+class _NormalizedOpenAPIFastAPI(FastAPI):
+    def openapi(self) -> dict[str, Any]:
+        if self.openapi_schema is not None:
+            return self.openapi_schema
+
+        self.openapi_schema = _build_openapi_schema(self)
+        return self.openapi_schema
 
 
 def configure_logging(settings: ApiSettings) -> None:
@@ -83,33 +113,6 @@ def configure_request_context_middleware(app: FastAPI) -> None:
         return response
 
 
-def configure_openapi(app: FastAPI) -> None:
-    def custom_openapi() -> dict[str, object]:
-        if app.openapi_schema is not None:
-            return app.openapi_schema
-
-        openapi_schema = get_openapi(
-            title=app.title,
-            version=app.version,
-            openapi_version=app.openapi_version,
-            summary=app.summary,
-            description=app.description,
-            routes=app.routes,
-            webhooks=app.webhooks.routes,
-            tags=app.openapi_tags,
-            servers=app.servers,
-            terms_of_service=app.terms_of_service,
-            contact=app.contact,
-            license_info=app.license_info,
-            separate_input_output_schemas=app.separate_input_output_schemas,
-            external_docs=app.openapi_external_docs,
-        )
-        app.openapi_schema = normalize_generated_openapi_schema(openapi_schema)
-        return app.openapi_schema
-
-    app.openapi = custom_openapi
-
-
 @asynccontextmanager
 async def app_lifespan(app: FastAPI) -> AsyncIterator[None]:
     logger = logging.getLogger("app.lifecycle")
@@ -123,11 +126,10 @@ def create_app(settings: ApiSettings | None = None) -> FastAPI:
     api_settings = settings or ApiSettings()
     configure_logging(api_settings)
 
-    app = FastAPI(root_path=api_settings.API_PATH, lifespan=app_lifespan)
+    app = _NormalizedOpenAPIFastAPI(root_path=api_settings.API_PATH, lifespan=app_lifespan)
     configure_request_context_middleware(app)
     configure_cors(app, api_settings)
     configure_exception_handlers(app)
     configure_routers(app)
-    configure_openapi(app)
 
     return app

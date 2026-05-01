@@ -58,7 +58,7 @@ const jsonResponse = (status: number, payload: unknown, requestId?: string): Par
 const renderAdminUsersPage = (
   permissions: string[] = [
     IAM_PERMISSION.USERS_MANAGE,
-    IAM_PERMISSION.USER_ROLES_MANAGE,
+    IAM_PERMISSION.ROLES_MANAGE,
   ],
 ) => {
   const queryClient = createQueryClient();
@@ -176,10 +176,11 @@ describe("AdminUsersPage", () => {
       await screen.findByRole("heading", { name: t("admin.users.title") }, { timeout: 8000 }),
     ).toBeInTheDocument();
     expect(await screen.findByText("admin", {}, { timeout: 8000 })).toBeInTheDocument();
+    const createRolesInput = await screen.findByLabelText(t("admin.users.create.roles"));
 
     await user.type(screen.getByLabelText(t("admin.users.create.username")), "ops_user");
     await user.type(screen.getByLabelText(t("admin.users.create.password")), "OpsUser123");
-    await user.selectOptions(screen.getByLabelText(t("admin.users.create.roles")), "2");
+    await user.selectOptions(createRolesInput, "2");
     await user.click(screen.getByRole("button", { name: t("admin.users.create.submit") }));
 
     const createdUsernameCell = await screen.findByText("ops_user");
@@ -352,7 +353,125 @@ describe("AdminUsersPage", () => {
     expect(await screen.findByText(/request_id=req-users-conflict/)).toBeInTheDocument();
   });
 
-  it("hides role assignment controls when user lacks user_roles:manage", async () => {
+  it("hides role controls and omits role_ids when session lacks roles:manage", async () => {
+    let createdPayload: { username: string; password: string; role_ids?: number[] } | null = null;
+    let updatedPayload: {
+      username: string;
+      disabled: boolean;
+      role_ids?: number[];
+      current_password?: string;
+      new_password?: string;
+    } | null = null;
+
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const requestUrl = toRequestUrl(input);
+      const method = init?.method ?? "GET";
+      const path = requestUrl.pathname;
+
+      if (method === "GET" && path === "/v1/rbac/users") {
+        return jsonResponse(200, [
+          {
+            id: 1,
+            username: "admin",
+            disabled: false,
+            role_ids: [1],
+          },
+        ]);
+      }
+
+      if (method === "POST" && path === "/v1/rbac/users") {
+        const payload = readJsonBody<{ username: string; password: string; role_ids?: number[] }>(init);
+        createdPayload = payload;
+        return jsonResponse(201, {
+          id: 2,
+          username: payload.username,
+          disabled: false,
+          role_ids: [],
+        });
+      }
+
+      if (method === "PUT" && path === "/v1/rbac/users/1") {
+        const payload = readJsonBody<{
+          username: string;
+          disabled: boolean;
+          role_ids?: number[];
+          current_password?: string;
+          new_password?: string;
+        }>(init);
+        updatedPayload = payload;
+        return jsonResponse(200, {
+          id: 1,
+          username: payload.username,
+          disabled: payload.disabled,
+          role_ids: [1],
+        });
+      }
+
+      throw new Error(`Unhandled request: ${method} ${path}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const user = userEvent.setup();
+
+    renderAdminUsersPage([IAM_PERMISSION.USERS_MANAGE]);
+
+    expect(await screen.findByRole("heading", { name: t("admin.users.title") })).toBeInTheDocument();
+    expect(screen.getByText(t("admin.users.roles.hidden.permission"))).toBeInTheDocument();
+    expect(screen.queryByLabelText(t("admin.users.create.roles"))).not.toBeInTheDocument();
+    expect(screen.queryByRole("columnheader", { name: t("admin.users.columns.roles") })).not.toBeInTheDocument();
+    expect(
+      fetchMock.mock.calls.some((call) => {
+        const requestUrl = toRequestUrl(call[0]);
+        return requestUrl.pathname === "/v1/rbac/roles";
+      }),
+    ).toBe(false);
+
+    await user.type(screen.getByLabelText(t("admin.users.create.username")), "ops_user");
+    await user.type(screen.getByLabelText(t("admin.users.create.password")), "OpsUser123");
+    await user.click(screen.getByRole("button", { name: t("admin.users.create.submit") }));
+
+    await waitFor(() => {
+      expect(createdPayload).toEqual({
+        username: "ops_user",
+        password: "OpsUser123", // pragma: allowlist secret
+      });
+    });
+
+    const adminRow = (await screen.findByText("admin")).closest("tr");
+    expect(adminRow).not.toBeNull();
+    if (!adminRow) {
+      throw new Error("Expected admin row");
+    }
+
+    await user.click(within(adminRow).getByRole("button", { name: t("admin.users.actions.edit") }));
+    const editHeading = await screen.findByRole("heading", { name: /^Editar usuario:/ });
+    const editSection = editHeading.closest("section");
+    expect(editSection).not.toBeNull();
+    if (!editSection) {
+      throw new Error("Expected edit section");
+    }
+    const editFormScope = within(editSection);
+    expect(editFormScope.queryByLabelText(t("admin.users.edit.roles"))).not.toBeInTheDocument();
+
+    const editUsernameInput = editFormScope.getByLabelText(t("admin.users.edit.username"));
+    await user.clear(editUsernameInput);
+    await user.type(editUsernameInput, "admin_v2");
+    await user.click(editFormScope.getByRole("button", { name: t("admin.users.edit.submit") }));
+
+    await waitFor(() => {
+      expect(updatedPayload).toEqual({
+        username: "admin_v2",
+        disabled: false,
+      });
+    });
+    expect(
+      fetchMock.mock.calls.some((call) => {
+        const requestUrl = toRequestUrl(call[0]);
+        return requestUrl.pathname === "/v1/rbac/roles";
+      }),
+    ).toBe(false);
+  });
+
+  it("keeps the users workspace available when the role catalog request fails", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const requestUrl = toRequestUrl(input);
       const method = init?.method ?? "GET";
@@ -370,34 +489,30 @@ describe("AdminUsersPage", () => {
       }
 
       if (method === "GET" && path === "/v1/rbac/roles") {
-        return jsonResponse(200, [
+        return jsonResponse(
+          500,
           {
-            id: 1,
-            name: "admin_role",
-            permissions: [],
-            parent_role_ids: [],
+            detail: "Role catalog unavailable",
+            code: "internal_error",
+            request_id: "req-roles-500",
           },
-        ]);
+          "req-roles-500",
+        );
       }
 
       throw new Error(`Unhandled request: ${method} ${path}`);
     });
     vi.stubGlobal("fetch", fetchMock);
-    const user = userEvent.setup();
 
-    renderAdminUsersPage([IAM_PERMISSION.USERS_MANAGE]);
+    renderAdminUsersPage([IAM_PERMISSION.USERS_MANAGE, IAM_PERMISSION.ROLES_MANAGE]);
 
     expect(await screen.findByRole("heading", { name: t("admin.users.title") })).toBeInTheDocument();
+    expect(await screen.findByText("admin")).toBeInTheDocument();
+    expect(screen.getByLabelText(t("admin.users.create.username"))).toBeInTheDocument();
+    expect(await screen.findByText(t("admin.users.roles.hidden.error"))).toBeInTheDocument();
+    expect(await screen.findByText(/request_id=req-roles-500/)).toBeInTheDocument();
     expect(screen.queryByLabelText(t("admin.users.create.roles"))).not.toBeInTheDocument();
-
-    const adminRow = (await screen.findByText("admin")).closest("tr");
-    expect(adminRow).not.toBeNull();
-    if (!adminRow) {
-      throw new Error("Expected admin row");
-    }
-
-    await user.click(within(adminRow).getByRole("button", { name: t("admin.users.actions.edit") }));
-    expect(screen.queryByLabelText(t("admin.users.edit.roles"))).not.toBeInTheDocument();
+    expect(screen.queryByRole("columnheader", { name: t("admin.users.columns.roles") })).not.toBeInTheDocument();
   });
 
   it("clears invalid session token when RBAC endpoint responds 401", async () => {

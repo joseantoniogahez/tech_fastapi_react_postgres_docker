@@ -1,4 +1,4 @@
-name: books-prod
+name: tech-prod
 
 services:
   database:

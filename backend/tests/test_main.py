@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from types import SimpleNamespace
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import pytest
@@ -11,6 +12,7 @@ from pydantic import ValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.testclient import TestClient
 
+from app.core.common.openapi import normalize_generated_openapi_schema
 from app.core.config.settings import ApiSettings, AuthSettings
 from app.core.errors.setup.handlers import REQUEST_ID_HEADER, configure_exception_handlers
 from app.core.setup.cors import configure_cors
@@ -243,6 +245,79 @@ def test_generated_openapi_matches_normalized_validation_contracts() -> None:
 
     assert set(scope_request_schema["required"]) == {"scope"}
     assert "default" not in scope_request_schema["properties"]["scope"]
+
+
+def test_normalize_generated_openapi_schema_handles_non_dict_paths_and_operations() -> None:
+    openapi_schema = {
+        "paths": {
+            "/invalid-path-item": "not-a-dict",
+            "/users": {
+                "get": "not-a-dict",
+                "post": {
+                    "responses": {
+                        "200": {"description": "ok"},
+                        "422": {"description": "validation error"},
+                        422: {"description": "validation error int key"},
+                    }
+                },
+            },
+        },
+        "components": {
+            "schemas": {
+                "HTTPValidationError": {"type": "object"},
+                "ValidationError": {"type": "object"},
+            }
+        },
+    }
+
+    normalized = normalize_generated_openapi_schema(openapi_schema)
+
+    responses = normalized["paths"]["/users"]["post"]["responses"]
+    assert "422" not in responses
+    assert 422 not in responses
+    assert "HTTPValidationError" not in normalized["components"]["schemas"]
+    assert "ValidationError" not in normalized["components"]["schemas"]
+
+
+def test_normalize_generated_openapi_schema_keeps_referenced_components() -> None:
+    openapi_schema = {
+        "paths": {},
+        "components": {
+            "schemas": {
+                "HTTPValidationError": {"type": "object"},
+                "ReferencedSchema": {
+                    "type": "object",
+                    "properties": {
+                        "error": {"$ref": "#/components/schemas/HTTPValidationError"},
+                    },
+                },
+            }
+        },
+    }
+
+    normalized = normalize_generated_openapi_schema(openapi_schema)
+
+    assert "HTTPValidationError" in normalized["components"]["schemas"]
+
+
+def test_normalize_generated_openapi_schema_tolerates_missing_component_mappings() -> None:
+    schema_with_non_mapping_components: dict[str, Any] = {"paths": {}, "components": None}
+    schema_with_missing_named_schema: dict[str, Any] = {"paths": {}, "components": {"schemas": {}}}
+
+    normalized_non_mapping = normalize_generated_openapi_schema(schema_with_non_mapping_components)
+    normalized_missing_schema = normalize_generated_openapi_schema(schema_with_missing_named_schema)
+
+    assert normalized_non_mapping is schema_with_non_mapping_components
+    assert normalized_missing_schema is schema_with_missing_named_schema
+
+
+def test_create_app_openapi_returns_cached_schema_without_regenerating() -> None:
+    test_app = create_app(ApiSettings())
+    expected_schema: dict[str, Any] = {"openapi": "3.1.0", "paths": {}}
+    test_app.openapi_schema = expected_schema
+
+    with patch("app.core.setup.factory.get_openapi", side_effect=AssertionError("get_openapi should not run")):
+        assert test_app.openapi() is expected_schema
 
 
 def test_get_registered_routers_loads_catalog_modules_and_supports_fqcn() -> None:

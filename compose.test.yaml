@@ -1,4 +1,4 @@
-name: books-tests
+name: tech-tests
 
 services:
   backend-test:

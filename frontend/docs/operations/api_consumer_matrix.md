@@ -29,11 +29,15 @@ This document is the canonical consumer-side inventory of backend endpoints used
 | `/rbac/users/{user_id}/roles/{role_id}`             | `PUT`    | `shared/rbac/admin.ts`   | `assignRbacUserRole`        | `bearer`  | `UserRoleAssignmentResponse`                  |
 | `/rbac/users/{user_id}/roles/{role_id}`             | `DELETE` | `shared/rbac/admin.ts`   | `removeRbacUserRole`        | `bearer`  | `204 no-content`                              |
 
+## Conditional Consumer Notes
+
+- `readRbacRoles` is permission-gated on `/admin/users`: the page only requests `/rbac/roles` when the current session has `roles:manage`; otherwise it hides role-related controls and does not send `role_ids`.
+
 ## Error Contract Matrix
 
 | Endpoint            | Expected Error Codes                                                                                     | Request-ID Policy                                      | Frontend Handling Contract                                                                                                     |
 | ------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
-| `/token`            | `unauthorized`, `validation_error`, `internal_error`, `network_error`                                    | Use `X-Request-ID`/payload `request_id` when available | Show user-safe login error and append request-id diagnostic for support.                                                       |
+| `/token`            | `invalid_input`, `unauthorized`, `forbidden`, `internal_error`, `network_error`                          | Use `X-Request-ID`/payload `request_id` when available | Show user-safe login error and append request-id diagnostic for support.                                                       |
 | `/users/register`   | `invalid_input`, `conflict`, `internal_error`, `network_error`                                           | Use `X-Request-ID`/payload `request_id` when available | Show deterministic registration feedback, keep auth/session state unchanged, and expose diagnostics when available.            |
 | `/users/me`         | `invalid_input`, `unauthorized`, `forbidden`, `conflict`, `internal_error`, `network_error`              | Use `X-Request-ID`/payload `request_id` when available | `GET` unauthorized clears session; successful `PATCH` writes through `SESSION_QUERY_KEY`; unauthorized `PATCH` clears session. |
 | `/rbac/users*`      | `invalid_input`, `unauthorized`, `forbidden`, `not_found`, `conflict`, `network_error`, `internal_error` | Use `X-Request-ID`/payload `request_id` when available | Show admin error panel with backend detail and request-id diagnostic.                                                          |

@@ -73,7 +73,11 @@ Frontend URL: `http://localhost:3000`
 
 - `/`: public landing page
 - `/login`: public credential entry flow
+- `/register`: public self-service registration
 - `/welcome`: authenticated session entry point
+- `/profile`: authenticated current-user profile management
+- `/admin/assignments`: authenticated RBAC user-role assignments
+- `/admin/permissions`: authenticated RBAC role-permission assignments
 - `/admin/users`: authenticated RBAC user administration
 - `/admin/roles`: authenticated RBAC role and permission administration
 

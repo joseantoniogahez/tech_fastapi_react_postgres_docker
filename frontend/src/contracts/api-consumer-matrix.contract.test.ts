@@ -92,5 +92,8 @@ describe("api consumer matrix contracts", () => {
     expect(markdown).toContain("conflict");
     expect(markdown).toContain("internal_error");
     expect(markdown).toContain("network_error");
+    expect(markdown).toContain(
+      "`readRbacRoles` is permission-gated on `/admin/users`: the page only requests `/rbac/roles` when the current session has `roles:manage`; otherwise it hides role-related controls and does not send `role_ids`.",
+    );
   });
 });

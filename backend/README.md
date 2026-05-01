@@ -126,6 +126,7 @@ Base permissions:
 - `roles:manage`
 - `role_permissions:manage`
 - `user_roles:manage`
+- `users:manage`
 
 ## Testing and Validation
 

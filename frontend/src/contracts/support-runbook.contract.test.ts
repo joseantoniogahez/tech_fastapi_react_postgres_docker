@@ -23,7 +23,7 @@ describe("support diagnostics runbook contracts", () => {
     expect(markdown).toContain("`forbidden`");
     expect(markdown).toContain("`internal_error`");
     expect(markdown).toContain("`network_error`");
-    expect(markdown).toContain("`validation_error`");
+    expect(markdown).toContain("`invalid_input`");
     expect(markdown).toContain("request_id");
   });
 });

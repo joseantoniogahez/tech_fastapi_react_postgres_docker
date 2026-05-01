@@ -64,9 +64,14 @@ export const ES_MESSAGES = {
   "admin.users.edit.username": "Username",
   "admin.users.list.empty": "No hay usuarios registrados.",
   "admin.users.list.title": "Usuarios",
+  "admin.users.roles.hidden.error": "Los controles de roles estan ocultos porque no fue posible cargar el catalogo.",
+  "admin.users.roles.hidden.permission":
+    "Los controles de roles estan ocultos porque esta sesion no puede consultar el catalogo de roles.",
+  "admin.users.roles.loading": "Cargando catalogo de roles para esta vista...",
   "admin.users.status.active": "Activo",
   "admin.users.status.disabled": "Inactivo",
-  "admin.users.subtitle": "Crea, actualiza y deshabilita usuarios con asignacion de roles.",
+  "admin.users.subtitle":
+    "Crea, actualiza y deshabilita usuarios; los controles de roles aparecen cuando el catalogo esta disponible.",
   "admin.users.title": "Administracion de usuarios",
   "auth.login.badge": "Login",
   "auth.login.error.generic": "No fue posible iniciar sesion, intenta nuevamente.",
