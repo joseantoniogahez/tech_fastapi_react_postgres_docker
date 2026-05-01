@@ -17,8 +17,8 @@ For backend API behavior and authentication rules, see `../backend/README.md`.
 
 - Vite 7
 - React 19 + TypeScript
-- React Router
-- TanStack Query
+- React Router 7
+- TanStack Query 5
 - Tailwind CSS 4
 - Vitest + Testing Library
 - Playwright (smoke e2e)
@@ -26,7 +26,7 @@ For backend API behavior and authentication rules, see `../backend/README.md`.
 ## Prerequisites
 
 - Node.js `>=20.9.0`
-- npm `>=11`
+- npm `>=11` (`11.10.0` in Docker/CI)
 - Python environment with backend dependencies installed when running `npm run check` (required by `openapi:check`).
 
 ## Environment Variables

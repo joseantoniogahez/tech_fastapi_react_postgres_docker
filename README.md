@@ -4,7 +4,7 @@ Full-stack template application with JWT authentication and RBAC.
 
 - Backend: FastAPI + SQLAlchemy (async) + Alembic
 - Frontend: Vite + React 19 + TypeScript
-- Database: PostgreSQL 18
+- Database: PostgreSQL 18.2 (`postgres:18.2`)
 - Orchestration: Docker Compose
 
 ## README Map
@@ -18,6 +18,8 @@ Full-stack template application with JWT authentication and RBAC.
 - `backend/`: FastAPI API, models, services, migrations, backend tests
 - `backend/docs/`: backend documentation (API endpoints, auth, RBAC, DI, OpenAPI pattern)
 - `frontend/`: React SPA and frontend tests
+- `frontend/docs/`: frontend documentation (routing, API sync, runtime config, quality gates)
+- `.github/workflows/ci.yaml`: CI validation for repository hooks, backend, and frontend
 - `compose.yaml`: base multi-container stack
 - `compose.override.yaml`: local development overrides loaded automatically by `docker compose`
 - `compose.test.yaml`: isolated services for backend/frontend test runs
@@ -30,7 +32,8 @@ Full-stack template application with JWT authentication and RBAC.
 - Docker Desktop (or Docker Engine + Compose plugin)
 - Optional for local non-Docker workflows:
   - Python 3.14.3
-  - Node.js 22+
+  - Node.js >=20.9.0 (Node.js 22 is used by Docker/CI)
+  - npm >=11
 
 ## Environment Setup
 
@@ -81,7 +84,7 @@ docker compose -f compose.test.yaml run --rm frontend-test
 docker compose -f compose.test.yaml run --rm backend-test && docker compose -f compose.test.yaml run --rm frontend-test
 ```
 
-`compose.test.yaml` sets `name: books-tests`, so test resources stay isolated from local development.
+`compose.test.yaml` sets `name: tech-tests`, so test resources stay isolated from local development.
 
 ## GitHub Actions CI
 
@@ -112,7 +115,7 @@ Stop production stack:
 docker compose -f compose.yaml -f compose.prod.yaml down
 ```
 
-`compose.prod.yaml` sets `name: books-prod`, so production resources stay isolated from dev/test projects.
+`compose.prod.yaml` sets `name: tech-prod`, so production resources stay isolated from dev/test projects.
 
 If production `database` keeps restarting due to an old volume mount path, recreate the production volume:
 
@@ -134,7 +137,7 @@ The repository uses a root virtual environment for shared tooling and hooks.
 Local `pre-commit` hooks depend on more than the root Python environment:
 
 - Python 3.14.3 for Python-based hooks
-- Node.js 22+ and npm 11+ for `frontend` ESLint and typecheck hooks
+- Node.js >=20.9.0 (Node.js 22 in Docker/CI) and npm 11+ for `frontend` ESLint and typecheck hooks
 - Docker Desktop (or Docker Engine + Compose plugin) for `hadolint` and `docker compose config` hooks
 - A local `.env` copied from `.env_examples`, because compose validation hooks resolve environment variables from it
 
@@ -159,6 +162,8 @@ python -m pip install -r requirements.txt
 npm --prefix frontend install
 pre-commit install --install-hooks --hook-type pre-commit --hook-type pre-push
 ```
+
+The root `requirements.txt` is the umbrella Python manifest used by CI; it includes backend runtime dependencies, backend test dependencies, and repository tooling.
 
 Before running hooks, make sure Docker is running so local Docker-based hooks can start successfully.
 

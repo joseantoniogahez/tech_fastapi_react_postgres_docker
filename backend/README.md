@@ -37,13 +37,14 @@ Install dependencies:
 
 ```bash
 # requirements.txt at repo root is the umbrella manifest used by CI.
+# It includes backend runtime dependencies, backend test dependencies, and shared tooling.
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
 ## Runtime Configuration
 
-Default local profile (SQLite):
+Default local profile when backend environment variables are unset outside Docker (SQLite):
 
 - `APP_ENV=local`
 - `DB_TYPE=sqlite+aiosqlite`
@@ -59,6 +60,8 @@ JWT defaults for `local/test`:
 - `JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30`
 - `JWT_ISSUER=fastapi-template`
 - `JWT_AUDIENCE=fastapi-template-api`
+
+Repository-level Docker Compose uses `.env` values from `.env_examples` and runs the backend against PostgreSQL by default (`DB_TYPE=postgresql+asyncpg`, `DB_HOST=system_db`, `DB_NAME=main_db`).
 
 For network databases, set:
 
