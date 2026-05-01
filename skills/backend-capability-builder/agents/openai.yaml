@@ -1,0 +1,4 @@
+interface:
+  display_name: "Backend Capability Builder"
+  short_description: "Backend features and capabilities"
+  default_prompt: "Use $backend-capability-builder to implement a backend capability using the project playbook."

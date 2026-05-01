@@ -1,18 +1,18 @@
 from collections.abc import Mapping
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from app.core.errors.base import AppError
 
 
-class ErrorLayer(str, Enum):
+class ErrorLayer(StrEnum):
     DOMAIN = "domain"
     ROUTER = "router"
     SERVICE = "service"
     REPOSITORY = "repository"
 
 
-class DomainErrorType(str, Enum):
+class DomainErrorType(StrEnum):
     INVALID_INPUT = "invalid_input"
     UNAUTHORIZED = "unauthorized"
     FORBIDDEN = "forbidden"

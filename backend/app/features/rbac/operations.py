@@ -465,7 +465,9 @@ class RBACUserManagement:
         if new_password is None:
             return
 
-        assert current_password is not None
+        if current_password is None:
+            raise InvalidInputError(message="current_password is required to update password")
+
         if not self._password_service.verify_password(current_password, user.hashed_password):
             raise UnauthorizedError(message="Current password is invalid")
         if self._password_service.verify_password(new_password, user.hashed_password):

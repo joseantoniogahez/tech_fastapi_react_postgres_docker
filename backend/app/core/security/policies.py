@@ -1,15 +1,15 @@
 import re
-from enum import Enum
+from enum import StrEnum
 
 USERNAME_ALLOWED_DESCRIPTION = "lowercase letters, numbers, dot, underscore and hyphen"
 
 
-class UsernamePolicyErrorCode(str, Enum):
+class UsernamePolicyErrorCode(StrEnum):
     REQUIRED = "required"
     INVALID_FORMAT = "invalid_format"
 
 
-class PasswordPolicyRule(str, Enum):
+class PasswordPolicyRule(StrEnum):
     MIN_LENGTH = "min_length"
     LOWERCASE = "lowercase"
     UPPERCASE = "uppercase"

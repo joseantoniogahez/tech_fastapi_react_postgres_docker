@@ -1,0 +1,4 @@
+interface:
+  display_name: "Project Feature Builder"
+  short_description: "Full-stack feature delivery"
+  default_prompt: "Use $project-feature-builder to deliver a scoped full-stack feature in this starter kit."

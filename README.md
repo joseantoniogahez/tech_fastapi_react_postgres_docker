@@ -12,6 +12,8 @@ Full-stack template application with JWT authentication and RBAC.
 - `README.md` (this file): repository architecture and multi-service run flow.
 - `backend/README.md`: backend-only setup, API behavior, migrations, and backend tests.
 - `frontend/README.md`: frontend-only setup, scripts, tests, and API client configuration.
+- `AGENTS.md`: AI assistant operating guide for this starter kit.
+- `AI_GOVERNED_STARTER_KIT_PLAN.md`: roadmap for the AI-governed starter kit workflow.
 
 ## Project Structure
 
@@ -19,6 +21,8 @@ Full-stack template application with JWT authentication and RBAC.
 - `backend/docs/`: backend documentation (API endpoints, auth, RBAC, DI, OpenAPI pattern)
 - `frontend/`: React SPA and frontend tests
 - `frontend/docs/`: frontend documentation (routing, API sync, runtime config, quality gates)
+- `docs/ai/`: repository-level AI request templates
+- `scripts/`: repository-level developer and AI workflow helpers
 - `.github/workflows/ci.yaml`: CI validation for repository hooks, backend, and frontend
 - `compose.yaml`: base multi-container stack
 - `compose.override.yaml`: local development overrides loaded automatically by `docker compose`
@@ -177,4 +181,18 @@ Run heavier pre-push hooks locally:
 
 ```bash
 pre-commit run --all-files --hook-stage pre-push
+```
+
+## AI Workflow Helpers
+
+Preview feature scaffolds:
+
+```bash
+python scripts/scaffold_feature.py full-stack audit-log --route /admin/audit-log --with-model --dry-run
+```
+
+Preview new-app identity bootstrap:
+
+```bash
+python scripts/bootstrap_new_app.py --app-name "Example Portal" --description "A portal for example workflows."
 ```

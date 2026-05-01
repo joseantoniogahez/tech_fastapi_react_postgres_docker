@@ -62,5 +62,5 @@ class JwtTokenService:
                 issuer=self.issuer,
             )
             return AccessTokenPayload.model_validate(payload)
-        except (InvalidTokenError, ValidationError):
+        except InvalidTokenError, ValidationError:
             return None

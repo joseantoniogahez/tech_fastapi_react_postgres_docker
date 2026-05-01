@@ -1,0 +1,4 @@
+interface:
+  display_name: "Frontend Feature Builder"
+  short_description: "Frontend routes and UI features"
+  default_prompt: "Use $frontend-feature-builder to implement a frontend feature using the project playbook."

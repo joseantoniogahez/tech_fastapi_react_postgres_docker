@@ -1,0 +1,4 @@
+interface:
+  display_name: "Project Reviewer"
+  short_description: "Review changes against project gates"
+  default_prompt: "Use $project-reviewer to review a change against this starter kit governance model."

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from enum import Enum
+from enum import StrEnum
 from threading import RLock
 
 from pydantic import ValidationError
@@ -16,7 +16,7 @@ class DatabaseConfigError(Exception):
     pass
 
 
-class DatabaseConnectionType(str, Enum):
+class DatabaseConnectionType(StrEnum):
     AUTO = "auto"
     NETWORK = "network"
     FILE = "file"

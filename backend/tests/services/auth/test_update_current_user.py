@@ -69,6 +69,14 @@ def test_build_password_change_validates_current_and_new_password() -> None:
 
     assert service._build_password_change(current_user, UpdateCurrentUserCommand(username="john"), "john") == {}
 
+    with pytest.raises(InvalidInputError) as missing_current:
+        service._build_password_change(
+            current_user,
+            UpdateCurrentUserCommand(new_password="AnotherPass1"),  # pragma: allowlist secret
+            "john",
+        )
+    assert "current_password is required" in str(missing_current.value)
+
     with pytest.raises(UnauthorizedError) as invalid_current:
         service._build_password_change(
             current_user,

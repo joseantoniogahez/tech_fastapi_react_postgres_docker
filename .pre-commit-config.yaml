@@ -71,7 +71,7 @@ repos:
 
   # Fast spelling checks on source and docs, with generated artifacts excluded.
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.4.1
+    rev: v2.4.2
     hooks:
       - id: codespell
         args: [--ignore-words=.codespell-ignore-words.txt]
@@ -142,7 +142,7 @@ repos:
         args: [--disable, MD013]
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.11
+    rev: v0.15.12
     hooks:
       - id: ruff-check
         args: [--fix]
@@ -152,7 +152,7 @@ repos:
 
   # Optional security linting runs on pre-push with noisy password heuristics disabled.
   - repo: https://github.com/PyCQA/bandit
-    rev: 1.8.3
+    rev: 1.9.4
     hooks:
       - id: bandit
         stages: [pre-push]
@@ -170,7 +170,7 @@ repos:
 
   # Heavy Python type checking runs before push, not on every commit.
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.19.1
+    rev: v1.20.2
     hooks:
       - id: mypy
         stages: [pre-push]

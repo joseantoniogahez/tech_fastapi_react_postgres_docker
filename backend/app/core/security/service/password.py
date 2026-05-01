@@ -20,5 +20,5 @@ class Argon2PasswordService:
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:
         try:
             return self.password_hasher.verify(hashed_password, plain_password)
-        except (VerifyMismatchError, VerificationError, InvalidHashError):
+        except VerifyMismatchError, VerificationError, InvalidHashError:
             return False

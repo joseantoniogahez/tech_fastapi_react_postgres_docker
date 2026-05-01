@@ -443,6 +443,24 @@ def test_update_user_requires_current_password_when_new_password_is_provided() -
     asyncio.run(run_test())
 
 
+def test_apply_password_update_requires_current_password_when_new_password_is_provided() -> None:
+    service, repository, _ = _build_service()
+    user = User(id=3, username="reader_user", hashed_password="hash", disabled=False)
+    changes: dict[str, object] = {}
+
+    with pytest.raises(InvalidInputError, match="current_password is required"):
+        service._user_management._apply_password_update(  # pyright: ignore[reportPrivateUsage]
+            user=user,
+            current_password=None,
+            new_password="NewPass123",  # pragma: allowlist secret
+            normalized_username="reader_user",
+            changes=changes,
+        )
+
+    assert changes == {}
+    repository.update_user.assert_not_awaited()
+
+
 def test_update_user_replaces_role_set() -> None:
     service, repository, _ = _build_service()
     repository.get_user.return_value = User(id=3, username="reader_user", hashed_password="hash", disabled=False)

@@ -71,7 +71,9 @@ class AuthProfileUpdates:
         if update_data.new_password is None:
             return {}
 
-        assert update_data.current_password is not None
+        if update_data.current_password is None:
+            raise InvalidInputError(message="current_password is required to update password")
+
         if not self._password_service.verify_password(update_data.current_password, current_user.hashed_password):
             raise UnauthorizedError(message="Current password is invalid")
 
