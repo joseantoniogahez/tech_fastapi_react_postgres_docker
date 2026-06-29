@@ -8,6 +8,8 @@ from app.core.db.database import get_async_session_factory
 from app.core.db.ports import UnitOfWorkPort
 from app.core.db.uow import UnitOfWork
 from app.core.security.service import Argon2PasswordService, JwtTokenService, PasswordServicePort, TokenServicePort
+from app.features.audit_log.repository import AuditLogRepository
+from app.features.audit_log.service import AuditLogService, AuditLogServicePort
 from app.features.auth.repository import AuthRepository
 from app.features.auth.service import AuthService, AuthServicePort
 from app.features.outbox.repository import OutboxRepository
@@ -67,6 +69,13 @@ async def get_rbac_repository(session: DbSessionDependency):
 
 
 RBACRepositoryDependency = Annotated[RBACRepository, Depends(get_rbac_repository)]
+
+
+async def get_audit_log_repository(session: DbSessionDependency):
+    return AuditLogRepository(session=session)
+
+
+AuditLogRepositoryDependency = Annotated[AuditLogRepository, Depends(get_audit_log_repository)]
 
 
 async def get_outbox_repository(session: DbSessionDependency):
@@ -129,6 +138,15 @@ async def get_rbac_service(
 
 
 RBACServiceDependency = Annotated[RBACServicePort, Depends(get_rbac_service)]
+
+
+async def get_audit_log_service(
+    audit_log_repository: AuditLogRepositoryDependency,
+) -> AuditLogServicePort:
+    return AuditLogService(audit_log_repository=audit_log_repository)
+
+
+AuditLogServiceDependency = Annotated[AuditLogServicePort, Depends(get_audit_log_service)]
 
 
 async def get_outbox_service(

@@ -123,6 +123,54 @@ describe("accessibility route baseline", () => {
     expect((await axe.run(view.container, AXE_RUN_OPTIONS)).violations).toHaveLength(0);
   });
 
+  it("has no obvious accessibility violations on audit log route", async () => {
+    setAccessToken("audit-admin-token");
+
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const pathname = toRequestPathname(input);
+      if (pathname === "/v1/users/me") {
+        return {
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve({
+              id: 1,
+              username: "audit_admin",
+              disabled: false,
+              permissions: ["audit_logs:read"],
+            }),
+        } satisfies Partial<Response>;
+      }
+
+      if (pathname === "/v1/audit-log") {
+        return {
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve([
+              {
+                id: 1,
+                actor_user_id: null,
+                action: "system.seeded",
+                resource_type: "rbac",
+                resource_id: null,
+                summary: "Seeded RBAC catalog",
+                created_at: "2026-05-01T12:00:00Z",
+              },
+            ]),
+        } satisfies Partial<Response>;
+      }
+
+      throw new Error(`Unhandled accessibility request: ${pathname}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const view = renderRoute(["/admin/audit-log"]);
+
+    expect(await screen.findByRole("heading", { name: t("admin.auditLog.title") })).toBeInTheDocument();
+    expect((await axe.run(view.container, AXE_RUN_OPTIONS)).violations).toHaveLength(0);
+  });
+
   it("has no obvious accessibility violations on admin assignments route", async () => {
     setAccessToken("assignment-admin-token");
 

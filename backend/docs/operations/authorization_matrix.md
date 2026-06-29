@@ -9,6 +9,7 @@ Permission IDs follow `<resource>:<action>` with lowercase letters, numbers, and
 
 | Permission                | Name                         | Resource           | Action |
 | ------------------------- | ---------------------------- | ------------------ | ------ |
+| `audit_logs:read`         | Read audit logs              | `audit_logs`       | read   |
 | `roles:manage`            | Manage roles                 | `roles`            | manage |
 | `role_permissions:manage` | Manage role permissions      | `role_permissions` | manage |
 | `user_roles:manage`       | Manage user role assignments | `user_roles`       | manage |
@@ -22,6 +23,7 @@ This table is contract-checked by `tests/routers/test_authorization_policy_cover
 
 | Method   | Path                                                   | Permission                | Required Scope | Dependency Alias              |
 | -------- | ------------------------------------------------------ | ------------------------- | -------------- | ----------------------------- |
+| `GET`    | `/v1/audit-log`                                        | `audit_logs:read`         | `any`          | `AuditLogReadAuth`            |
 | `GET`    | `/v1/rbac/roles`                                       | `roles:manage`            | `any`          | `RBACRoleAdminAuth`           |
 | `GET`    | `/v1/rbac/permissions`                                 | `role_permissions:manage` | `any`          | `RBACRolePermissionAdminAuth` |
 | `GET`    | `/v1/rbac/users`                                       | `users:manage`            | `any`          | `RBACUserAdminAuth`           |
@@ -76,6 +78,7 @@ This table is contract-checked by `tests/routers/test_authorization_policy_cover
 
 | Method | Path                             | Access Level    | Permission                |
 | ------ | -------------------------------- | --------------- | ------------------------- |
+| `GET`  | `/v1/audit-log`                  | `permission`    | `audit_logs:read`         |
 | `GET`  | `/v1/health`                     | `public`        | No                        |
 | `GET`  | `/v1/users/me`                   | `authenticated` | No                        |
 | `GET`  | `/v1/rbac/roles`                 | `permission`    | `roles:manage`            |
@@ -89,10 +92,10 @@ This table is contract-checked by `tests/routers/test_authorization_policy_cover
 
 Seed source: `utils/rbac_bootstrap.py`
 
-| Role          | Base Permissions                                                               |
-| ------------- | ------------------------------------------------------------------------------ |
-| `admin_role`  | `roles:manage`, `role_permissions:manage`, `user_roles:manage`, `users:manage` |
-| `reader_role` | none                                                                           |
+| Role          | Base Permissions                                                                                  |
+| ------------- | ------------------------------------------------------------------------------------------------- |
+| `admin_role`  | `audit_logs:read`, `roles:manage`, `role_permissions:manage`, `user_roles:manage`, `users:manage` |
+| `reader_role` | none                                                                                              |
 
 ## Notes
 

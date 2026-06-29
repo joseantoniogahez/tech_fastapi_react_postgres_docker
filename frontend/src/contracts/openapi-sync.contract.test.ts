@@ -28,9 +28,11 @@ describe("openapi sync contracts", () => {
 
     const pathEntries = Object.entries(openapi.paths);
     const tokenEndpoint = pathEntries.find(([routePath]) => routePath.endsWith("/token"));
+    const auditLogEndpoint = pathEntries.find(([routePath]) => routePath.endsWith("/audit-log"));
     const meEndpoint = pathEntries.find(([routePath]) => routePath.endsWith("/users/me"));
 
     expect(tokenEndpoint).toBeTruthy();
+    expect(auditLogEndpoint).toBeTruthy();
     expect(meEndpoint).toBeTruthy();
   });
 });

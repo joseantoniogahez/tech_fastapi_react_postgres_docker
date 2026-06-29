@@ -15,6 +15,7 @@ const ROUTE_ROW_PATTERN = /^\|\s*`(?<path>\/[^`]*)`\s*\|\s*`(?<access>public|pro
 
 const ROUTE_OWNER_BY_COMPONENT: Record<string, string> = {
   AdminAssignmentsPage: "features/admin-assignments/AdminAssignmentsPage",
+  AuditLogPage: "features/audit-log/AuditLogPage",
   AdminPermissionsPage: "features/admin-permissions/AdminPermissionsPage",
   AdminRolesPage: "features/admin-roles/AdminRolesPage",
   AdminUsersPage: "features/admin-users/AdminUsersPage",
@@ -132,6 +133,7 @@ describe("route inventory contracts", () => {
     expect(markdown).toContain("`/*`");
     expect(markdown).toContain("`/register`");
     expect(markdown).toContain("`/profile`");
+    expect(markdown).toContain("Requires `audit_logs:read`; missing permission redirects to `/welcome`.");
     expect(markdown).toContain("Requires `user_roles:manage`; missing permission redirects to `/welcome`.");
     expect(markdown).toContain("Requires `role_permissions:manage`; role inventory falls back to manual ID without `roles:manage`.");
     expect(markdown).toContain(

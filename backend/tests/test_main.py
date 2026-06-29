@@ -336,6 +336,7 @@ def test_app_registers_routes_from_dynamic_catalog() -> None:
     paths = {route.path for route in app.routes if isinstance(route, APIRoute)}
     expected_paths = {
         "/v1/health",
+        "/v1/audit-log",
         "/v1/token",
         "/v1/users/me",
         "/v1/users/register",

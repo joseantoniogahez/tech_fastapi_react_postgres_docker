@@ -126,6 +126,7 @@ This bootstrap command:
 
 Base permissions:
 
+- `audit_logs:read`
 - `roles:manage`
 - `role_permissions:manage`
 - `user_roles:manage`
@@ -179,6 +180,7 @@ Current backend layout:
 
 - `app/core`: shared runtime, config, security, authorization, db, setup
 - `app/features/auth`: register, login, current-user profile
+- `app/features/audit_log`: administrator audit log review
 - `app/features/health`: health endpoint
 - `app/features/rbac`: roles, permissions, user-role assignment
 - `app/features/outbox`: outbox capability

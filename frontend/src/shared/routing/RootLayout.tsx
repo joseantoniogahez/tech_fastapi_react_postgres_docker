@@ -8,12 +8,13 @@ import { t } from "@/shared/i18n/ui-text";
 
 interface AdminMenuItem {
   key:
+    | "routing.nav.admin.auditLog"
     | "routing.nav.admin.assignments"
     | "routing.nav.admin.permissions"
     | "routing.nav.admin.users"
     | "routing.nav.admin.roles";
   permissionId: string;
-  to: "/admin/assignments" | "/admin/permissions" | "/admin/users" | "/admin/roles";
+  to: "/admin/audit-log" | "/admin/assignments" | "/admin/permissions" | "/admin/users" | "/admin/roles";
 }
 
 interface PrimaryMenuItem {
@@ -33,6 +34,11 @@ const PRIMARY_MENU_ITEMS: readonly PrimaryMenuItem[] = [
 ];
 
 const ADMIN_MENU_ITEMS: readonly AdminMenuItem[] = [
+  {
+    key: "routing.nav.admin.auditLog",
+    permissionId: IAM_PERMISSION.AUDIT_LOGS_READ,
+    to: "/admin/audit-log",
+  },
   {
     key: "routing.nav.admin.permissions",
     permissionId: IAM_PERMISSION.ROLE_PERMISSIONS_MANAGE,

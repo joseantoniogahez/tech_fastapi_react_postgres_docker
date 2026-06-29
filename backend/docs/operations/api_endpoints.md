@@ -16,6 +16,7 @@ All routes are versioned under `/v1`.
 
 | Method   | Path                                                   | Auth | Permission                | Main Request Contract                                       | Success Response                   | Common Error Statuses                    |
 | -------- | ------------------------------------------------------ | ---- | ------------------------- | ----------------------------------------------------------- | ---------------------------------- | ---------------------------------------- |
+| `GET`    | `/v1/audit-log`                                        | Yes  | `audit_logs:read`         | No body                                                     | `200` `AuditLogEntryResponse[]`    | `401`, `403`, `500`                      |
 | `GET`    | `/v1/health`                                           | No   | No                        | No body                                                     | `200` `{ "status": "ok" }`         | -                                        |
 | `POST`   | `/v1/token`                                            | No   | No                        | `application/x-www-form-urlencoded` (`username`,`password`) | `200` bearer token                 | `400`, `401`, `403`, `500`               |
 | `POST`   | `/v1/users/register`                                   | No   | No                        | JSON `RegisterUserRequest`                                  | `201` `AuthenticatedUserResponse`  | `400`, `409`, `500`                      |
@@ -49,6 +50,7 @@ This table classifies each `GET` endpoint as `public`, `authenticated`, or `perm
 
 | Method | Path                             | Access Level    | Permission                |
 | ------ | -------------------------------- | --------------- | ------------------------- |
+| `GET`  | `/v1/audit-log`                  | `permission`    | `audit_logs:read`         |
 | `GET`  | `/v1/health`                     | `public`        | No                        |
 | `GET`  | `/v1/users/me`                   | `authenticated` | No                        |
 | `GET`  | `/v1/rbac/roles`                 | `permission`    | `roles:manage`            |
@@ -82,3 +84,9 @@ This table classifies each `GET` endpoint as `public`, `authenticated`, or `perm
 - `GET /v1/rbac/users/{user_id}/roles` returns direct user-role assignments.
 - `GET /v1/rbac/roles/{role_id}/users` returns direct role-user assignments.
 - `DELETE /v1/rbac/roles/{role_id}` also removes related role links and user-role assignments.
+
+### Audit Log
+
+- `GET /v1/audit-log` returns the most recent audit log entries for administrator review.
+- Access requires `audit_logs:read`.
+- The current feature exposes existing audit rows only; automatic event capture is intentionally out of scope.

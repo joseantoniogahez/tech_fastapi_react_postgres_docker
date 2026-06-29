@@ -33,6 +33,7 @@ Current top-level shape:
 
 Current features:
 
+- `audit_log`
 - `health`
 - `auth`
 - `rbac`
@@ -48,6 +49,7 @@ Allowed shared imports:
 
 - features may import `app/core/*`
 - a feature may import another feature only for explicitly shared records/models that already exist in production flow
+- feature-local authorization aliases may import `app.features.auth.principal` when they need the authenticated principal type
 - repositories must not depend on router or setup modules
 
 ## Practical rules

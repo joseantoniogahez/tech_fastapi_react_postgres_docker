@@ -21,6 +21,12 @@ The gate evaluates production artifacts in `dist/assets`:
 - `npm --prefix frontend run build` must fail when any budget threshold is exceeded.
 - Build command runs `npm run perf:check` after Vite production build.
 
+## Threshold Rationale
+
+- `max_total_js_bytes` is `380000` bytes after adding the admin-only Audit Log route and API
+  consumer. The production build measured `376910` raw JavaScript bytes with gzip still below the
+  existing `115000` byte limit.
+
 ## Commands
 
 - Build with budget gate: `npm --prefix frontend run build`

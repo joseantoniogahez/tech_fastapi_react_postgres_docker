@@ -15,6 +15,7 @@ AUTHENTICATED_USER_EXAMPLE: dict[str, Any] = {
     "username": "admin",
     "disabled": False,
     "permissions": [
+        "audit_logs:read",
         "role_permissions:manage",
         "roles:manage",
         "user_roles:manage",

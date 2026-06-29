@@ -13,9 +13,11 @@ Main providers:
 - `get_db_session`
 - `get_unit_of_work`
 - `get_auth_repository`
+- `get_audit_log_repository`
 - `get_rbac_repository`
 - `get_outbox_repository`
 - `get_auth_service`
+- `get_audit_log_service`
 - `get_rbac_service`
 - `get_outbox_service`
 - `get_password_service`
@@ -24,6 +26,7 @@ Main providers:
 Feature-local auth dependencies live in:
 
 - `app/features/auth/dependencies.py`
+- `app/features/audit_log/dependencies.py`
 - `app/features/rbac/dependencies.py`
 - `app/core/authorization/dependencies.py`
 

@@ -6,6 +6,7 @@ from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from app.core.db.database import Base, get_database_url
+from app.features.audit_log.models import AuditLogEntry
 from app.features.auth.models import User
 from app.features.outbox.models import OutboxEvent
 from app.features.rbac.models import Permission, Role, RoleInheritance, RolePermission, UserRole
@@ -16,7 +17,7 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 # Keep explicit model references so Alembic sees all tables in metadata.
-_MODEL_REGISTRY = (User, Role, Permission, UserRole, RolePermission, RoleInheritance, OutboxEvent)
+_MODEL_REGISTRY = (User, Role, Permission, UserRole, RolePermission, RoleInheritance, OutboxEvent, AuditLogEntry)
 
 target_metadata = Base.metadata
 

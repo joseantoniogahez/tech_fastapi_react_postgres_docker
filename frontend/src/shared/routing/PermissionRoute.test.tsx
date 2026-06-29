@@ -7,7 +7,9 @@ import { createQueryClient } from "@/app/query-client";
 import { SESSION_QUERY_KEY } from "@/shared/auth/session";
 import { t } from "@/shared/i18n/ui-text";
 
-const renderAppAt = (path: "/admin/assignments" | "/admin/permissions" | "/admin/users" | "/admin/roles") => {
+type AdminRoutePath = "/admin/audit-log" | "/admin/assignments" | "/admin/permissions" | "/admin/users" | "/admin/roles";
+
+const renderAppAt = (path: AdminRoutePath) => {
   const queryClient = createQueryClient();
   queryClient.setQueryData(SESSION_QUERY_KEY, {
     id: 7,
@@ -34,6 +36,20 @@ describe("PermissionRoute", () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
     const router = renderAppAt("/admin/users");
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe("/welcome");
+    });
+    expect(
+      await screen.findByRole("heading", { name: t("welcome.greeting", { username: "reader_user" }) }),
+    ).toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalled();
+  }, 10_000);
+
+  it("redirects unauthorized direct navigation from /admin/audit-log to /welcome", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const router = renderAppAt("/admin/audit-log");
 
     await waitFor(() => {
       expect(router.state.location.pathname).toBe("/welcome");

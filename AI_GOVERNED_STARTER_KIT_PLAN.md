@@ -37,7 +37,12 @@ Status date: `2026-05-01`
   - Compiled and dry-run tested `scripts/scaffold_feature.py` and `scripts/bootstrap_new_app.py`.
   - Confirmed dry-runs do not write artifacts and invalid inputs fail with clear errors.
   - Confirmed governance docs reference the expected templates, checklists, scripts, and skills.
-- Next phase: Phase 7, iterate from real features.
+- Phase 7: `in progress`.
+  - Completed the first real-feature iteration with an admin-only Audit Log full-stack slice.
+  - Validated scaffold output, API/RBAC/OpenAPI contracts, route visibility, docs, backend tests,
+    frontend checks, e2e smoke coverage, and production build budget against a concrete feature.
+  - Captured the frontend raw JavaScript budget rebaseline required by the new admin route while
+    keeping the gzip budget unchanged.
 
 ## Purpose
 

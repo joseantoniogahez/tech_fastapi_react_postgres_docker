@@ -4,6 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { FRONTEND_DIR } from "@/contracts/docs";
+import { AUDIT_LOG_ENDPOINT_PATH } from "@/features/audit-log/api";
 import {
   RBAC_PERMISSIONS_ENDPOINT_PATH,
   RBAC_ROLE_USERS_ENDPOINT_PATH_TEMPLATE,
@@ -65,6 +66,7 @@ describe("api consumer matrix contracts", () => {
     expect(endpointKeys).toContain(`${REGISTER_USER_ENDPOINT_PATH}|POST|registerUser`);
     expect(endpointKeys).toContain(`${CURRENT_USER_ENDPOINT_PATH}|GET|readCurrentUser`);
     expect(endpointKeys).toContain(`${CURRENT_USER_ENDPOINT_PATH}|PATCH|updateCurrentUser`);
+    expect(endpointKeys).toContain(`${AUDIT_LOG_ENDPOINT_PATH}|GET|readAuditLogEntries`);
     expect(endpointKeys).toContain(`${RBAC_USERS_ENDPOINT_PATH}|GET|readAdminUsers`);
     expect(endpointKeys).toContain(`${RBAC_USERS_ENDPOINT_PATH}|POST|createAdminUser`);
     expect(endpointKeys).toContain(`${RBAC_USER_ROLES_ENDPOINT_PATH_TEMPLATE}|GET|readRbacUserRoles`);
@@ -87,6 +89,7 @@ describe("api consumer matrix contracts", () => {
     expect(markdown).toContain("X-Request-ID");
     expect(markdown).toContain("request_id");
     expect(markdown).toContain("permissions[]");
+    expect(markdown).toContain("audit_logs:read");
     expect(markdown).toContain("unauthorized");
     expect(markdown).toContain("forbidden");
     expect(markdown).toContain("conflict");

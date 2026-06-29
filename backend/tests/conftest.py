@@ -11,6 +11,7 @@ from starlette.testclient import TestClient
 from app.core.authorization import PERMISSION_SPECS
 from app.core.db.database import Base
 from app.core.setup.dependencies import get_db_session
+from app.features.audit_log.models import AuditLogEntry
 from app.features.auth.models import User
 from app.features.outbox.models import OutboxEvent
 from app.features.rbac.models import Permission, Role, RoleInheritance, RolePermission, UserRole
@@ -91,6 +92,7 @@ def mock_data(
         {"class": RolePermission, "json": mock_role_permissions},
         {"class": RoleInheritance, "json": []},
         {"class": OutboxEvent, "json": []},
+        {"class": AuditLogEntry, "json": []},
     ]
 
 

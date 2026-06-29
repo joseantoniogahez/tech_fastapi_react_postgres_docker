@@ -81,6 +81,7 @@ def test_admin_can_list_roles_and_permission_catalog(mock_client: TestClient) ->
     assert "admin_role" in by_name
     assert "reader_role" in by_name
     admin_permissions = {permission["id"]: permission["scope"] for permission in by_name["admin_role"]["permissions"]}
+    assert admin_permissions[PermissionId.AUDIT_LOG_READ] == "any"
     assert admin_permissions[PermissionId.ROLE_MANAGE] == "any"
     assert admin_permissions[PermissionId.ROLE_PERMISSION_MANAGE] == "any"
     assert admin_permissions[PermissionId.USER_ROLE_MANAGE] == "any"

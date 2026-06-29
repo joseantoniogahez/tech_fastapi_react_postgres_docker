@@ -11,6 +11,7 @@ OpenAPI metadata is owned by the feature that exposes the endpoint.
 - shared helpers: `app/core/common/openapi.py`
 - feature docs:
   - `app/features/auth/openapi.py`
+  - `app/features/audit_log/openapi.py`
   - `app/features/health/openapi.py`
   - `app/features/rbac/openapi/__init__.py`
   - `app/features/rbac/openapi/docs.py`

@@ -75,6 +75,7 @@ test.describe("frontend foundation smoke", () => {
             username: SMOKE_USERNAME,
             disabled: false,
             permissions: [
+              "audit_logs:read",
               "role_permissions:manage",
               "roles:manage",
               "user_roles:manage",
@@ -251,6 +252,58 @@ test.describe("frontend foundation smoke", () => {
     await expect(page.getByText(/request_id=req-admin-403/)).toBeVisible();
   });
 
+  test("loads admin audit log route for audit readers", async ({ page }) => {
+    await page.addInitScript((storageKey) => {
+      window.sessionStorage.setItem(storageKey, "seed-token");
+    }, ACCESS_TOKEN_STORAGE_KEY);
+
+    await page.route("**/v1/**", async (route) => {
+      const request = route.request();
+      const method = request.method();
+      const pathname = new URL(request.url()).pathname;
+
+      if (method === "GET" && pathname === "/v1/users/me") {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            id: 1,
+            username: SMOKE_USERNAME,
+            disabled: false,
+            permissions: ["audit_logs:read"],
+          }),
+        });
+        return;
+      }
+
+      if (method === "GET" && pathname === "/v1/audit-log") {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify([
+            {
+              id: 1,
+              actor_user_id: null,
+              action: "system.seeded",
+              resource_type: "rbac",
+              resource_id: null,
+              summary: "Seeded RBAC catalog",
+              created_at: "2026-05-01T12:00:00Z",
+            },
+          ]),
+        });
+        return;
+      }
+
+      throw new Error(`Unhandled API request in audit-log smoke: ${method} ${pathname}`);
+    });
+
+    await page.goto("/admin/audit-log");
+
+    await expect(page.getByRole("heading", { name: t("admin.auditLog.title") })).toBeVisible();
+    await expect(page.getByText("Seeded RBAC catalog")).toBeVisible();
+  });
+
   test("loads admin assignments workspace and shows direct-read diagnostics", async ({ page }) => {
     await page.addInitScript((storageKey) => {
       window.sessionStorage.setItem(storageKey, "seed-token");
@@ -408,6 +461,10 @@ test.describe("frontend foundation smoke", () => {
     await expect(page.getByRole("heading", { name: t("welcome.greeting", { username: SMOKE_USERNAME }) })).toBeVisible();
 
     await page.goto("/admin/permissions");
+    await expect(page).toHaveURL(/\/welcome$/);
+    await expect(page.getByRole("heading", { name: t("welcome.greeting", { username: SMOKE_USERNAME }) })).toBeVisible();
+
+    await page.goto("/admin/audit-log");
     await expect(page).toHaveURL(/\/welcome$/);
     await expect(page.getByRole("heading", { name: t("welcome.greeting", { username: SMOKE_USERNAME }) })).toBeVisible();
   });

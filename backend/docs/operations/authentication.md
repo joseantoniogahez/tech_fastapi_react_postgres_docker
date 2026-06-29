@@ -119,6 +119,7 @@ curl -X GET http://localhost:8000/v1/users/me \
   "username": "admin",
   "disabled": false,
   "permissions": [
+    "audit_logs:read",
     "role_permissions:manage",
     "roles:manage",
     "user_roles:manage",

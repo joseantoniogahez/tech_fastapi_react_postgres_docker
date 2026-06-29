@@ -7,6 +7,7 @@ This document defines the automated accessibility quality gate for foundation ro
 - Landing route (`/`)
 - Login route (`/login`)
 - Protected error state for session validation failure (`/welcome` fallback UI)
+- Selected admin routes, including users, assignments, permissions, and audit log.
 
 ## Automation Contract
 

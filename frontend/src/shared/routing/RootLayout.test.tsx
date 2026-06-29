@@ -65,6 +65,7 @@ describe("RootLayout", () => {
     expect(screen.getByRole("link", { name: t("routing.nav.profile") })).toBeInTheDocument();
     expect(screen.getByText(t("routing.nav.admin.group"))).toBeInTheDocument();
     expect(screen.getByRole("link", { name: t("routing.nav.admin.assignments") })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: t("routing.nav.admin.auditLog") })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: t("routing.nav.admin.permissions") })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: t("routing.nav.admin.users") })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: t("routing.nav.admin.roles") })).not.toBeInTheDocument();
@@ -83,6 +84,23 @@ describe("RootLayout", () => {
     await user.click(menuTrigger);
 
     expect(screen.getByRole("link", { name: t("routing.nav.admin.assignments") })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: t("routing.nav.admin.users") })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: t("routing.nav.admin.roles") })).not.toBeInTheDocument();
+  });
+
+  it("shows audit log nav item for audit_logs:read without other admin permissions", async () => {
+    renderLayout({
+      id: 6,
+      username: "audit_admin",
+      disabled: false,
+      permissions: [IAM_PERMISSION.AUDIT_LOGS_READ],
+    });
+
+    const menuTrigger = await screen.findByRole("button", { name: t("routing.nav.menu.toggle") });
+    const user = userEvent.setup();
+    await user.click(menuTrigger);
+
+    expect(screen.getByRole("link", { name: t("routing.nav.admin.auditLog") })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: t("routing.nav.admin.users") })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: t("routing.nav.admin.roles") })).not.toBeInTheDocument();
   });

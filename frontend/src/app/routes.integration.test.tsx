@@ -157,6 +157,52 @@ describe("routing integration", () => {
     expect(await screen.findByRole("heading", { name: t("admin.users.title") })).toBeInTheDocument();
   });
 
+  it("renders audit log route when session has audit_logs:read", async () => {
+    setAccessToken("valid-audit-admin-token");
+
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const pathname = toRequestPathname(input);
+
+      if (pathname === "/v1/users/me") {
+        return {
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve({
+              id: 1,
+              username: "audit_admin",
+              disabled: false,
+              permissions: ["audit_logs:read"],
+            }),
+        } satisfies Partial<Response>;
+      }
+
+      if (pathname === "/v1/audit-log") {
+        return {
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve([]),
+        } satisfies Partial<Response>;
+      }
+
+      throw new Error(`Unhandled route integration request: ${pathname}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const queryClient = createQueryClient();
+    const router = createMemoryRouter(appRoutes, {
+      initialEntries: ["/admin/audit-log"],
+    });
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByRole("heading", { name: t("admin.auditLog.title") })).toBeInTheDocument();
+  });
+
   it("renders admin assignments route when session has user_roles:manage", async () => {
     setAccessToken("valid-assignment-admin-token");
 

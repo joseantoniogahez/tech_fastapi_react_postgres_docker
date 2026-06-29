@@ -98,6 +98,69 @@
         "title": "AssignedUser",
         "type": "object"
       },
+      "AuditLogEntryResponse": {
+        "properties": {
+          "action": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Action",
+            "type": "string"
+          },
+          "actor_user_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor User Id"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "resource_id": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resource Id"
+          },
+          "resource_type": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Resource Type",
+            "type": "string"
+          },
+          "summary": {
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "action",
+          "resource_type",
+          "summary",
+          "created_at"
+        ],
+        "title": "AuditLogEntryResponse",
+        "type": "object"
+      },
       "AuthenticatedUserResponse": {
         "properties": {
           "disabled": {
@@ -522,6 +585,217 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/v1/audit-log": {
+      "get": {
+        "description": "Return the most recent audit log entries for administrator review. Requires `audit_logs:read`.",
+        "operationId": "list_audit_log_entries_v1_audit_log_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": [
+                  {
+                    "action": "user.created",
+                    "actor_user_id": 1,
+                    "created_at": "2026-05-01T12:00:00Z",
+                    "id": 1,
+                    "resource_id": "42",
+                    "resource_type": "user",
+                    "summary": "Created user ops_user"
+                  }
+                ],
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AuditLogEntryResponse"
+                  },
+                  "title": "Response List Audit Log Entries V1 Audit Log Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Audit log entries returned."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "unauthorized",
+                  "detail": "Could not validate credentials",
+                  "request_id": "req-example-1234",
+                  "status": 401
+                },
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "description": "Machine-readable domain error code.",
+                      "type": "string"
+                    },
+                    "detail": {
+                      "description": "Human-readable error message.",
+                      "type": "string"
+                    },
+                    "meta": {
+                      "description": "Optional structured error metadata."
+                    },
+                    "request_id": {
+                      "description": "Request correlation identifier echoed in the response header.",
+                      "example": "req-example-1234",
+                      "type": "string"
+                    },
+                    "status": {
+                      "description": "HTTP status code.",
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status",
+                    "code",
+                    "request_id"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Missing, expired, or invalid token.",
+            "headers": {
+              "WWW-Authenticate": {
+                "description": "Bearer authentication challenge.",
+                "schema": {
+                  "example": "Bearer",
+                  "type": "string"
+                }
+              },
+              "X-Request-ID": {
+                "description": "Request correlation identifier for diagnostics and support.",
+                "schema": {
+                  "example": "req-example-1234",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "forbidden",
+                  "detail": "Missing required permission: audit_logs:read",
+                  "meta": {
+                    "permission_id": "audit_logs:read"
+                  },
+                  "request_id": "req-example-1234",
+                  "status": 403
+                },
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "description": "Machine-readable domain error code.",
+                      "type": "string"
+                    },
+                    "detail": {
+                      "description": "Human-readable error message.",
+                      "type": "string"
+                    },
+                    "meta": {
+                      "description": "Optional structured error metadata."
+                    },
+                    "request_id": {
+                      "description": "Request correlation identifier echoed in the response header.",
+                      "example": "req-example-1234",
+                      "type": "string"
+                    },
+                    "status": {
+                      "description": "HTTP status code.",
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status",
+                    "code",
+                    "request_id"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "User lacks permission to read audit logs.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Request correlation identifier for diagnostics and support.",
+                "schema": {
+                  "example": "req-example-1234",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "internal_error",
+                  "detail": "Internal server error",
+                  "request_id": "req-example-1234",
+                  "status": 500
+                },
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "description": "Machine-readable domain error code.",
+                      "type": "string"
+                    },
+                    "detail": {
+                      "description": "Human-readable error message.",
+                      "type": "string"
+                    },
+                    "meta": {
+                      "description": "Optional structured error metadata."
+                    },
+                    "request_id": {
+                      "description": "Request correlation identifier echoed in the response header.",
+                      "example": "req-example-1234",
+                      "type": "string"
+                    },
+                    "status": {
+                      "description": "HTTP status code.",
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status",
+                    "code",
+                    "request_id"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Unhandled internal server error.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Request correlation identifier for diagnostics and support.",
+                "schema": {
+                  "example": "req-example-1234",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List audit log entries",
+        "tags": [
+          "audit-log"
+        ]
+      }
+    },
     "/v1/health": {
       "get": {
         "description": "Verify that the API is available and responding to requests.",
@@ -6801,6 +7075,7 @@
                   "disabled": false,
                   "id": 1,
                   "permissions": [
+                    "audit_logs:read",
                     "role_permissions:manage",
                     "roles:manage",
                     "user_roles:manage",
@@ -7331,6 +7606,7 @@
                   "disabled": false,
                   "id": 1,
                   "permissions": [
+                    "audit_logs:read",
                     "role_permissions:manage",
                     "roles:manage",
                     "user_roles:manage",

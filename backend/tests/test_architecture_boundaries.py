@@ -7,6 +7,7 @@ FEATURES_PATH = APP_PATH / "features"
 INIT_ALLOWED_ASSIGNMENTS: set[str] = set()
 
 ALLOWED_CROSS_FEATURE_IMPORT_PREFIXES: dict[str, tuple[str, ...]] = {
+    "audit_log": ("app.features.auth.principal",),
     "auth": ("app.features.rbac.models",),
     "rbac": (
         "app.features.auth.models",

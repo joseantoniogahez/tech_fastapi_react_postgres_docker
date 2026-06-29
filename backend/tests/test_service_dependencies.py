@@ -3,7 +3,15 @@ from unittest.mock import AsyncMock, MagicMock
 
 from starlette.requests import Request
 
-from app.core.setup.dependencies import get_outbox_repository, get_outbox_service, get_request_permission_scope_cache
+from app.core.setup.dependencies import (
+    get_audit_log_repository,
+    get_audit_log_service,
+    get_outbox_repository,
+    get_outbox_service,
+    get_request_permission_scope_cache,
+)
+from app.features.audit_log.repository import AuditLogRepository
+from app.features.audit_log.service import AuditLogService
 from app.features.outbox.repository import OutboxRepository
 from app.features.outbox.service import OutboxService
 
@@ -46,6 +54,30 @@ def test_get_outbox_repository_builds_outbox_repository() -> None:
 
         assert isinstance(repository, OutboxRepository)
         assert repository.session is session
+
+    asyncio.run(run_test())
+
+
+def test_get_audit_log_repository_builds_audit_log_repository() -> None:
+    session = MagicMock()
+
+    async def run_test() -> None:
+        repository = await get_audit_log_repository(session)
+
+        assert isinstance(repository, AuditLogRepository)
+        assert repository.session is session
+
+    asyncio.run(run_test())
+
+
+def test_get_audit_log_service_builds_audit_log_service() -> None:
+    audit_log_repository = MagicMock()
+
+    async def run_test() -> None:
+        service = await get_audit_log_service(audit_log_repository=audit_log_repository)
+
+        assert isinstance(service, AuditLogService)
+        assert service.audit_log_repository is audit_log_repository
 
     asyncio.run(run_test())
 

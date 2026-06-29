@@ -1,6 +1,7 @@
 import type { RouteObject } from "react-router-dom";
 
 import { AdminAssignmentsPage } from "@/features/admin-assignments/AdminAssignmentsPage";
+import { AuditLogPage } from "@/features/audit-log/AuditLogPage";
 import { AdminPermissionsPage } from "@/features/admin-permissions/AdminPermissionsPage";
 import { AdminRolesPage } from "@/features/admin-roles/AdminRolesPage";
 import { AdminUsersPage } from "@/features/admin-users/AdminUsersPage";
@@ -44,6 +45,15 @@ export const appRoutes: RouteObject[] = [
           {
             path: "profile",
             element: <ProfilePage />,
+          },
+          {
+            element: <PermissionRoute requiredPermission={IAM_PERMISSION.AUDIT_LOGS_READ} />,
+            children: [
+              {
+                path: "admin/audit-log",
+                element: <AuditLogPage />,
+              },
+            ],
           },
           {
             element: <PermissionRoute requiredPermission={IAM_PERMISSION.USERS_MANAGE} />,

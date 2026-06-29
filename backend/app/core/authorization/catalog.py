@@ -6,6 +6,7 @@ from app.core.authorization.types import (
 )
 
 PERMISSION_CATALOG: tuple[PermissionDefinition, ...] = (
+    PermissionDefinition(resource="audit_logs", action="read", name="Read audit logs"),
     PermissionDefinition(resource="roles", action="manage", name="Manage roles"),
     PermissionDefinition(resource="role_permissions", action="manage", name="Manage role permissions"),
     PermissionDefinition(resource="user_roles", action="manage", name="Manage user role assignments"),
@@ -28,6 +29,7 @@ _PERMISSION_IDS_BY_RESOURCE_ACTION: dict[tuple[str, str], str] = {
 
 
 class PermissionId:
+    AUDIT_LOG_READ = _PERMISSION_IDS_BY_RESOURCE_ACTION[("audit_logs", "read")]
     ROLE_MANAGE = _PERMISSION_IDS_BY_RESOURCE_ACTION[("roles", "manage")]
     ROLE_PERMISSION_MANAGE = _PERMISSION_IDS_BY_RESOURCE_ACTION[("role_permissions", "manage")]
     USER_ROLE_MANAGE = _PERMISSION_IDS_BY_RESOURCE_ACTION[("user_roles", "manage")]
@@ -37,6 +39,12 @@ class PermissionId:
 READ_ACCESS_POLICY_CATALOG: tuple[ReadAccessPolicyDefinition, ...] = (
     ReadAccessPolicyDefinition(method="GET", path="/v1/health", access_level=ReadAccessLevel.PUBLIC),
     ReadAccessPolicyDefinition(method="GET", path="/v1/users/me", access_level=ReadAccessLevel.AUTHENTICATED),
+    ReadAccessPolicyDefinition(
+        method="GET",
+        path="/v1/audit-log",
+        access_level=ReadAccessLevel.PERMISSION,
+        permission_id=PermissionId.AUDIT_LOG_READ,
+    ),
     ReadAccessPolicyDefinition(
         method="GET",
         path="/v1/rbac/roles",
