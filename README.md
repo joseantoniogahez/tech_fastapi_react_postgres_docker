@@ -13,7 +13,8 @@ Full-stack template application with JWT authentication and RBAC.
 - `backend/README.md`: backend-only setup, API behavior, migrations, and backend tests.
 - `frontend/README.md`: frontend-only setup, scripts, tests, and API client configuration.
 - `AGENTS.md`: AI assistant operating guide for this starter kit.
-- `AI_GOVERNED_STARTER_KIT_PLAN.md`: roadmap for the AI-governed starter kit workflow.
+- `docs/ai/start_new_project.md`: new-project bootstrap workflow for turning this starter kit into
+  a named application.
 
 ## Project Structure
 
@@ -21,7 +22,7 @@ Full-stack template application with JWT authentication and RBAC.
 - `backend/docs/`: backend documentation (API endpoints, auth, RBAC, DI, OpenAPI pattern)
 - `frontend/`: React SPA and frontend tests
 - `frontend/docs/`: frontend documentation (routing, API sync, runtime config, quality gates)
-- `docs/ai/`: repository-level AI request templates
+- `docs/ai/`: repository-level AI request templates and new-project bootstrap instructions
 - `scripts/`: repository-level developer and AI workflow helpers
 - `.github/workflows/ci.yaml`: CI validation for repository hooks, backend, and frontend
 - `compose.yaml`: base multi-container stack
@@ -52,6 +53,27 @@ Copy-Item .env_examples .env
 ```
 
 See `.env_examples` for variable descriptions.
+
+## Use This As a New Project Starter
+
+Start with the detailed guide:
+
+```bash
+docs/ai/start_new_project.md
+```
+
+Quick flow:
+
+```bash
+# preview identity changes
+python scripts/bootstrap_new_app.py --app-name "Example Portal" --description "A portal for example workflows."
+
+# apply after reviewing the preview
+python scripts/bootstrap_new_app.py --app-name "Example Portal" --description "A portal for example workflows." --write
+```
+
+Then review `git diff`, create `.env` from `.env_examples`, run the validation gates listed in
+`docs/ai/start_new_project.md`, and start the stack with `docker compose up --build`.
 
 ## Run Full Stack (Docker)
 

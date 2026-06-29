@@ -14,8 +14,8 @@ definition of done.
 ## Workflow
 
 1. Read `AGENTS.md`.
-1. Read `AI_GOVERNED_STARTER_KIT_PLAN.md` when the request affects AI governance, skill behavior,
-   starter-kit roadmap, or reusable workflow shape.
+1. Read `docs/ai/README.md` when the request affects AI governance, skill behavior, or reusable
+   workflow shape.
 1. Read `backend/docs/backend_playbook.md` and `frontend/docs/frontend_playbook.md`.
 1. Read both foundation status files:
    - `backend/docs/foundation_status.md`

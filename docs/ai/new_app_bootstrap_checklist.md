@@ -1,7 +1,8 @@
 # New App Bootstrap Checklist
 
 Use this checklist when turning this starter kit into a new application. Start from
-`docs/ai/templates/new_app_request.md` and keep `AGENTS.md` as the operating guide.
+`docs/ai/start_new_project.md`; when app identity or scope is still unclear, fill
+`docs/ai/templates/new_app_request.md`. Keep `AGENTS.md` as the operating guide.
 
 ## Before Changing Files
 

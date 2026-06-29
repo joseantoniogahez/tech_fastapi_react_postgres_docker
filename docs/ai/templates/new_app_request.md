@@ -87,7 +87,7 @@ Choose one:
 - Backend README or docs changes:
 - Frontend README or docs changes:
 - `AGENTS.md` changes:
-- AI-governance plan changes:
+- AI governance docs changes:
 - Foundation status changes:
 
 ## AI Execution Constraints
@@ -95,7 +95,8 @@ Choose one:
 Required docs to read before coding:
 
 - `AGENTS.md`
-- `AI_GOVERNED_STARTER_KIT_PLAN.md`
+- `docs/ai/start_new_project.md`
+- `docs/ai/new_app_bootstrap_checklist.md`
 - `README.md`
 - `backend/README.md`
 - `frontend/README.md`

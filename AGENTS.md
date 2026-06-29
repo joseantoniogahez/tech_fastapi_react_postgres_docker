@@ -22,7 +22,7 @@ Always start here, then read only the canonical docs needed for the task.
 
 For AI-governance work, also read:
 
-- `AI_GOVERNED_STARTER_KIT_PLAN.md`
+- `docs/ai/README.md`
 
 For repository setup and service overview, read:
 
@@ -77,7 +77,7 @@ Review work:
 
 New application bootstrap:
 
-- Read `AI_GOVERNED_STARTER_KIT_PLAN.md`.
+- Read `docs/ai/start_new_project.md`.
 - Read `docs/ai/new_app_bootstrap_checklist.md`.
 - Read root and service READMEs.
 - Use `docs/ai/templates/new_app_request.md` when app identity, scope, or bootstrap mode is not
@@ -142,9 +142,10 @@ Frontend docs to consider:
 
 AI governance docs to consider:
 
-- `AI_GOVERNED_STARTER_KIT_PLAN.md` when roadmap, phases, skills, or governance strategy changes.
 - `AGENTS.md` when task routing, required reading, non-negotiable rules, or validation expectations
   change.
+- `docs/ai/README.md` when repository-level AI workflow docs are added, removed, or reorganized.
+- `docs/ai/start_new_project.md` when the new-project bootstrap workflow changes.
 - `docs/ai/templates/*.md` when full-stack or new-app request shape changes.
 - `docs/ai/new_app_bootstrap_checklist.md` when new-app identity or validation workflow changes.
 

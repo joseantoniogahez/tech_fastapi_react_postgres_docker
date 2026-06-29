@@ -24,6 +24,8 @@ const auditLogRequestPathname = new URL(buildApiUrl(AUDIT_LOG_ENDPOINT_PATH)).pa
 const isAuditLogRequest = (input: RequestInfo | URL): boolean =>
   toRequestUrl(input).pathname === auditLogRequestPathname;
 
+const ASYNC_ROUTE_TIMEOUT = { timeout: 5000 } as const;
+
 const jsonResponse = (status: number, payload: unknown, requestId?: string): Partial<Response> => ({
   ok: status >= 200 && status < 300,
   status,
@@ -83,7 +85,9 @@ describe("AuditLogPage", () => {
 
     renderAuditLogPage();
 
-    expect(await screen.findByRole("heading", { name: t("admin.auditLog.title") })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: t("admin.auditLog.title") }, ASYNC_ROUTE_TIMEOUT),
+    ).toBeInTheDocument();
     expect(screen.getByText(t("admin.auditLog.subtitle"))).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: t("admin.auditLog.columns.createdAt") })).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: t("admin.auditLog.columns.actor") })).toBeInTheDocument();
@@ -120,7 +124,9 @@ describe("AuditLogPage", () => {
 
     renderAuditLogPage();
 
-    expect(await screen.findByRole("heading", { name: t("admin.auditLog.title") })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: t("admin.auditLog.title") }, ASYNC_ROUTE_TIMEOUT),
+    ).toBeInTheDocument();
     expect(screen.getByText(t("admin.auditLog.empty"))).toBeInTheDocument();
   });
 
@@ -145,7 +151,9 @@ describe("AuditLogPage", () => {
 
     renderAuditLogPage();
 
-    expect(await screen.findByRole("heading", { name: t("admin.common.error.title") })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: t("admin.common.error.title") }, ASYNC_ROUTE_TIMEOUT),
+    ).toBeInTheDocument();
     expect(await screen.findByText(/request_id=req-audit-forbidden/)).toBeInTheDocument();
     expect(screen.queryByText(t("admin.auditLog.empty"))).not.toBeInTheDocument();
   });

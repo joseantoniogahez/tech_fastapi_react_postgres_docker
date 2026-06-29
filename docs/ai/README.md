@@ -5,14 +5,14 @@ This folder contains repository-level AI workflow assets that apply across backe
 Use `AGENTS.md` as the root operating guide. Use these templates when a request needs a structured
 scope before implementation.
 
+## New Project Startup
+
+- `start_new_project.md`: practical workflow for turning this starter kit into a named application.
+
 ## Checklists
 
 - `new_app_bootstrap_checklist.md`: canonical checklist for renaming this starter kit into a new
   application.
-
-## Reports
-
-- `forward_testing_report.md`: latest controlled forward test of the AI governance workflow.
 
 ## Templates
 
