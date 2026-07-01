@@ -232,12 +232,17 @@ them as task-specific operating modes while keeping this file as the root orient
 they are not auto-discovered, invoke them by path or install/copy them into the active Codex skills
 location.
 
-Initial skill pack:
+Use `skills/README.md` as the project skill catalog and manual activation guide.
+Use `python scripts/install_project_skills.py` to preview or install project skills into the active
+Codex skills directory.
+
+Project skill pack:
 
 - `skills/project-feature-builder`
 - `skills/backend-capability-builder`
 - `skills/frontend-feature-builder`
 - `skills/project-reviewer`
+- `skills/new-app-bootstrapper`
 
 ## Scaffolds
 

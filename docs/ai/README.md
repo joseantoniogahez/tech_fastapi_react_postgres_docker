@@ -9,6 +9,17 @@ scope before implementation.
 
 - `start_new_project.md`: practical workflow for turning this starter kit into a named application.
 
+## Improvement Plans
+
+- `agent_capability_improvement_plan.md`: tracking plan for skills, plugin packaging, and MCP
+  decisions that improve agent portability across new projects.
+
+## Skills
+
+- `../../skills/README.md`: repository-local skill catalog and manual activation guide.
+- `../../scripts/install_project_skills.py`: previews or installs repository-local skills into the
+  active Codex skills directory. It writes only when `--write` is passed.
+
 ## Checklists
 
 - `new_app_bootstrap_checklist.md`: canonical checklist for renaming this starter kit into a new
@@ -33,4 +44,5 @@ Example:
 ```powershell
 python scripts/scaffold_feature.py full-stack audit-log --route /admin/audit-log --with-model --dry-run
 python scripts/bootstrap_new_app.py --app-name "Example Portal" --description "A portal for example workflows."
+python scripts/install_project_skills.py --skill new-app-bootstrapper
 ```
