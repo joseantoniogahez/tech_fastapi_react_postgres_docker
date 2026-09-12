@@ -1,4 +1,4 @@
-import { ApiError, getApiErrorRequestId } from "@/shared/api/errors";
+import { getApiErrorRequestId, hasApiErrorCause } from "@/shared/api/errors";
 import { emitObservabilityEvent } from "@/shared/observability/events";
 
 let runtimeHandlersInstalled = false;
@@ -23,31 +23,25 @@ export const installGlobalRuntimeErrorHandlers = (): void => {
   }
 
   runtimeErrorHandler = (event) => {
-    const requestId = getApiErrorRequestId(event.error);
     emitObservabilityEvent({
       event_name: "runtime.error",
       level: "error",
-      request_id: requestId,
+      request_id: getApiErrorRequestId(event.error),
       context: {
         message: resolveErrorMessage(event.error ?? event.message),
-        filename: event.filename || null,
-        lineno: event.lineno || null,
-        colno: event.colno || null,
       },
     });
   };
 
   runtimeUnhandledRejectionHandler = (event) => {
     const reason: unknown = event.reason;
-    const requestId = getApiErrorRequestId(reason);
-
     emitObservabilityEvent({
       event_name: "runtime.unhandled_rejection",
       level: "error",
-      request_id: requestId,
+      request_id: getApiErrorRequestId(reason),
       context: {
         reason: resolveErrorMessage(reason),
-        is_api_error: reason instanceof ApiError,
+        is_api_error: hasApiErrorCause(reason),
       },
     });
   };

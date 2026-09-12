@@ -53,7 +53,10 @@ Final transaction decision is always delegated to `UnitOfWork`.
 
 ## How services use UoW
 
-Write use cases wrap business logic with `async with self.unit_of_work`.
+Mutating use cases wrap business logic with `async with self.unit_of_work`. The requirement follows
+the use-case behavior, not the HTTP verb: a command that changes persistent state requires UoW even
+if exposed through an unusual verb, while an HTTP request that performs no persistent mutation does
+not acquire a transaction merely because of its verb.
 
 Examples in current code:
 

@@ -5,7 +5,7 @@ from app.core.config.settings import ApiSettings
 
 
 def configure_cors(app: FastAPI, settings: ApiSettings) -> None:
-    origins = [origin.strip() for origin in settings.API_CORS_ORIGINS.split(",") if origin.strip()]
+    origins = settings.cors_origins
     if not origins:
         return
 
@@ -13,6 +13,13 @@ def configure_cors(app: FastAPI, settings: ApiSettings) -> None:
         CORSMiddleware,
         allow_origins=origins,
         allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        allow_headers=["Accept", "Authorization", "Content-Type", "X-Request-ID"],
+        expose_headers=[
+            "X-Request-ID",
+            "X-RateLimit-Limit",
+            "X-RateLimit-Remaining",
+            "X-RateLimit-Reset",
+            "Retry-After",
+        ],
     )

@@ -16,6 +16,11 @@ This document defines dependency-risk thresholds and enforcement rules for front
   - `npm --prefix frontend run deps:audit`
 - Standard quality gate:
   - `npm --prefix frontend run check` includes dependency audit gate.
+- Operational failures fail closed: process errors, signals, unexpected exit statuses, npm error
+  reports, malformed JSON, missing vulnerability metadata, and invalid vulnerability counts reject
+  the gate.
+- Exit status `1` is accepted for evaluation only when npm returned a structurally valid audit
+  report; the configured `high` and `critical` thresholds then determine whether the gate passes.
 - If audit fails:
   1. Upgrade/replace vulnerable dependency.
   1. Re-run audit and confirm threshold compliance.

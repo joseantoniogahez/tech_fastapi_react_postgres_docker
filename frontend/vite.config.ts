@@ -24,6 +24,7 @@ export default defineConfig({
     globals: true,
     setupFiles: "./src/test/setup.ts",
     css: true,
+    maxWorkers: 4,
     exclude: ["e2e/**", "**/node_modules/**", "**/dist/**", "**/.{idea,git,cache,output,temp}/**"],
     coverage: {
       provider: "v8",

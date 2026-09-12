@@ -1,7 +1,7 @@
-<!--
+---
 name: project-reviewer
 description: Review changes against this AI-governed FastAPI, React, PostgreSQL, and Docker starter kit. Use when Codex is asked to review a diff, branch, pull request, implementation, architecture change, documentation change, or readiness state, especially for bugs, regressions, missing tests, docs drift, contract drift, auth or RBAC risk, security issues, and validation gaps.
--->
+---
 
 # Project Reviewer
 
@@ -18,6 +18,9 @@ summary.
 1. Read the affected playbooks, foundation status files, operation docs, architecture docs, and
    templates for that classification.
 1. Inspect the diff and nearby code.
+1. Delegate backend-only depth to `$backend-code-reviewer` and frontend-only depth to
+   `$frontend-code-reviewer`. For full-stack changes, apply both while retaining ownership of API
+   sync, shared contracts, and cross-surface regressions.
 1. Check behavior against documented contracts and validation expectations.
 1. Report findings first, ordered by severity, with file and line references.
 

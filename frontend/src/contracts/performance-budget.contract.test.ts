@@ -27,11 +27,15 @@ describe("performance budget contracts", () => {
 
   it("documents the budget gate commands and enforcement ownership", () => {
     const markdown = fs.readFileSync(DOC_PATH, "utf8");
+    const policy = JSON.parse(fs.readFileSync(POLICY_PATH, "utf8")) as Record<string, number>;
 
     expect(markdown).toContain("## Budget Policy Source");
     expect(markdown).toContain("## Enforcement Rule");
     expect(markdown).toContain("## Commands");
     expect(markdown).toContain("npm --prefix frontend run build");
     expect(markdown).toContain("npm --prefix frontend run perf:check");
+    for (const threshold of Object.values(policy)) {
+      expect(markdown).toContain(`\`${threshold}\``);
+    }
   });
 });

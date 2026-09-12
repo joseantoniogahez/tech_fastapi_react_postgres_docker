@@ -23,6 +23,9 @@ max-complexity = 10
 [tool.mypy]
 plugins = ["pydantic.mypy"]
 
+[tool.pytest.ini_options]
+addopts = "--basetemp=.pytest_tmp"
+
 [tool.coverage.run]
 source = ["backend/app"]
 omit = [

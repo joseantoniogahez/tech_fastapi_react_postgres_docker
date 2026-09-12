@@ -27,6 +27,8 @@ Dependency direction:
 
 1. Route definitions are centralized in `src/app/routes.tsx`.
 1. Shared API calls must flow through `src/shared/api/http.ts`.
+1. Every JSON API call must supply a runtime parser; endpoints contracted as `204` must use
+   `apiNoContentRequest` instead of the JSON path.
 1. API error normalization must be handled in `src/shared/api/errors.ts`.
 1. Session/auth state operations must be handled through `src/shared/auth/session.ts`.
 1. Token persistence behavior must be encapsulated in `src/shared/auth/storage.ts`.
@@ -58,13 +60,17 @@ Reference implementation: `src/app/query-policy.ts`.
 
 ## Mutation Policy Matrix
 
-| Domain               | Retry Policy                                     | Invalidation Strategy                                          |
-| -------------------- | ------------------------------------------------ | -------------------------------------------------------------- |
-| Default mutation     | Retry only transient/network errors, max 1 retry | Domain-driven; explicit in caller                              |
-| Auth login mutation  | No retry                                         | Write-through `SESSION_QUERY_KEY` and invalidate session query |
-| Auth logout mutation | No retry                                         | Clear `SESSION_QUERY_KEY` and invalidate session query         |
+| Domain               | Retry Policy                 | Invalidation Strategy                                          |
+| -------------------- | ---------------------------- | -------------------------------------------------------------- |
+| Default mutation     | No inherited automatic retry | Domain-driven; explicit in caller                              |
+| Auth login mutation  | No retry                     | Write-through `SESSION_QUERY_KEY` and invalidate session query |
+| Auth logout mutation | No retry                     | Clear `SESSION_QUERY_KEY` and invalidate session query         |
 
 Reference implementation: `src/app/mutation-policy.ts`.
+
+An individual mutation may opt in only after its backend contract proves idempotency and the
+consumer documents and tests that exception. No current mutation has such an exception. Query
+retry behavior remains governed independently by the query policy matrix.
 
 ## Request and Template Conventions
 
@@ -99,8 +105,8 @@ During coding:
 Before delivery:
 
 1. Run `npm --prefix frontend run check`.
-1. Run `npm --prefix frontend run build` when routing/build-sensitive changes are included.
-1. Run `.\.venv\Scripts\pre-commit.exe run --all-files`.
+1. Run `npm --prefix frontend run build`.
+1. Run `.\.venv\Scripts\python.exe -m pre_commit run --all-files`.
 
 ## Reviewer Checklist
 

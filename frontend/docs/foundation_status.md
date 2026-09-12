@@ -7,7 +7,7 @@ This document replaces backlog-style historical tracking for frontend foundation
 
 ## Current Foundation Snapshot
 
-Status date: `2026-05-01`
+Status date: `2026-08-28`
 
 - Foundation maturity: `ready for feature delivery`.
 - Architecture baseline enforced:
@@ -16,13 +16,25 @@ Status date: `2026-05-01`
 - Runtime and quality contracts active:
   - API contract sync and drift prevention.
   - API consumer/error matrix.
-  - Mutation/query policy contracts.
+  - Cross-stack `rate_limited` and `service_unavailable` authentication taxonomy with request-ID
+    diagnostics and no implicit retry semantics.
+  - Query transient retry plus a no-inherited-retry mutation default; idempotent mutation opt-ins
+    require an explicit proven backend contract.
+  - Mandatory runtime parsing for JSON API responses and a separate strict `204` no-content path,
+    with correlated `invalid_response` diagnostics for contract mismatches.
   - Runtime config validation and fail-fast boot.
-  - Browser security baseline.
-  - Observability and runtime error pipeline.
-  - Accessibility baseline gate.
+  - Browser security baseline enforced by generated production response headers and HTTP smoke.
+  - Privacy-safe API diagnostics, recursively redacted observability, and bounded cause-based
+    runtime error correlation.
+  - Accessibility baseline gate with axe/jsdom route coverage, token-level text/control contrast
+    thresholds, deterministic field focus outlines, and retained manual browser review.
+  - Vitest unit/coverage execution capped at four workers so jsdom integration cases retain the
+    five-second per-test contract without host-core-count saturation.
   - Performance budget gate.
-  - E2E smoke baseline for auth/routing/error journeys.
+  - E2E smoke baseline for auth/routing/error journeys with exact equality between the documented
+    and implemented scenario inventories.
+  - Mobile open-navigation reflow is covered at 320 and 390 CSS pixels for profile, users, and
+    roles, with full-width content and automatic menu closure after navigation.
 
 ## Active Guardrails
 

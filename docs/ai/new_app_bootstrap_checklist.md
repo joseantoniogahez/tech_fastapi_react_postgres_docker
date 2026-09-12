@@ -14,6 +14,10 @@ Use this checklist when turning this starter kit into a new application. Start f
 - [ ] Confirm integrations that are in scope and explicitly out of scope.
 - [ ] Confirm deployment expectations and local development ports.
 - [ ] Confirm allowed files and protected files.
+- [ ] Record the credential-free template repository URL and either a full 40-character commit or
+  an existing reviewed tag; do not use a mutable branch or symbolic revision.
+- [ ] Confirm the revision resolves to the checkout's full `HEAD` commit and capture its tree.
+- [ ] Confirm Git status is clean and no `docs/ai/template_provenance.json` exists.
 
 ## Identity Values to Decide
 
@@ -52,19 +56,21 @@ Use this checklist when turning this starter kit into a new application. Start f
 Preview changes first:
 
 ```powershell
-python scripts/bootstrap_new_app.py --app-name "Example Portal" --description "A portal for example workflows."
+.\.venv\Scripts\python.exe scripts\bootstrap_new_app.py --source-repository "https://github.com/example/foundation" --source-revision "<commit-or-tag>" --app-name "Example Portal" --description "A portal for example workflows."
 ```
 
 Apply only after reviewing the preview:
 
 ```powershell
-python scripts/bootstrap_new_app.py --app-name "Example Portal" --description "A portal for example workflows." --write
+.\.venv\Scripts\python.exe scripts\bootstrap_new_app.py --source-repository "https://github.com/example/foundation" --source-revision "<commit-or-tag>" --app-name "Example Portal" --description "A portal for example workflows." --write
 ```
 
 Use explicit overrides when defaults are not right:
 
 ```powershell
-python scripts/bootstrap_new_app.py `
+.\.venv\Scripts\python.exe scripts\bootstrap_new_app.py `
+  --source-repository "https://github.com/example/foundation" `
+  --source-revision "<commit-or-tag>" `
   --app-name "Example Portal" `
   --slug example-portal `
   --description "A portal for example workflows." `
@@ -76,13 +82,28 @@ python scripts/bootstrap_new_app.py `
 
 ## Validation After In-Place Bootstrap
 
-- [ ] Validate Docker Compose config for affected profiles.
-- [ ] Run `python -m pytest backend/tests`.
-- [ ] Run `python -m pytest backend/tests --cov=app --cov-report=term-missing:skip-covered --cov-fail-under=100`.
+- [ ] Run `docker compose --env-file .env_examples -f compose.yaml config -q`.
+- [ ] Run `docker compose --env-file .env_examples -f compose.yaml -f compose.override.yaml config -q`.
+- [ ] Run `docker compose --env-file .env_examples -f compose.test.yaml config -q`.
+- [ ] Run `docker compose --env-file .env_examples -f compose.yaml -f compose.test.yaml config -q`.
+- [ ] Run `docker compose --env-file .env_examples -f compose.yaml -f compose.prod.yaml config -q`.
+- [ ] Confirm `docs/ai/template_provenance.json` contains the resolved source commit/tree and derived identity.
+- [ ] Confirm a second bootstrap attempt is rejected; do not delete provenance to rerun it.
+- [ ] Confirm normal success and injected recoverable failures leave no `.bootstrap-*` transaction.
+- [ ] Confirm generated replacements retain the prior POSIX mode where applicable and receive the
+  destination directory's normal inherited ACL on Windows.
+- [ ] Confirm the checkout filesystem supports same-directory hardlinks; explicit per-file Windows
+  DACLs are outside bootstrap preservation and require a separate reviewed procedure.
+- [ ] If rollback is reported incomplete, retain its `.bootstrap-*` backups and stop for manual
+  recovery; do not rerun bootstrap.
+- [ ] After `SIGKILL`, power loss, or other uncatchable termination, treat the checkout as partial and
+  inspect retained transaction/adjacent install artifacts before continuing.
+- [ ] Run `.\.venv\Scripts\python.exe -m pytest backend/tests`.
+- [ ] Run `.\.venv\Scripts\python.exe -m pytest backend/tests --cov=app --cov-report=term-missing:skip-covered --cov-fail-under=100`.
 - [ ] Run `npm --prefix frontend run check`.
-- [ ] Run `npm --prefix frontend run test:e2e:ci` when route, auth, or error journeys change.
+- [ ] Run `npm --prefix frontend run test:e2e:ci`.
 - [ ] Run `npm --prefix frontend run build`.
-- [ ] Run `pre-commit run --all-files`.
+- [ ] Run `.\.venv\Scripts\python.exe -m pre_commit run --all-files`.
 
 ## Reviewer Checks
 
@@ -93,3 +114,4 @@ python scripts/bootstrap_new_app.py `
 - [ ] Database and container hostnames are clear and environment-specific.
 - [ ] No feature behavior changed unintentionally during rename work.
 - [ ] Documentation describes the new app without losing operational instructions.
+- [ ] Provenance remains committed and states that the application is not the pristine template.

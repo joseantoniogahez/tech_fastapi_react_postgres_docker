@@ -1,4 +1,7 @@
-import { emitObservabilityEvent } from "@/shared/observability/events";
+import {
+  emitObservabilityEvent,
+  sanitizeObservabilityValue,
+} from "@/shared/observability/events";
 
 describe("frontend observability events", () => {
   it("emits structured error events with request correlation", () => {
@@ -80,5 +83,41 @@ describe("frontend observability events", () => {
         ],
       },
     });
+  });
+
+  it("recursively redacts without flattening arrays, objects, or repeated values", () => {
+    const repeated = {
+      refresh_token: "private-refresh-token",
+      label: "preserved",
+    };
+    const context: Record<string, unknown> = {
+      profile: {
+        refresh_token: "private-refresh-token",
+        attempts: [
+          {
+            token: "private-token",
+            status: 401,
+          },
+        ],
+      },
+      repeated: [repeated, repeated],
+    };
+
+    expect(sanitizeObservabilityValue(context)).toEqual({
+      profile: {
+        refresh_token: "[redacted]",
+        attempts: [
+          {
+            token: "[redacted]",
+            status: 401,
+          },
+        ],
+      },
+      repeated: [
+        { refresh_token: "[redacted]", label: "preserved" },
+        { refresh_token: "[redacted]", label: "preserved" },
+      ],
+    });
+    expect(repeated.refresh_token).toBe("private-refresh-token");
   });
 });

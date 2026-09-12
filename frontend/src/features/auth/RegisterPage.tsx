@@ -128,7 +128,7 @@ export const RegisterPage = () => {
             </span>
             <input
               autoComplete="username"
-              className="w-full rounded-2xl border border-[var(--app-border)] bg-white px-4 py-3 text-base outline-none transition focus:border-[var(--app-accent)]"
+              className="w-full rounded-2xl border border-[var(--app-border)] bg-white px-4 py-3 text-base outline-none transition focus:border-[var(--app-accent)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-2 focus-visible:outline-[var(--app-accent)]"
               name="username"
               onChange={(event) =>
                 setFormState((previous) => ({ ...previous, username: event.target.value }))
@@ -144,7 +144,7 @@ export const RegisterPage = () => {
             </span>
             <input
               autoComplete="new-password"
-              className="w-full rounded-2xl border border-[var(--app-border)] bg-white px-4 py-3 text-base outline-none transition focus:border-[var(--app-accent)]"
+              className="w-full rounded-2xl border border-[var(--app-border)] bg-white px-4 py-3 text-base outline-none transition focus:border-[var(--app-accent)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-2 focus-visible:outline-[var(--app-accent)]"
               minLength={8}
               name="password"
               onChange={(event) =>

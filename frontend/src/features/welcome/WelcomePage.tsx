@@ -1,38 +1,13 @@
-import { startTransition } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
-
-import { authLogoutMutationPolicy } from "@/app/mutation-policy";
-import { SESSION_QUERY_KEY, logout, useSession } from "@/shared/auth/session";
+import { useSession } from "@/shared/auth/session";
 import { t } from "@/shared/i18n/ui-text";
 import { CenteredMessage } from "@/shared/ui/CenteredMessage";
 
 export const WelcomePage = () => {
   const { data: user } = useSession();
-  const queryClient = useQueryClient();
-  const navigate = useNavigate();
-
-  const logoutMutation = useMutation({
-    ...authLogoutMutationPolicy,
-    mutationFn: () => {
-      logout();
-    },
-    onSuccess: async () => {
-      queryClient.setQueryData(SESSION_QUERY_KEY, null);
-      await queryClient.invalidateQueries({ queryKey: SESSION_QUERY_KEY });
-      startTransition(() => {
-        void navigate("/login", { replace: true });
-      });
-    },
-  });
 
   if (!user) {
     return <CenteredMessage title={t("welcome.noSession.title")} body={t("welcome.noSession.body")} />;
   }
-
-  const closeSession = () => {
-    logoutMutation.mutate();
-  };
 
   return (
     <main className="flex min-h-screen items-center justify-center px-6 py-12">
@@ -44,16 +19,6 @@ export const WelcomePage = () => {
         <p className="fade-rise-delay-2 mt-6 max-w-xl text-base text-[var(--app-subtle)] sm:text-lg">
           {t("welcome.sessionActive.body")}
         </p>
-        <div className="fade-rise-delay-2 mt-10">
-          <button
-            className="rounded-full border border-[var(--app-border)] bg-transparent px-5 py-3 text-sm font-semibold text-[var(--app-ink)] transition hover:border-[var(--app-accent)] hover:text-[var(--app-accent)]"
-            disabled={logoutMutation.isPending}
-            onClick={closeSession}
-            type="button"
-          >
-            {logoutMutation.isPending ? t("welcome.logout.pending") : t("welcome.logout")}
-          </button>
-        </div>
       </section>
     </main>
   );

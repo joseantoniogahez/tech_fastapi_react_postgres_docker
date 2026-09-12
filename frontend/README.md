@@ -25,13 +25,19 @@ For backend API behavior and authentication rules, see `../backend/README.md`.
 
 ## Prerequisites
 
-- Node.js `>=20.9.0`
-- npm `>=11` (`11.10.0` in Docker/CI)
+- Node.js `>=22.22.2 <23` (`22.23.1` is pinned in Docker/CI)
+- npm `12.0.x` (`12.0.1` is pinned in Docker/CI)
 - Python environment with backend dependencies installed when running `npm run check` (required by `openapi:check`).
+
+The committed npm policy allows only the exact `esbuild@0.27.3` dependency install script and
+fails installation if a new unreviewed install script appears.
+
+OpenAPI sync uses the repository-root `.venv` by default. CI or another explicitly provisioned
+environment without that directory can set `OPENAPI_PYTHON` to its governed Python executable.
 
 ## Environment Variables
 
-Frontend runtime variables:
+Vite build inputs:
 
 - `VITE_API_ORIGIN` (example: `http://localhost:8000`)
 - `VITE_API_BASE_PATH` (example: `/v1`)
@@ -53,6 +59,11 @@ export VITE_API_ORIGIN="http://localhost:8000"
 export VITE_API_BASE_PATH="/v1"
 ```
 
+Vite embeds these values in the static assets during `npm run build`. The browser validates the
+embedded configuration when the application starts. `VITE_API_ORIGIN` must be a canonical HTTP(S)
+origin without credentials, an API path, a query string, or a fragment; put the API prefix in
+`VITE_API_BASE_PATH`. Changing either value requires rebuilding and redeploying the bundle.
+
 ## Development Environment
 
 Install dependencies from `frontend/`:
@@ -71,16 +82,7 @@ Frontend URL: `http://localhost:3000`
 
 ## Current Route Surface
 
-- `/`: public landing page
-- `/login`: public credential entry flow
-- `/register`: public self-service registration
-- `/welcome`: authenticated session entry point
-- `/profile`: authenticated current-user profile management
-- `/admin/audit-log`: authenticated administrator audit log review
-- `/admin/assignments`: authenticated RBAC user-role assignments
-- `/admin/permissions`: authenticated RBAC role-permission assignments
-- `/admin/users`: authenticated RBAC user administration
-- `/admin/roles`: authenticated RBAC role and permission administration
+See `docs/operations/route_inventory.md` for the canonical route and access-policy inventory.
 
 ## Testing and Quality Gates
 
@@ -92,6 +94,7 @@ npm run typecheck
 npm run test
 npm run test:coverage
 npm run test:a11y
+npm run test:dependency-audit
 npm run e2e:install
 npm run test:e2e:ci
 npm run check
@@ -104,6 +107,8 @@ Run `npm run e2e:install` once per machine before `npm run test:e2e` or `npm run
 - lint
 - typecheck
 - coverage gate
+- security-header generator and checker contract tests
+- fail-closed dependency-audit contract tests
 - OpenAPI artifact freshness gate (`openapi:check`)
 - dependency audit gate (`deps:audit`)
 
@@ -129,6 +134,11 @@ npm run preview
 
 Important: Vite variables are resolved at build time. If `VITE_API_ORIGIN` or `VITE_API_BASE_PATH` changes, rebuild before releasing.
 
+The production image also derives its `Content-Security-Policy` from the validated
+`VITE_API_ORIGIN` during that build. Pinned `serve` sends the generated policy and the remaining
+browser-security baseline as HTTP response headers. Container-start environment changes cannot
+change the already-built bundle or CSP.
+
 For containerized production deployment, use repository-level compose commands from `../README.md`.
 
 ## Scripts
@@ -141,6 +151,8 @@ npm run test           # run unit/integration tests
 npm run test:coverage  # run tests with coverage thresholds
 npm run test:watch     # run tests in watch mode
 npm run test:a11y      # run accessibility route baseline tests
+npm run test:dependency-audit # test fail-closed npm audit handling
+npm run test:security-headers # test header generation and the HTTP checker
 npm run e2e:install    # install Playwright Chromium locally
 npm run test:e2e       # run Playwright smoke suite
 npm run test:e2e:ci    # CI-equivalent Playwright smoke suite
@@ -151,4 +163,10 @@ npm run perf:check     # enforce bundle budget contract
 npm run check          # lint + typecheck + coverage + openapi drift + dependency audit
 npm run build          # build production bundle + performance budget gate
 npm run preview        # serve production bundle locally
+```
+
+Inspect the real headers of an already-running production frontend, including its SPA fallback:
+
+```bash
+node scripts/security-headers-smoke.mjs http://127.0.0.1:3000 http://localhost:8000
 ```

@@ -13,6 +13,58 @@ const mockUnhandledApiRequests = async (page: Page): Promise<void> => {
 };
 
 test.describe("frontend foundation smoke", () => {
+  test("keeps profile and administration usable with mobile navigation open", async ({ page }) => {
+    await page.addInitScript((storageKey) => {
+      window.sessionStorage.setItem(storageKey, "seed-token");
+    }, ACCESS_TOKEN_STORAGE_KEY);
+    await page.route("**/v1/**", async (route) => {
+      const request = route.request();
+      const pathname = new URL(request.url()).pathname;
+      if (request.method() === "GET" && pathname === "/v1/users/me") {
+        await route.fulfill({ json: {
+          id: 1, username: SMOKE_USERNAME, disabled: false,
+          permissions: ["users:manage", "roles:manage"],
+        } });
+        return;
+      }
+      if (request.method() === "GET" && ["/v1/rbac/users", "/v1/rbac/roles"].includes(pathname)) {
+        const records = pathname === "/v1/rbac/users"
+          ? [{ id: 1, username: SMOKE_USERNAME, disabled: false, role_ids: [1] }]
+          : [{ id: 1, name: "Smoke reviewer", permissions: [], parent_role_ids: [] }];
+        await route.fulfill({ json: records });
+        return;
+      }
+      throw new Error(`Unhandled API request in mobile navigation smoke: ${request.method()} ${pathname}`);
+    });
+
+    for (const width of [320, 390]) {
+      await page.setViewportSize({ width, height: 844 });
+      for (const [path, title] of [
+        ["/profile", "profile.title"],
+        ["/admin/users", "admin.users.title"],
+        ["/admin/roles", "admin.roles.title"],
+      ] as const) {
+        await page.goto(path);
+        const toggle = page.getByRole("button", { name: t("routing.nav.menu.toggle") });
+        await expect(toggle).toBeVisible();
+        await toggle.click();
+        await expect(toggle).toHaveAttribute("aria-expanded", "true");
+        const navigation = page.getByRole("navigation");
+        await expect(navigation).toBeVisible();
+        await expect(page.getByRole("main").getByRole("heading", { name: t(title), exact: true })).toBeVisible();
+        await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+        const mainBounds = await page.getByRole("main").boundingBox();
+        const navBounds = await navigation.boundingBox();
+        expect(mainBounds!.width).toBeGreaterThanOrEqual(width - 32);
+        expect(mainBounds!.y).toBeGreaterThanOrEqual(navBounds!.y + navBounds!.height);
+        await navigation.getByRole("link", { name: t("routing.nav.home"), exact: true }).click();
+        await expect(page).toHaveURL(/\/welcome$/);
+        await expect(toggle).toHaveAttribute("aria-expanded", "false");
+        await expect(navigation).toBeHidden();
+      }
+    }
+  });
+
   test("navigates to register and completes the registration flow", async ({ page }) => {
     await page.route("**/v1/**", async (route) => {
       const request = route.request();
@@ -192,6 +244,37 @@ test.describe("frontend foundation smoke", () => {
 
     await expect(page.getByText(t("profile.success.body", { username: "smoke-user-v2" }))).toBeVisible();
     await expect(page.getByText(t("profile.currentUser", { username: "smoke-user-v2" }))).toBeVisible();
+  });
+
+  test("logs out from the authenticated layout and denies protected history return", async ({ page }) => {
+    await page.addInitScript((storageKey) => {
+      window.sessionStorage.setItem(storageKey, "seed-token");
+    }, ACCESS_TOKEN_STORAGE_KEY);
+
+    await page.route("**/v1/**", async (route) => {
+      const request = route.request();
+      const pathname = new URL(request.url()).pathname;
+      if (request.method() === "GET" && pathname === "/v1/users/me") {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ id: 1, username: SMOKE_USERNAME, disabled: false, permissions: [] }),
+        });
+        return;
+      }
+      throw new Error(`Unhandled API request in logout smoke: ${request.method()} ${pathname}`);
+    });
+
+    await page.goto("/welcome");
+    await expect(page.getByRole("heading", { name: t("welcome.greeting", { username: SMOKE_USERNAME }) })).toBeVisible();
+    await page.goto("/profile");
+    await expect(page.getByRole("heading", { name: t("profile.title") })).toBeVisible();
+    await page.getByRole("button", { name: t("welcome.logout") }).click();
+    await expect(page).toHaveURL(/\/login$/);
+    await expect(page.evaluate((storageKey) => window.sessionStorage.getItem(storageKey), ACCESS_TOKEN_STORAGE_KEY)).resolves.toBeNull();
+
+    await page.goBack();
+    await expect(page).toHaveURL(/\/login$/);
   });
 
   test("renders admin-users error diagnostics on forbidden RBAC access", async ({ page }) => {

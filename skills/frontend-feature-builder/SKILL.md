@@ -1,7 +1,7 @@
-<!--
+---
 name: frontend-feature-builder
 description: Frontend feature delivery for this Vite, React, TypeScript, React Router, TanStack Query, and Tailwind starter kit. Use when Codex must add or change frontend-only behavior such as routes, pages, shared UI, API consumers, auth-gated screens, RBAC UI, query or mutation flows, runtime config, accessibility, e2e smoke coverage, tests, and frontend documentation.
--->
+---
 
 # Frontend Feature Builder
 
@@ -16,13 +16,14 @@ quality gates green.
 1. Read `frontend/docs/frontend_playbook.md`.
 1. Read `frontend/docs/foundation_status.md`.
 1. Read affected operation docs in `frontend/docs/operations/`.
+1. Read product documentation only when a derived application explicitly declares it canonical.
 1. Use `frontend/docs/templates/feature_request.md`, `integration_request.md`, or
    `code_change_request.md` when the request needs clearer acceptance criteria.
 1. Confirm route, API, auth, state, UX, a11y, observability, performance, and validation impact.
-1. Use `python scripts/scaffold_feature.py frontend <feature-name> --dry-run` to preview new page
-   structure when adding a new feature route.
-1. Use `python scripts/scaffold_feature.py frontend <feature-name>` only after target paths and
-   route scope are clear.
+1. Use `\.\.venv\Scripts\python.exe scripts\scaffold_feature.py --dry-run frontend <feature-name>`
+   on PowerShell or `./.venv/bin/python scripts/scaffold_feature.py --dry-run frontend
+   <feature-name>` on POSIX to preview new page structure.
+1. Remove `--dry-run` only after target paths and route scope are clear.
 1. Implement within the existing frontend architecture.
 1. Add or update tests and docs in the same change.
 1. Run relevant frontend validation gates.
@@ -92,7 +93,8 @@ Also run:
 
 - `npm --prefix frontend run test:e2e:ci` when auth, routing, or error journeys change.
 - `npm --prefix frontend run openapi:check` when API output should be unchanged.
-- `pre-commit run --all-files` when docs, hooks, formatting, Docker, or shared config changed.
+- `\.\.venv\Scripts\python.exe -m pre_commit run --all-files` when docs, hooks, formatting,
+  Docker, or shared config changed; use `./.venv/bin/python` on POSIX.
 
 ## Final Report
 

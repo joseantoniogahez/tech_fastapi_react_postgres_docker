@@ -173,8 +173,9 @@ EXAMPLE_DOC: dict[str, Any] = {}
 - [ ] Update `backend/docs/operations/authorization_matrix.md` when permissions change.
 - [ ] Update `backend/docs/operations/error_mapping.md` when domain errors change.
 - [ ] Add Alembic migration if models or constraints change.
-- [ ] Run `python -m pytest backend/tests`.
-- [ ] Run `python -m pytest backend/tests --cov=app --cov-report=term-missing:skip-covered --cov-fail-under=100`.
+- [ ] Run `.\\.venv\\Scripts\\python.exe -m pytest backend\\tests` on PowerShell.
+- [ ] Run `./.venv/bin/python -m pytest backend/tests` on POSIX.
+- [ ] Run the coverage gate with the same interpreter and `-m pytest`.
 ''',
         ),
     ]
@@ -260,7 +261,8 @@ def full_stack_files(root: Path, names: FeatureNames) -> list[ScaffoldFile]:
 - [ ] Run `npm --prefix frontend run openapi:sync` when backend OpenAPI output changes.
 - [ ] Run backend validation.
 - [ ] Run frontend validation.
-- [ ] Run `pre-commit run --all-files` before push-level confidence when practical.
+- [ ] Run `.\\.venv\\Scripts\\python.exe -m pre_commit run --all-files` on PowerShell or the
+      equivalent `./.venv/bin/python -m pre_commit run --all-files` on POSIX.
 ''',
         )
     ]

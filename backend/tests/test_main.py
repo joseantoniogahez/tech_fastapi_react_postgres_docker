@@ -12,8 +12,9 @@ from pydantic import ValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.testclient import TestClient
 
+from app.core.common.observability import resolve_request_id
 from app.core.common.openapi import normalize_generated_openapi_schema
-from app.core.config.settings import ApiSettings, AuthSettings
+from app.core.config.settings import ApiSettings, AuthSettings, RateLimitSettings
 from app.core.errors.setup.handlers import REQUEST_ID_HEADER, configure_exception_handlers
 from app.core.setup.cors import configure_cors
 from app.core.setup.dependencies import create_async_session, get_db_session, get_unit_of_work
@@ -65,11 +66,16 @@ def test_validate_auth_settings_raises_when_jwt_secret_is_missing_in_production(
     assert "Invalid JWT settings." in str(exc_info.value)
 
 
+@pytest.mark.parametrize(
+    "insecure_secret",
+    ("local-dev-jwt-secret", "local-development-jwt-secret-32-bytes"),
+)
 def test_validate_auth_settings_raises_when_jwt_secret_is_insecure_in_production(
     monkeypatch: pytest.MonkeyPatch,
+    insecure_secret: str,
 ) -> None:
     monkeypatch.setenv("APP_ENV", "prod")
-    monkeypatch.setenv("JWT_SECRET_KEY", "local-dev-jwt-secret")
+    monkeypatch.setenv("JWT_SECRET_KEY", insecure_secret)
     monkeypatch.setenv("JWT_ALGORITHM", "HS256")
     monkeypatch.setenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "30")
     monkeypatch.setenv("JWT_ISSUER", "unit-test-issuer")
@@ -109,6 +115,101 @@ def test_auth_settings_validators_for_blank_values() -> None:
 
     with pytest.raises(ValidationError):
         AuthSettings(JWT_AUDIENCE="   ")
+
+
+@pytest.mark.parametrize(
+    ("raw_value", "normalized", "openapi_enabled"),
+    [
+        ("   ", "local", True),
+        (" LOCAL ", "local", True),
+        ("test", "test", True),
+        ("dev", "development", True),
+        ("development", "development", True),
+        ("staging", "staging", False),
+        ("prod", "production", False),
+        ("production", "production", False),
+    ],
+)
+def test_api_settings_normalizes_known_environments(
+    raw_value: str,
+    normalized: str,
+    openapi_enabled: bool,
+) -> None:
+    settings = ApiSettings(APP_ENV=raw_value)
+    assert normalized == settings.APP_ENV
+    assert settings.openapi_enabled is openapi_enabled
+
+
+def test_api_and_auth_settings_reject_unknown_environments() -> None:
+    with pytest.raises(ValidationError, match="APP_ENV must be one of"):
+        ApiSettings(APP_ENV="preview")
+    with pytest.raises(ValidationError, match="APP_ENV must be one of"):
+        AuthSettings(APP_ENV="preview")
+
+
+@pytest.mark.parametrize(
+    ("raw_origins", "expected"),
+    [
+        (
+            " HTTP://LOCALHOST:80/, https://Example.com:443, https://example.com:8443, http://127.0.0.1 ",
+            ["http://localhost", "https://example.com", "https://example.com:8443", "http://127.0.0.1"],
+        ),
+        ("http://[::1]:80,https://[2001:db8::1]:444/", ["http://[::1]", "https://[2001:db8::1]:444"]),
+        ("https://example.com, https://example.com, ,", ["https://example.com"]),
+    ],
+)
+def test_api_settings_canonicalizes_cors_origins(raw_origins: str, expected: list[str]) -> None:
+    settings = ApiSettings(API_CORS_ORIGINS=raw_origins)
+    assert settings.cors_origins == expected
+    assert ",".join(expected) == settings.API_CORS_ORIGINS
+
+
+@pytest.mark.parametrize(
+    "origin",
+    [
+        "*",
+        "ftp://example.com",
+        "https://",
+        "https://user@example.com",
+        "https://example.com/path",
+        "https://example.com?",
+        "https://example.com#",
+        "https://bad_host.example",
+        "http://:80",
+        "https://example.com:not-a-port",
+    ],
+)
+def test_api_settings_rejects_non_origin_cors_values(origin: str) -> None:
+    with pytest.raises(ValidationError):
+        ApiSettings(API_CORS_ORIGINS=origin)
+
+
+@pytest.mark.parametrize("app_env", ["local", "test", "development"])
+def test_create_app_serves_openapi_routes_in_controlled_environments(app_env: str) -> None:
+    test_app = create_app(ApiSettings(APP_ENV=app_env))
+    with TestClient(test_app) as client:
+        assert client.get("/docs").status_code == 200
+        assert client.get("/redoc").status_code == 200
+        assert client.get("/openapi.json").status_code == 200
+
+
+@pytest.mark.parametrize("app_env", ["staging", "production"])
+def test_create_app_disables_openapi_routes_in_production_like_environments(app_env: str) -> None:
+    limiter_settings = RateLimitSettings(
+        APP_ENV=app_env,
+        RATE_LIMIT_ENABLED=True,
+        RATE_LIMIT_STORAGE="redis",
+        RATE_LIMIT_LOGIN=10,
+        RATE_LIMIT_REGISTER=5,
+        RATE_LIMIT_WINDOW_SECONDS=60,
+        REDIS_URL="rediss://redis.example:6379/0",
+        REDIS_PASSWORD="unit-test-secret",  # pragma: allowlist secret
+    )
+    test_app = create_app(ApiSettings(APP_ENV=app_env), limiter_settings)
+    with TestClient(test_app) as client:
+        assert client.get("/docs").status_code == 404
+        assert client.get("/redoc").status_code == 404
+        assert client.get("/openapi.json").status_code == 404
 
 
 def test_app_lifespan_logs_startup_and_shutdown() -> None:
@@ -151,13 +252,14 @@ def test_request_context_middleware_generates_request_id_and_logs_success() -> N
     assert log_call.args[0] == logging.INFO
     assert (
         log_call.args[1]
-        == "event=api_request_completed request_id=%s method=%s path=%s status_code=%s duration_ms=%.2f"
+        == "event=api_request_completed request_id=%s client_ip=%s method=%s path=%s status_code=%s duration_ms=%.2f"
     )
     assert log_call.args[2] == request_id
-    assert log_call.args[3] == "GET"
-    assert log_call.args[4] == "/ping"
-    assert log_call.args[5] == 200
-    assert log_call.args[6] >= 0
+    assert log_call.args[3] == "testclient"
+    assert log_call.args[4] == "GET"
+    assert log_call.args[5] == "/ping"
+    assert log_call.args[6] == 200
+    assert log_call.args[7] >= 0
 
 
 def test_request_context_middleware_reuses_incoming_request_id_for_errors() -> None:
@@ -182,9 +284,26 @@ def test_request_context_middleware_reuses_incoming_request_id_for_errors() -> N
     assert log_call is not None
     assert log_call.args[0] == logging.WARNING
     assert log_call.args[2] == "req-123"
-    assert log_call.args[3] == "GET"
-    assert log_call.args[4] == "/boom"
-    assert log_call.args[5] == 404
+    assert log_call.args[3] == "testclient"
+    assert log_call.args[4] == "GET"
+    assert log_call.args[5] == "/boom"
+    assert log_call.args[6] == 404
+
+
+def test_request_context_middleware_replaces_unsafe_incoming_request_ids() -> None:
+    test_app = FastAPI()
+    configure_request_context_middleware(test_app)
+
+    @test_app.get("/ping")
+    async def ping() -> dict[str, str]:
+        return {"status": "ok"}
+
+    with TestClient(test_app) as client:
+        response = client.get("/ping", headers={REQUEST_ID_HEADER: "unsafe request id"})
+
+    generated_request_id = response.headers[REQUEST_ID_HEADER]
+    assert generated_request_id != "unsafe request id"
+    assert resolve_request_id(generated_request_id) == generated_request_id
 
 
 def test_request_context_middleware_logs_server_errors_and_explicit_500_at_error_level() -> None:
@@ -215,11 +334,11 @@ def test_request_context_middleware_logs_server_errors_and_explicit_500_at_error
     error_logs = [
         call_args
         for call_args in logger.log.call_args_list
-        if call_args.args[0] == logging.ERROR and call_args.args[5] == 500
+        if call_args.args[0] == logging.ERROR and call_args.args[6] == 500
     ]
     assert len(error_logs) >= 2
-    assert any(call_args.args[4] == "/crash" for call_args in error_logs)
-    assert any(call_args.args[4] == "/status-500" for call_args in error_logs)
+    assert any(call_args.args[5] == "/crash" for call_args in error_logs)
+    assert any(call_args.args[5] == "/status-500" for call_args in error_logs)
 
 
 def test_generated_openapi_matches_normalized_validation_contracts() -> None:
@@ -360,9 +479,58 @@ def test_configure_cors_adds_cors_middleware_when_origins_are_provided() -> None
         CORSMiddleware,
         allow_origins=["http://localhost:3000", "https://example.com"],
         allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        allow_headers=["Accept", "Authorization", "Content-Type", "X-Request-ID"],
+        expose_headers=[
+            "X-Request-ID",
+            "X-RateLimit-Limit",
+            "X-RateLimit-Remaining",
+            "X-RateLimit-Reset",
+            "Retry-After",
+        ],
     )
+
+
+def test_configure_cors_enforces_origin_method_and_header_allowlists() -> None:
+    test_app = FastAPI()
+
+    @test_app.post("/resource")
+    def create_resource() -> dict[str, bool]:
+        return {"ok": True}
+
+    configure_cors(test_app, ApiSettings(API_CORS_ORIGINS="https://frontend.example"))
+    with TestClient(test_app) as client:
+        allowed = client.options(
+            "/resource",
+            headers={
+                "Origin": "https://frontend.example",
+                "Access-Control-Request-Method": "POST",
+                "Access-Control-Request-Headers": "authorization,content-type,x-request-id",
+            },
+        )
+        wrong_origin = client.options(
+            "/resource",
+            headers={"Origin": "https://attacker.example", "Access-Control-Request-Method": "POST"},
+        )
+        wrong_method = client.options(
+            "/resource",
+            headers={"Origin": "https://frontend.example", "Access-Control-Request-Method": "TRACE"},
+        )
+        wrong_header = client.options(
+            "/resource",
+            headers={
+                "Origin": "https://frontend.example",
+                "Access-Control-Request-Method": "POST",
+                "Access-Control-Request-Headers": "x-unapproved",
+            },
+        )
+
+    assert allowed.status_code == 200
+    assert allowed.headers["access-control-allow-origin"] == "https://frontend.example"
+    assert wrong_origin.status_code == 400
+    assert "access-control-allow-origin" not in wrong_origin.headers
+    assert wrong_method.status_code == 400
+    assert wrong_header.status_code == 400
 
 
 def test_get_db_session_yields_session_from_create_async_session() -> None:

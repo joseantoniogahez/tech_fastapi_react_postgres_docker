@@ -1,4 +1,4 @@
 interface:
   display_name: "New App Bootstrapper"
   short_description: "Bootstrap a named app from this starter kit"
-  default_prompt: "Bootstrap a new application from this starter kit using the documented dry-run-first workflow."
+  default_prompt: "Use $new-app-bootstrapper to bootstrap a new application with the documented dry-run-first workflow."

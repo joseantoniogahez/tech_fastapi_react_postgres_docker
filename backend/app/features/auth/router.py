@@ -1,6 +1,7 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
 from app.core.authorization.dependencies import AuthenticatedReadAccessDependency
+from app.core.rate_limit import LOGIN_RATE_LIMIT_DEPENDENCY, REGISTER_RATE_LIMIT_DEPENDENCY
 from app.core.setup.dependencies import AuthServiceDependency
 from app.features.auth.dependencies import AuthCredentialsDependency, CurrentActiveUserDependency
 from app.features.auth.openapi import (
@@ -22,7 +23,12 @@ from app.features.auth.schemas import (
 router = APIRouter(tags=["auth"])
 
 
-@router.post("/token", response_model=AccessTokenResponse, **LOGIN_FOR_ACCESS_TOKEN_DOC)
+@router.post(
+    "/token",
+    response_model=AccessTokenResponse,
+    dependencies=[Depends(LOGIN_RATE_LIMIT_DEPENDENCY)],
+    **LOGIN_FOR_ACCESS_TOKEN_DOC,
+)
 async def login_for_access_token(
     credentials: AuthCredentialsDependency,
     auth_service: AuthServiceDependency,
@@ -31,7 +37,12 @@ async def login_for_access_token(
     return AccessTokenResponse.from_application(token)
 
 
-@router.post("/users/register", response_model=AuthenticatedUserResponse, **REGISTER_USER_DOC)
+@router.post(
+    "/users/register",
+    response_model=AuthenticatedUserResponse,
+    dependencies=[Depends(REGISTER_RATE_LIMIT_DEPENDENCY)],
+    **REGISTER_USER_DOC,
+)
 async def register_user(
     auth_service: AuthServiceDependency,
     register_data: RegisterUserPayload,

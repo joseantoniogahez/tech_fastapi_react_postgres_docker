@@ -8,7 +8,7 @@ import { createQueryClient } from "@/app/query-client";
 import { appRoutes } from "@/app/routes";
 import { RegisterPage } from "@/features/auth/RegisterPage";
 import { SESSION_QUERY_KEY } from "@/shared/auth/session";
-import { clearAccessToken } from "@/shared/auth/storage";
+import { clearAccessToken, setAccessToken } from "@/shared/auth/storage";
 import { t } from "@/shared/i18n/ui-text";
 
 const AXE_RUN_OPTIONS: axe.RunOptions = {
@@ -133,6 +133,7 @@ describe("RegisterPage", () => {
   });
 
   it("redirects authenticated users away from /register", async () => {
+    setAccessToken("register-authenticated-test-token");
     const queryClient = createQueryClient();
     queryClient.setQueryData(SESSION_QUERY_KEY, {
       id: 1,

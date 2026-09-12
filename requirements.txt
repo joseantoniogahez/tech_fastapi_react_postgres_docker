@@ -1,4 +1,7 @@
 -r backend/tests/requirements.txt
 
-flake8-pyproject
-pre-commit
+flake8-pyproject==1.2.4
+mypy==1.20.2
+pip==26.2.1
+pip-audit==2.10.1
+pre-commit==4.6.0

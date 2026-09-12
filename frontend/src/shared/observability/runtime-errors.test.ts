@@ -21,11 +21,12 @@ describe("global runtime error handlers", () => {
     installGlobalRuntimeErrorHandlers();
 
     const runtimeError = new Error("runtime failure");
+    const sensitiveFilename = "https://app.example.test/main.tsx?token=private#fragment";
     window.dispatchEvent(
       new ErrorEvent("error", {
         message: runtimeError.message,
         error: runtimeError,
-        filename: "main.tsx",
+        filename: sensitiveFilename,
         lineno: 12,
         colno: 4,
       }),
@@ -38,9 +39,10 @@ describe("global runtime error handlers", () => {
       request_id: null,
       context: {
         message: "runtime failure",
-        filename: "main.tsx",
       },
     });
+    expect(JSON.stringify(errorSpy.mock.calls)).not.toContain(sensitiveFilename);
+    expect(JSON.stringify(errorSpy.mock.calls)).not.toContain("private");
   });
 
   it("captures unhandled rejection and preserves ApiError request correlation", () => {
@@ -62,6 +64,66 @@ describe("global runtime error handlers", () => {
       request_id: "req-runtime-500",
       context: {
         is_api_error: true,
+      },
+    });
+  });
+
+  it("preserves ApiError diagnostics through wrapped and nested causes", () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    installGlobalRuntimeErrorHandlers();
+
+    const apiError = new ApiError("request failed", 503, "service_unavailable", "req-nested-503");
+    const wrappedReason = new Error("feature failed", { cause: apiError });
+    const nestedReason = new Error("workflow failed", {
+      cause: new Error("operation failed", { cause: wrappedReason }),
+    });
+
+    for (const reason of [wrappedReason, nestedReason]) {
+      const rejectionEvent = new Event("unhandledrejection") as PromiseRejectionEvent;
+      Object.defineProperty(rejectionEvent, "reason", {
+        value: reason,
+        configurable: true,
+      });
+      window.dispatchEvent(rejectionEvent);
+    }
+
+    expect(errorSpy).toHaveBeenCalledTimes(2);
+    expect(errorSpy.mock.calls[0]?.[1]).toMatchObject({
+      request_id: "req-nested-503",
+      context: {
+        reason: "feature failed",
+        is_api_error: true,
+      },
+    });
+    expect(errorSpy.mock.calls[1]?.[1]).toMatchObject({
+      request_id: "req-nested-503",
+      context: {
+        reason: "workflow failed",
+        is_api_error: true,
+      },
+    });
+  });
+
+  it("stops cyclic cause traversal without classifying it as an ApiError", () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    installGlobalRuntimeErrorHandlers();
+
+    const first = new Error("first");
+    const second = new Error("second", { cause: first });
+    Object.defineProperty(first, "cause", { value: second, configurable: true });
+    const rejectionEvent = new Event("unhandledrejection") as PromiseRejectionEvent;
+    Object.defineProperty(rejectionEvent, "reason", {
+      value: first,
+      configurable: true,
+    });
+
+    window.dispatchEvent(rejectionEvent);
+
+    expect(errorSpy.mock.calls[0]?.[1]).toMatchObject({
+      request_id: null,
+      context: {
+        reason: "first",
+        is_api_error: false,
       },
     });
   });

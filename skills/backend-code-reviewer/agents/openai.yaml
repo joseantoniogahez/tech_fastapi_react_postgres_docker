@@ -1,0 +1,4 @@
+interface:
+  display_name: "Backend Code Reviewer"
+  short_description: "Review FastAPI backend changes and contract risks"
+  default_prompt: "Use $backend-code-reviewer to review backend changes for regressions, contract drift, and validation gaps."

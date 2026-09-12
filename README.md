@@ -5,6 +5,7 @@ Full-stack template application with JWT authentication and RBAC.
 - Backend: FastAPI + SQLAlchemy (async) + Alembic
 - Frontend: Vite + React 19 + TypeScript
 - Database: PostgreSQL 18.2 (`postgres:18.2`)
+- Authentication rate-limit store: Redis 8.8.1 (`redis:8.8.1-alpine`)
 - Orchestration: Docker Compose
 
 ## README Map
@@ -36,9 +37,9 @@ Full-stack template application with JWT authentication and RBAC.
 
 - Docker Desktop (or Docker Engine + Compose plugin)
 - Optional for local non-Docker workflows:
-  - Python 3.14.3
-  - Node.js >=20.9.0 (Node.js 22 is used by Docker/CI)
-  - npm >=11
+  - Python 3.14.6
+  - Node.js 22 (`>=22.22.2 <23`; `22.23.1` is pinned in Docker/CI)
+  - npm 12.0.x (`12.0.1` is the reproducible execution pin)
 
 ## Environment Setup
 
@@ -64,13 +65,15 @@ docs/ai/start_new_project.md
 
 Quick flow:
 
-```bash
+```powershell
 # preview identity changes
-python scripts/bootstrap_new_app.py --app-name "Example Portal" --description "A portal for example workflows."
+.\.venv\Scripts\python.exe scripts\bootstrap_new_app.py --source-repository "https://github.com/example/foundation" --source-revision "<commit-or-tag>" --app-name "Example Portal" --description "A portal for example workflows."
 
 # apply after reviewing the preview
-python scripts/bootstrap_new_app.py --app-name "Example Portal" --description "A portal for example workflows." --write
+.\.venv\Scripts\python.exe scripts\bootstrap_new_app.py --source-repository "https://github.com/example/foundation" --source-revision "<commit-or-tag>" --app-name "Example Portal" --description "A portal for example workflows." --write
 ```
+
+On POSIX, replace `.\.venv\Scripts\python.exe` with `./.venv/bin/python`.
 
 Then review `git diff`, create `.env` from `.env_examples`, run the validation gates listed in
 `docs/ai/start_new_project.md`, and start the stack with `docker compose up --build`.
@@ -116,11 +119,19 @@ docker compose -f compose.test.yaml run --rm backend-test && docker compose -f c
 
 The repository includes a GitHub Actions workflow at `.github/workflows/ci.yaml` for push and pull request validation.
 
-It runs three independent quality gates:
+It runs three independent quality gates on the accepted Ubuntu 24.04, Python 3.14.6, Node.js
+22.23.1, npm 12.0.1, Docker 29.6.2, and Compose 5.3.1 matrix:
 
-- `pre-commit`: runs repository hooks in CI for both `pre-commit` and `pre-push` stages
-- `backend`: runs `python -m pytest backend/tests --cov=app --cov-report=term-missing:skip-covered --cov-fail-under=100`
-- `frontend`: runs frontend quality gate (`npm --prefix frontend run check`), smoke e2e (`npm --prefix frontend run test:e2e:ci`), and production build
+- `governance`: validates skills, documentation contracts, dependency audits, pre-push hooks, and
+  all five supported Compose render forms.
+- `backend`: runs mypy, dependency checks, and the 100% backend coverage gate.
+- `frontend`: runs the dependency audit, quality gate, smoke e2e, production build, and a real HTTP
+  security-header smoke against the production image.
+
+The separate `Release validation` workflow runs on pull requests and supports manual execution.
+It validates disposable PostgreSQL/Redis services, production images, and a new application
+bootstrapped from the checked-out snapshot. See
+[`docs/ai/release_validation.md`](docs/ai/release_validation.md) for its execution and reuse boundary.
 
 ## Run Production Profile (Docker Compose)
 
@@ -134,6 +145,9 @@ Production JWT note:
 
 - `compose.prod.yaml` sets `APP_ENV=prod`.
 - Define `JWT_SECRET_KEY`, `JWT_ALGORITHM`, `JWT_ACCESS_TOKEN_EXPIRE_MINUTES`, `JWT_ISSUER`, and `JWT_AUDIENCE` in `.env` before starting.
+- Define `REDIS_PASSWORD`, `RATE_LIMIT_LOGIN`, `RATE_LIMIT_REGISTER`, and
+  `RATE_LIMIT_WINDOW_SECONDS`. Redis remains private to the Compose network and its password is
+  mounted as a secret rather than rendered into service environment output.
 
 Stop production stack:
 
@@ -144,6 +158,11 @@ docker compose -f compose.yaml -f compose.prod.yaml down
 `compose.prod.yaml` sets `name: tech-prod`, so production resources stay isolated from dev/test projects.
 
 If production `database` keeps restarting due to an old volume mount path, recreate the production volume:
+
+**This deletes all Compose-managed database data.** Do not run it until a custom-format PostgreSQL
+backup has a matching SHA-256, is encrypted outside the repository, and has passed the isolated
+restore drill in `backend/docs/operations/postgresql_backups.md`. Otherwise stop and recover the
+volume instead.
 
 ```bash
 docker compose -f compose.yaml -f compose.prod.yaml down -v
@@ -160,61 +179,61 @@ docker compose -f compose.yaml -f compose.prod.yaml up --build -d
 
 The repository uses a root virtual environment for shared tooling and hooks.
 
-Local `pre-commit` hooks depend on more than the root Python environment:
+Local `pre-commit` hooks depend on more than the root Python environment. The exact matrix, lock
+checksums, inventory, and Windows/POSIX commands are in
+[`docs/ai/python_tooling.md`](docs/ai/python_tooling.md).
 
-- Python 3.14.3 for Python-based hooks
-- Node.js >=20.9.0 (Node.js 22 in Docker/CI) and npm 11+ for `frontend` ESLint and typecheck hooks
+- Python 3.14.6 for Python-based hooks
+- Node.js 22.23.1 and npm 12.0.1 for `frontend` ESLint and typecheck hooks
 - Docker Desktop (or Docker Engine + Compose plugin) for `hadolint` and `docker compose config` hooks
-- A local `.env` copied from `.env_examples`, because compose validation hooks resolve environment variables from it
+- Compose validation hooks use the committed, non-secret `.env_examples` fixture. A local `.env`
+  copied from it is still required when running the application stack.
 
-Create and activate:
+Create the environment:
 
-```bash
+```powershell
 # from repo root
-python -m venv .venv
-
-# Windows PowerShell
-.venv/Scripts/Activate.ps1
-
-# macOS/Linux
-source .venv/bin/activate
+py -3.14 -m venv .venv
+.\.venv\Scripts\python.exe -c "import sys; assert sys.version_info[:3] == (3, 14, 6)"
 ```
 
-Install tooling:
+Install the locked Windows environment and hooks:
 
-```bash
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
-npm --prefix frontend install
-pre-commit install --install-hooks --hook-type pre-commit --hook-type pre-push
+```powershell
+.\.venv\Scripts\python.exe -m pip install pip==26.2.1
+.\.venv\Scripts\python.exe scripts\update_python_tooling_lock.py
+.\.venv\Scripts\python.exe -m pip install --requirement pylock.windows-x86_64.toml
+npm --prefix frontend ci
+.\.venv\Scripts\python.exe -m pre_commit install --install-hooks --hook-type pre-commit --hook-type pre-push
 ```
 
-The root `requirements.txt` is the umbrella Python manifest used by CI; it includes backend runtime dependencies, backend test dependencies, and repository tooling.
+The root `requirements.txt` is the umbrella input manifest. The platform lock contains every
+resolved transitive dependency and artifact hash; do not use the Windows lock on POSIX.
 
 Before running hooks, make sure Docker is running so local Docker-based hooks can start successfully.
 
 Run repository hooks:
 
-```bash
-pre-commit run --all-files
+```powershell
+.\.venv\Scripts\python.exe -m pre_commit run --all-files
 ```
 
 Run heavier pre-push hooks locally:
 
-```bash
-pre-commit run --all-files --hook-stage pre-push
+```powershell
+.\.venv\Scripts\python.exe -m pre_commit run --all-files --hook-stage pre-push
 ```
 
 ## AI Workflow Helpers
 
 Preview feature scaffolds:
 
-```bash
-python scripts/scaffold_feature.py full-stack audit-log --route /admin/audit-log --with-model --dry-run
+```powershell
+.\.venv\Scripts\python.exe scripts\scaffold_feature.py --dry-run full-stack audit-log --route /admin/audit-log --with-model
 ```
 
 Preview new-app identity bootstrap:
 
-```bash
-python scripts/bootstrap_new_app.py --app-name "Example Portal" --description "A portal for example workflows."
+```powershell
+.\.venv\Scripts\python.exe scripts\bootstrap_new_app.py --source-repository "https://github.com/example/foundation" --source-revision "<commit-or-tag>" --app-name "Example Portal" --description "A portal for example workflows."
 ```

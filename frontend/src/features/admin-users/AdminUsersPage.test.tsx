@@ -549,7 +549,7 @@ describe("AdminUsersPage", () => {
     expect(getAccessToken()).toBeNull();
   });
 
-  it("shows generic ui error for non-api exceptions", async () => {
+  it("shows the normalized API error for invalid user contracts", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const requestUrl = toRequestUrl(input);
       const method = init?.method ?? "GET";
@@ -572,12 +572,10 @@ describe("AdminUsersPage", () => {
     await waitFor(
       () => {
         expect(screen.getByRole("heading", { name: t("admin.common.error.title") })).toBeInTheDocument();
-        expect(screen.getByText(t("admin.common.error.generic"))).toBeInTheDocument();
+        expect(screen.getByText(t("api.error.invalidResponse"))).toBeInTheDocument();
       },
       { timeout: 4000 },
     );
-    await waitFor(() => {
-      expect(fetchMock.mock.calls.length).toBeGreaterThanOrEqual(3);
-    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });

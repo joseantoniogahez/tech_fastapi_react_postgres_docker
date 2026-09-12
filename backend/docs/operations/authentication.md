@@ -12,10 +12,10 @@ For implementation rules and extension workflows, see `../backend_playbook.md`.
 
 ## Bootstrap Admin User (Fresh Environments)
 
-Run the idempotent RBAC bootstrap command from `backend/`:
+Run the idempotent RBAC bootstrap command from the repository root:
 
-```bash
-python -m utils.rbac_bootstrap --admin-username admin --admin-password "StrongSeed9"
+```powershell
+$env:PYTHONPATH = "backend"; .\.venv\Scripts\python.exe -m utils.rbac_bootstrap --admin-username admin --admin-password "StrongSeed9"
 ```
 
 This command:
@@ -209,3 +209,10 @@ Inactive users can be produced by admin soft-delete via `DELETE /v1/rbac/users/{
 ```
 
 See `authorization_matrix.md` for permission-to-endpoint mapping and required scopes.
+
+## Authentication Rate Limiting
+
+`POST /v1/token` and `POST /v1/users/register` use the fixed-window policy documented in
+`rate_limiting.md`. An exhausted quota returns `429 rate_limited`; an unavailable required shared
+store returns `503 service_unavailable`. Both responses retain `request_id` correlation. A caller
+must not interpret a store outage as bad credentials or retry it aggressively.

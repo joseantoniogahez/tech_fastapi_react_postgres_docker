@@ -1,0 +1,58 @@
+name: Release validation
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release-services:
+    name: Release services and derived fixture
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      PIP_DISABLE_PIP_VERSION_CHECK: "1"
+      PIP_NO_INPUT: "1"
+      RELEASE_SOURCE_REPOSITORY: ${{ github.server_url }}/${{ github.repository }}
+    steps:
+      - name: Check out immutable candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14.6"
+          architecture: x64
+          check-latest: false
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22.23.1"
+          architecture: x64
+          check-latest: false
+          package-manager-cache: false
+      - name: Set up Docker
+        uses: docker/setup-docker-action@77e84dbf09b47d1e29270283c22f16145aa85ca1 # v5.4.0
+        with:
+          version: v29.6.2
+      - name: Set up Compose
+        uses: docker/setup-compose-action@4eb059ff7f16592f9c84d5ca339c53cb7c5064e2 # v2.3.0
+        with:
+          version: v5.3.1
+          cache-binary: false
+      - name: Create isolated locked environment
+        run: |
+          python -m venv .venv
+          .venv/bin/python scripts/update_python_tooling_lock.py
+          .venv/bin/python -m pip install pip==26.2.1
+          .venv/bin/python -m pip install -r pylock.ubuntu-x86_64.toml
+          npm install --global npm@12.0.1
+          test "$(node --version)" = "v22.23.1"
+          test "$(npm --version)" = "12.0.1"
+          npm ci --prefix frontend
+          npm --prefix frontend exec -- playwright install --with-deps chromium
+      - name: Validate real services and derived application
+        run: .venv/bin/python scripts/release_validation.py

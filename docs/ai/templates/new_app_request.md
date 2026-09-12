@@ -17,6 +17,17 @@
 - Public product name:
 - Repository/package naming expectations:
 
+## Starting Template Snapshot
+
+- Credential-free HTTP(S) template repository URL:
+- Immutable commit or reviewed tag:
+- Resolved full commit (must equal checkout HEAD):
+- Resolved tree:
+- Compatibility review for a newer snapshot:
+- Confirmation that checkout is pristine and Git-clean:
+- Filesystem/mount confirmation for same-directory hardlinks and same-filesystem replacement:
+- Required explicit per-file Windows DACLs, if any (handled outside identity bootstrap):
+
 ## Bootstrap Mode
 
 Choose one:
@@ -124,25 +135,31 @@ Expected AI output:
 
 Recommended preview command before in-place bootstrap:
 
-- `python scripts/bootstrap_new_app.py --app-name "<App Name>" --description "<Description>"`
+- `.\.venv\Scripts\python.exe scripts\bootstrap_new_app.py --source-repository "<https-repository>" --source-revision "<commit-or-tag>" --app-name "<App Name>" --description "<Description>"`
 
 Recommended apply command after reviewing the preview:
 
-- `python scripts/bootstrap_new_app.py --app-name "<App Name>" --description "<Description>" --write`
+- `.\.venv\Scripts\python.exe scripts\bootstrap_new_app.py --source-repository "<https-repository>" --source-revision "<commit-or-tag>" --app-name "<App Name>" --description "<Description>" --write`
 
 Commands to run after in-place bootstrap work:
 
-- Docker Compose config validation for affected profiles.
-- `python -m pytest backend/tests`
-- `python -m pytest backend/tests --cov=app --cov-report=term-missing:skip-covered --cov-fail-under=100`
+- `docker compose --env-file .env_examples -f compose.yaml config -q`
+- `docker compose --env-file .env_examples -f compose.yaml -f compose.override.yaml config -q`
+- `docker compose --env-file .env_examples -f compose.test.yaml config -q`
+- `docker compose --env-file .env_examples -f compose.yaml -f compose.test.yaml config -q`
+- `docker compose --env-file .env_examples -f compose.yaml -f compose.prod.yaml config -q`
+- `.\.venv\Scripts\python.exe -m pytest backend/tests`
+- `.\.venv\Scripts\python.exe -m pytest backend/tests --cov=app --cov-report=term-missing:skip-covered --cov-fail-under=100`
 - `npm --prefix frontend run check`
-- `npm --prefix frontend run test:e2e:ci` when route, auth, or error journeys change.
+- `npm --prefix frontend run test:e2e:ci`
 - `npm --prefix frontend run build`
-- `pre-commit run --all-files`
+- `.\.venv\Scripts\python.exe -m pre_commit run --all-files`
 
 ## Reviewer Validation Checklist
 
 - [ ] App identity is explicit and consistently applied.
+- [ ] Source repository, revision, full commit/tree, clean checkout, and generated provenance are explicit.
+- [ ] Filesystem hardlink/replacement support and any custom Windows DACL migration are explicit.
 - [ ] Bootstrap mode is explicit.
 - [ ] Compose names, database name, JWT issuer, and JWT audience are addressed.
 - [ ] Backend auth, RBAC, seed, data, and API expectations are explicit.

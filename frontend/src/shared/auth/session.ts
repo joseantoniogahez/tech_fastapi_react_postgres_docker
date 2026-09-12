@@ -9,7 +9,7 @@ import {
   type AccessTokenResponse,
   type AuthenticatedUser,
 } from "@/shared/auth/contracts";
-import { clearAccessToken, getAccessToken, setAccessToken } from "@/shared/auth/storage";
+import { getAccessToken, revokeAccessToken, setAccessToken } from "@/shared/auth/storage";
 
 interface Credentials {
   username: string;
@@ -80,7 +80,7 @@ export const updateCurrentUser = (payload: UpdateCurrentUserInput): Promise<Auth
   });
 
 export const logout = (): void => {
-  clearAccessToken();
+  revokeAccessToken();
 };
 
 export const resolveSessionUser = async (): Promise<AuthenticatedUser | null> => {
@@ -92,7 +92,7 @@ export const resolveSessionUser = async (): Promise<AuthenticatedUser | null> =>
     return await readCurrentUser();
   } catch (error) {
     if (isUnauthorizedError(error)) {
-      clearAccessToken();
+      revokeAccessToken();
       return null;
     }
     throw error;

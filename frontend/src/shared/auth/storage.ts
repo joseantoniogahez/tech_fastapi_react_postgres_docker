@@ -1,5 +1,6 @@
 const LEGACY_ACCESS_TOKEN_KEY = "auth.access_token";
 const SESSION_ACCESS_TOKEN_KEY = "auth.session.access_token";
+const LOGGED_OUT_MARKER_KEY = "auth.session.logged_out";
 const STORAGE_PROBE_KEY = "__auth_storage_probe__";
 
 let inMemoryAccessToken: string | null = null;
@@ -54,6 +55,14 @@ const migrateLegacyTokenIfNeeded = (): void => {
 
 export const getAccessToken = (): string | null => {
   const sessionStorage = getSessionStorage();
+  const localStorage = getLocalStorage();
+  if (canUseStorage(localStorage) && localStorage.getItem(LOGGED_OUT_MARKER_KEY) === "1") {
+    if (canUseStorage(sessionStorage)) {
+      sessionStorage.removeItem(SESSION_ACCESS_TOKEN_KEY);
+    }
+    inMemoryAccessToken = null;
+    return null;
+  }
   if (canUseStorage(sessionStorage)) {
     migrateLegacyTokenIfNeeded();
     const token = sessionStorage.getItem(SESSION_ACCESS_TOKEN_KEY);
@@ -75,6 +84,7 @@ export const setAccessToken = (token: string): void => {
   const localStorage = getLocalStorage();
   if (canUseStorage(localStorage)) {
     localStorage.removeItem(LEGACY_ACCESS_TOKEN_KEY);
+    localStorage.removeItem(LOGGED_OUT_MARKER_KEY);
   }
 };
 
@@ -89,8 +99,18 @@ export const clearAccessToken = (): void => {
   const localStorage = getLocalStorage();
   if (canUseStorage(localStorage)) {
     localStorage.removeItem(LEGACY_ACCESS_TOKEN_KEY);
+    localStorage.removeItem(LOGGED_OUT_MARKER_KEY);
+  }
+};
+
+export const revokeAccessToken = (): void => {
+  clearAccessToken();
+  const localStorage = getLocalStorage();
+  if (canUseStorage(localStorage)) {
+    localStorage.setItem(LOGGED_OUT_MARKER_KEY, "1");
   }
 };
 
 export const ACCESS_TOKEN_STORAGE_KEY = SESSION_ACCESS_TOKEN_KEY;
 export const ACCESS_TOKEN_LEGACY_STORAGE_KEY = LEGACY_ACCESS_TOKEN_KEY;
+export const LOGGED_OUT_STORAGE_KEY = LOGGED_OUT_MARKER_KEY;

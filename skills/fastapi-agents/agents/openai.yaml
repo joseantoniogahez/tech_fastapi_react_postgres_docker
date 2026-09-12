@@ -1,0 +1,4 @@
+interface:
+  display_name: "FastAPI Agents"
+  short_description: "Apply official FastAPI guidance when available"
+  default_prompt: "Use $fastapi-agents to apply available official FastAPI guidance and this repository's canonical contracts."

@@ -62,6 +62,7 @@ Describe the integration need and the expected frontend behavior.
   - `npm --prefix frontend run check`
   - `npm --prefix frontend run test:e2e:ci` (required when integration changes auth/routing/error journeys)
   - `npm --prefix frontend run build`
+  - `.\.venv\Scripts\python.exe -m pre_commit run --all-files`
 
 ## Reviewer Validation Checklist
 

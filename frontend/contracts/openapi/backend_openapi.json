@@ -381,6 +381,51 @@
         "title": "RBACRolePermission",
         "type": "object"
       },
+      "ReadinessCheckResponse": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ReadinessStatus"
+          }
+        },
+        "required": [
+          "name",
+          "status"
+        ],
+        "title": "ReadinessCheckResponse",
+        "type": "object"
+      },
+      "ReadinessResponse": {
+        "properties": {
+          "checks": {
+            "items": {
+              "$ref": "#/components/schemas/ReadinessCheckResponse"
+            },
+            "title": "Checks",
+            "type": "array"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ReadinessStatus"
+          }
+        },
+        "required": [
+          "status",
+          "checks"
+        ],
+        "title": "ReadinessResponse",
+        "type": "object"
+      },
+      "ReadinessStatus": {
+        "enum": [
+          "ok",
+          "unavailable"
+        ],
+        "title": "ReadinessStatus",
+        "type": "string"
+      },
       "RegisterUserRequest": {
         "properties": {
           "password": {
@@ -798,7 +843,7 @@
     },
     "/v1/health": {
       "get": {
-        "description": "Verify that the API is available and responding to requests.",
+        "description": "Verify that the API process is responding without checking dependencies.",
         "operationId": "health_v1_health_get",
         "responses": {
           "200": {
@@ -819,7 +864,7 @@
             "description": "Service is available."
           }
         },
-        "summary": "Health check",
+        "summary": "Liveness check",
         "tags": [
           "health"
         ]
@@ -6795,6 +6840,56 @@
         ]
       }
     },
+    "/v1/readiness": {
+      "get": {
+        "description": "Verify that every registered dependency is available for traffic admission.",
+        "operationId": "readiness_v1_readiness_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "checks": [
+                    {
+                      "name": "database",
+                      "status": "ok"
+                    }
+                  ],
+                  "status": "ok"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ReadinessResponse"
+                }
+              }
+            },
+            "description": "All registered dependencies are available."
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "checks": [
+                    {
+                      "name": "database",
+                      "status": "unavailable"
+                    }
+                  ],
+                  "status": "unavailable"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ReadinessResponse"
+                }
+              }
+            },
+            "description": "One or more registered dependencies are unavailable."
+          }
+        },
+        "summary": "Readiness check",
+        "tags": [
+          "health"
+        ]
+      }
+    },
     "/v1/token": {
       "post": {
         "description": "Authenticate a user with `application/x-www-form-urlencoded` and return a JWT bearer token.",
@@ -6826,7 +6921,30 @@
                 }
               }
             },
-            "description": "Authentication successful."
+            "description": "Authentication successful.",
+            "headers": {
+              "X-RateLimit-Limit": {
+                "description": "Maximum requests allowed in the fixed window.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              },
+              "X-RateLimit-Remaining": {
+                "description": "Requests remaining in the current fixed window.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              },
+              "X-RateLimit-Reset": {
+                "description": "Whole seconds until the current fixed window resets.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
           },
           "400": {
             "content": {
@@ -7003,6 +7121,90 @@
               }
             }
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "rate_limited",
+                  "detail": "Too many requests. Try again later.",
+                  "meta": {
+                    "retry_after_seconds": 60
+                  },
+                  "request_id": "req-example-1234",
+                  "status": 429
+                },
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "description": "Machine-readable domain error code.",
+                      "type": "string"
+                    },
+                    "detail": {
+                      "description": "Human-readable error message.",
+                      "type": "string"
+                    },
+                    "meta": {
+                      "description": "Optional structured error metadata."
+                    },
+                    "request_id": {
+                      "description": "Request correlation identifier echoed in the response header.",
+                      "example": "req-example-1234",
+                      "type": "string"
+                    },
+                    "status": {
+                      "description": "HTTP status code.",
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status",
+                    "code",
+                    "request_id"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "The authentication surface quota is exhausted.",
+            "headers": {
+              "Retry-After": {
+                "description": "Whole seconds to wait before retrying.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              },
+              "X-RateLimit-Limit": {
+                "description": "Maximum requests allowed in the fixed window.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              },
+              "X-RateLimit-Remaining": {
+                "description": "Requests remaining in the current fixed window.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              },
+              "X-RateLimit-Reset": {
+                "description": "Whole seconds until the current fixed window resets.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              },
+              "X-Request-ID": {
+                "description": "Request correlation identifier for diagnostics and support.",
+                "schema": {
+                  "example": "req-example-1234",
+                  "type": "string"
+                }
+              }
+            }
+          },
           "500": {
             "content": {
               "application/json": {
@@ -7046,6 +7248,62 @@
               }
             },
             "description": "Unhandled internal server error.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Request correlation identifier for diagnostics and support.",
+                "schema": {
+                  "example": "req-example-1234",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "service_unavailable",
+                  "detail": "Service temporarily unavailable",
+                  "meta": {
+                    "dependency": "rate_limit_store"
+                  },
+                  "request_id": "req-example-1234",
+                  "status": 503
+                },
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "description": "Machine-readable domain error code.",
+                      "type": "string"
+                    },
+                    "detail": {
+                      "description": "Human-readable error message.",
+                      "type": "string"
+                    },
+                    "meta": {
+                      "description": "Optional structured error metadata."
+                    },
+                    "request_id": {
+                      "description": "Request correlation identifier echoed in the response header.",
+                      "example": "req-example-1234",
+                      "type": "string"
+                    },
+                    "status": {
+                      "description": "HTTP status code.",
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status",
+                    "code",
+                    "request_id"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "The required shared rate-limit store is unavailable.",
             "headers": {
               "X-Request-ID": {
                 "description": "Request correlation identifier for diagnostics and support.",
@@ -7619,7 +7877,30 @@
                 }
               }
             },
-            "description": "User registered."
+            "description": "User registered.",
+            "headers": {
+              "X-RateLimit-Limit": {
+                "description": "Maximum requests allowed in the fixed window.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              },
+              "X-RateLimit-Remaining": {
+                "description": "Requests remaining in the current fixed window.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              },
+              "X-RateLimit-Reset": {
+                "description": "Whole seconds until the current fixed window resets.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
           },
           "400": {
             "content": {
@@ -7735,6 +8016,90 @@
               }
             }
           },
+          "429": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "rate_limited",
+                  "detail": "Too many requests. Try again later.",
+                  "meta": {
+                    "retry_after_seconds": 60
+                  },
+                  "request_id": "req-example-1234",
+                  "status": 429
+                },
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "description": "Machine-readable domain error code.",
+                      "type": "string"
+                    },
+                    "detail": {
+                      "description": "Human-readable error message.",
+                      "type": "string"
+                    },
+                    "meta": {
+                      "description": "Optional structured error metadata."
+                    },
+                    "request_id": {
+                      "description": "Request correlation identifier echoed in the response header.",
+                      "example": "req-example-1234",
+                      "type": "string"
+                    },
+                    "status": {
+                      "description": "HTTP status code.",
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status",
+                    "code",
+                    "request_id"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "The authentication surface quota is exhausted.",
+            "headers": {
+              "Retry-After": {
+                "description": "Whole seconds to wait before retrying.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              },
+              "X-RateLimit-Limit": {
+                "description": "Maximum requests allowed in the fixed window.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              },
+              "X-RateLimit-Remaining": {
+                "description": "Requests remaining in the current fixed window.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              },
+              "X-RateLimit-Reset": {
+                "description": "Whole seconds until the current fixed window resets.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              },
+              "X-Request-ID": {
+                "description": "Request correlation identifier for diagnostics and support.",
+                "schema": {
+                  "example": "req-example-1234",
+                  "type": "string"
+                }
+              }
+            }
+          },
           "500": {
             "content": {
               "application/json": {
@@ -7778,6 +8143,62 @@
               }
             },
             "description": "Unhandled internal server error.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Request correlation identifier for diagnostics and support.",
+                "schema": {
+                  "example": "req-example-1234",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "service_unavailable",
+                  "detail": "Service temporarily unavailable",
+                  "meta": {
+                    "dependency": "rate_limit_store"
+                  },
+                  "request_id": "req-example-1234",
+                  "status": 503
+                },
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "description": "Machine-readable domain error code.",
+                      "type": "string"
+                    },
+                    "detail": {
+                      "description": "Human-readable error message.",
+                      "type": "string"
+                    },
+                    "meta": {
+                      "description": "Optional structured error metadata."
+                    },
+                    "request_id": {
+                      "description": "Request correlation identifier echoed in the response header.",
+                      "example": "req-example-1234",
+                      "type": "string"
+                    },
+                    "status": {
+                      "description": "HTTP status code.",
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status",
+                    "code",
+                    "request_id"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "The required shared rate-limit store is unavailable.",
             "headers": {
               "X-Request-ID": {
                 "description": "Request correlation identifier for diagnostics and support.",

@@ -7,6 +7,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from app.core.common.observability import sanitize_log_text
 from app.core.errors.domain import DomainError, DomainErrorType
 from app.core.errors.services import InternalError, InvalidInputError
 
@@ -16,6 +17,8 @@ ERROR_HTTP_STATUS_MAP: dict[DomainErrorType, int] = {
     DomainErrorType.FORBIDDEN: status.HTTP_403_FORBIDDEN,
     DomainErrorType.NOT_FOUND: status.HTTP_404_NOT_FOUND,
     DomainErrorType.CONFLICT: status.HTTP_409_CONFLICT,
+    DomainErrorType.RATE_LIMITED: status.HTTP_429_TOO_MANY_REQUESTS,
+    DomainErrorType.SERVICE_UNAVAILABLE: status.HTTP_503_SERVICE_UNAVAILABLE,
     DomainErrorType.INTERNAL_ERROR: status.HTTP_500_INTERNAL_SERVER_ERROR,
 }
 REQUEST_ID_HEADER = "X-Request-ID"
@@ -49,6 +52,15 @@ def get_request_id(request: Request) -> str | None:
     return None
 
 
+def get_rate_limit_headers(request: Request) -> dict[str, str]:
+    headers = getattr(request.state, "rate_limit_headers", None)
+    if not isinstance(headers, Mapping):
+        return {}
+    return {
+        str(name): str(value) for name, value in headers.items() if isinstance(name, str) and isinstance(value, str)
+    }
+
+
 def build_response_headers(
     headers: Mapping[str, str] | None,
     request_id: str | None,
@@ -68,6 +80,10 @@ def map_status_to_error_type(status_code: int) -> DomainErrorType:
         return DomainErrorType.NOT_FOUND
     if status_code == status.HTTP_409_CONFLICT:
         return DomainErrorType.CONFLICT
+    if status_code == status.HTTP_429_TOO_MANY_REQUESTS:
+        return DomainErrorType.RATE_LIMITED
+    if status_code == status.HTTP_503_SERVICE_UNAVAILABLE:
+        return DomainErrorType.SERVICE_UNAVAILABLE
     if status_code in {status.HTTP_400_BAD_REQUEST, status.HTTP_422_UNPROCESSABLE_CONTENT}:
         return DomainErrorType.INVALID_INPUT
     return DomainErrorType.INTERNAL_ERROR
@@ -87,7 +103,10 @@ async def domain_error_handler(request: Request, exc: Exception) -> JSONResponse
     return JSONResponse(
         status_code=status_code,
         content=payload,
-        headers=build_response_headers(domain_exc.headers, request_id),
+        headers=build_response_headers(
+            {**get_rate_limit_headers(request), **(domain_exc.headers or {})},
+            request_id,
+        ),
     )
 
 
@@ -117,7 +136,10 @@ async def http_error_handler(request: Request, exc: Exception) -> JSONResponse:
     return JSONResponse(
         status_code=http_exc.status_code,
         content=payload,
-        headers=build_response_headers(http_exc.headers, request_id),
+        headers=build_response_headers(
+            {**get_rate_limit_headers(request), **(http_exc.headers or {})},
+            request_id,
+        ),
     )
 
 
@@ -125,9 +147,9 @@ async def unhandled_error_handler(request: Request, exc: Exception) -> JSONRespo
     request_id = get_request_id(request)
     logger.exception(
         "event=api_unhandled_error request_id=%s method=%s path=%s",
-        request_id or "-",
-        request.method,
-        request.url.path,
+        sanitize_log_text(request_id or "-"),
+        sanitize_log_text(request.method),
+        sanitize_log_text(request.url.path),
         exc_info=exc,
     )
     return await domain_error_handler(request, InternalError())
