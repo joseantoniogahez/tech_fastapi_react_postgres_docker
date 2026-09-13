@@ -18,6 +18,8 @@ non-default port, and omits the trailing root slash. API path configuration belo
 ## Fail-Fast Behavior
 
 - Vite resolves `VITE_*` values while building the bundle.
+- The production CSP generator uses the same Vite production environment files and process
+  environment precedence as the canonical `npm run build` bundle.
 - Browser startup calls `readFrontendEnvConfig()` from `src/shared/api/env.ts`.
 - Invalid embedded configuration throws `FrontendEnvError` and blocks browser boot before requests.
 - API URL builders (`getApiBaseUrl`, `buildApiUrl`) use the same validated config path.

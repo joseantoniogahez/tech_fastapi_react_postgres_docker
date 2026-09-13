@@ -114,6 +114,44 @@ def test_conflict_preserves_existing_target_and_installs_nothing(tmp_path: Path)
     assert not (destination / "beta-skill").exists()
 
 
+def test_failed_restore_retains_backups_and_restores_independent_targets(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root = _repository(tmp_path, names=("alpha-skill", "beta-skill", "gamma-skill"))
+    destination = tmp_path / "destination"
+    for name in ("alpha-skill", "beta-skill"):
+        _write(destination / name / "existing.txt", f"original {name}\n")
+    alpha_before = _tree_snapshot(destination / "alpha-skill")
+    beta_before = _tree_snapshot(destination / "beta-skill")
+    actions = installer.collect_actions(
+        available_skills=installer.discover_project_skills(root / "skills", root),
+        requested_skills=None,
+        destination_root=destination,
+        force=True,
+    )
+    original_move = installer._move_path
+
+    def fail_commit_and_one_restore(source: Path, target: Path) -> None:
+        if (source.parent.name, source.name) in {
+            ("stage", "gamma-skill"), ("backup", "beta-skill"),
+        }:
+            raise OSError("simulated rename failure")
+        original_move(source, target)
+
+    monkeypatch.setattr(installer, "_move_path", fail_commit_and_one_restore)
+    with pytest.raises(installer.SkillInstallError, match="rollback was incomplete") as failure:
+        installer.apply_actions(actions, destination)
+
+    transactions = list(destination.glob(".project-skills-*"))
+    assert len(transactions) == 1
+    assert _tree_snapshot(transactions[0] / "backup" / "beta-skill") == beta_before
+    assert _tree_snapshot(destination / "alpha-skill") == alpha_before
+    assert not (destination / "gamma-skill").exists()
+    assert str(transactions[0]) in str(failure.value)
+    assert str(destination / "beta-skill") in str(failure.value)
+    assert "previous destinations restored" not in str(failure.value)
+
+
 def test_force_replaces_only_the_exact_selected_target(tmp_path: Path) -> None:
     root = _repository(tmp_path)
     destination = tmp_path / "destination"

@@ -44,7 +44,9 @@ The backend reads the mounted password through `REDIS_PASSWORD_FILE`.
 ## Atomicity, Lifecycle, Readiness, And Failure
 
 Redis enforcement uses one Lua evaluation containing `INCR`, first-write `EXPIRE`, and `TTL`; the
-increment and expiry decision are atomic. The Redis client is created lazily, shared for request
+increment and expiry decision are atomic. A zero-second `TTL` means the key is about to expire and must not renew
+the window; only a missing expiry (`TTL = -1`) is repaired. Response headers round a zero-second
+remainder up to one second without changing the stored expiry. The client is created lazily, shared for request
 enforcement and readiness, and closed with `aclose()` during application lifespan shutdown. Both
 connection establishment and Redis commands use the bounded `REDIS_TIMEOUT_SECONDS` timeout, so a
 network outage cannot leave an authentication request waiting indefinitely.

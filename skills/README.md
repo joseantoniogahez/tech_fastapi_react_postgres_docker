@@ -46,7 +46,10 @@ unless `--force` is passed.
 
 The installer validates every local skill before it lists or copies any of them. A malformed skill
 blocks the complete operation, even when it was not selected. Write mode stages the requested batch
-on the destination filesystem and restores all previous targets if a later commit step fails.
+on the destination filesystem and attempts to restore all previous targets if a later commit step
+fails. If restoration fails, it reports the affected paths and retains the `.project-skills-*`
+transaction directory and backups for manual recovery. Do not delete that directory or rerun the
+installation until the affected targets have been recovered.
 `--force` applies only to explicitly selected skill names; it never replaces adjacent destinations.
 
 ## Skill Matrix

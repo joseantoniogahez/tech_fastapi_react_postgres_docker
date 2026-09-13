@@ -1,18 +1,72 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import http from "node:http";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, test } from "node:test";
+import { fileURLToPath } from "node:url";
 
 import { createServeConfig, normalizeApiOrigin, writeServeConfig } from "./generate-serve-config.mjs";
 import { runSecurityHeadersSmoke } from "./security-headers-smoke.mjs";
 
 const temporaryDirectories = [];
+const generatorPath = fileURLToPath(new URL("./generate-serve-config.mjs", import.meta.url));
 
 afterEach(() => {
   for (const directory of temporaryDirectories.splice(0)) {
     fs.rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test("CLI matches Vite production environment files, expansion, and process precedence", () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "frontend-env-config-"));
+  temporaryDirectories.push(directory);
+  const outputPath = path.join(directory, "serve.json");
+  const env = { ...process.env };
+  delete env.VITE_API_ORIGIN;
+  const checkOrigin = (expectedOrigin) => {
+    const result = spawnSync(process.execPath, [generatorPath, "--output", outputPath], {
+      cwd: directory, env, encoding: "utf8",
+    });
+    assert.equal(result.status, 0, result.stderr);
+    const config = JSON.parse(fs.readFileSync(outputPath, "utf8"));
+    const csp = config.headers[0].headers.find((header) => header.key === "Content-Security-Policy").value;
+    assert.equal(csp.split("; ").find((directive) => directive.startsWith("connect-src")),
+      `connect-src 'self' ${expectedOrigin}`);
+  };
+
+  checkOrigin("http://localhost:8000");
+  for (const [file, origin] of [
+    [".env", "https://base.example.test"],
+    [".env.local", "https://local.example.test"],
+    [".env.production", "https://production.example.test"],
+    [".env.production.local", "https://production-local.example.test"],
+  ]) {
+    fs.writeFileSync(path.join(directory, file), `VITE_API_ORIGIN=${origin}\n`);
+    checkOrigin(origin);
+  }
+  fs.writeFileSync(path.join(directory, ".env.production.local"),
+    "REVIEW_API_HOST=expanded.example.test\nVITE_API_ORIGIN=https://${REVIEW_API_HOST}\n");
+  checkOrigin("https://expanded.example.test");
+  env.VITE_API_ORIGIN = "https://process.example.test";
+  checkOrigin(env.VITE_API_ORIGIN);
+});
+
+test("CLI rejects an invalid production file origin before writing configuration", () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "frontend-invalid-env-"));
+  temporaryDirectories.push(directory);
+  fs.writeFileSync(path.join(directory, ".env.production"), "VITE_API_ORIGIN=https://api.example.test/v1\n");
+  const env = { ...process.env };
+  delete env.VITE_API_ORIGIN;
+  const outputPath = path.join(directory, "serve.json");
+  for (const args of [["--check"], ["--output", outputPath]]) {
+    const result = spawnSync(process.execPath, [generatorPath, ...args], {
+      cwd: directory, env, encoding: "utf8",
+    });
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /VITE_API_ORIGIN/);
+    assert.equal(fs.existsSync(outputPath), false);
   }
 });
 

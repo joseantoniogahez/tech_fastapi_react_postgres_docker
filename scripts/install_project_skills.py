@@ -182,6 +182,7 @@ def apply_actions(actions: list[SkillAction], destination_root: Path) -> None:
     stage_root = transaction_root / "stage"
     backup_root = transaction_root / "backup"
     mutations: list[tuple[Path, Path | None]] = []
+    retain_transaction = False
 
     try:
         stage_root.mkdir()
@@ -218,12 +219,19 @@ def apply_actions(actions: list[SkillAction], destination_root: Path) -> None:
             except OSError as rollback_exc:
                 rollback_errors.append(f"{destination_root}: {rollback_exc}")
 
-        detail = f"Skill installation failed; previous destinations restored: {exc}"
         if rollback_errors:
-            detail += f"; rollback errors: {'; '.join(rollback_errors)}"
+            retain_transaction = True
+            detail = (
+                f"Skill installation failed and rollback was incomplete: {exc}; "
+                f"recovery data retained at {transaction_root}; "
+                f"rollback errors: {'; '.join(rollback_errors)}"
+            )
+        else:
+            detail = f"Skill installation failed; previous destinations restored: {exc}"
         raise SkillInstallError(detail) from exc
     finally:
-        shutil.rmtree(transaction_root, ignore_errors=True)
+        if not retain_transaction:
+            shutil.rmtree(transaction_root, ignore_errors=True)
 
 
 def print_summary(actions: list[SkillAction], destination_root: Path, *, write: bool, force: bool) -> None:

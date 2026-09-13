@@ -33,6 +33,9 @@ and `-c /app/serve.json` for response headers.
 
 The configuration is coupled to the same build arguments as the Vite bundle. Changing the API
 origin requires rebuilding the image; the static container has no Vite runtime environment.
+For the canonical production build, generation uses Vite's `loadEnv` with production mode and
+the frontend working directory, including `.env`, `.env.local`, `.env.production`, and
+`.env.production.local`. Existing process environment values take precedence, matching the bundle.
 
 ## Markup Scope
 

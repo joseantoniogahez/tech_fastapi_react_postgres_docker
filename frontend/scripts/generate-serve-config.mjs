@@ -85,9 +85,11 @@ const parseArguments = (args) => {
   throw new TypeError("usage: node scripts/generate-serve-config.mjs --check | --output <path>");
 };
 
-const main = () => {
+const main = async () => {
   const options = parseArguments(process.argv.slice(2));
-  const apiOrigin = normalizeApiOrigin(process.env.VITE_API_ORIGIN);
+  const { loadEnv } = await import("vite");
+  const env = loadEnv("production", process.cwd());
+  const apiOrigin = normalizeApiOrigin(env.VITE_API_ORIGIN);
   if (!options.checkOnly) {
     writeServeConfig(options.outputPath, apiOrigin);
   }
@@ -95,7 +97,7 @@ const main = () => {
 
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
   try {
-    main();
+    await main();
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error));
     process.exitCode = 1;
