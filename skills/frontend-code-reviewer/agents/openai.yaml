@@ -1,0 +1,4 @@
+interface:
+  display_name: "Frontend Code Reviewer"
+  short_description: "Review React frontend changes and contract risks"
+  default_prompt: "Use $frontend-code-reviewer to review frontend changes for regressions, contract drift, and validation gaps."

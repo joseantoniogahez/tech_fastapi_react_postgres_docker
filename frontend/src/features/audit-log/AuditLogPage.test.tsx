@@ -158,7 +158,7 @@ describe("AuditLogPage", () => {
     expect(screen.queryByText(t("admin.auditLog.empty"))).not.toBeInTheDocument();
   });
 
-  it("shows generic ui error for invalid audit log contracts", async () => {
+  it("shows the normalized API error for invalid audit log contracts", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const requestUrl = toRequestUrl(input);
       if (isAuditLogRequest(input)) {
@@ -174,7 +174,7 @@ describe("AuditLogPage", () => {
     await waitFor(
       () => {
         expect(screen.getByRole("heading", { name: t("admin.common.error.title") })).toBeInTheDocument();
-        expect(screen.getByText(t("admin.common.error.generic"))).toBeInTheDocument();
+        expect(screen.getByText(t("api.error.invalidResponse"))).toBeInTheDocument();
       },
       { timeout: 4000 },
     );

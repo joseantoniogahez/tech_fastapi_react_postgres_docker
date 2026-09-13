@@ -1,17 +1,20 @@
 from typing import Annotated, cast
 
 from fastapi import Depends, Request
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config.settings import AuthSettings
+from app.core.config.settings import AuthSettings, ReadinessSettings
 from app.core.db.database import get_async_session_factory
 from app.core.db.ports import UnitOfWorkPort
 from app.core.db.uow import UnitOfWork
+from app.core.rate_limit import RateLimiter
 from app.core.security.service import Argon2PasswordService, JwtTokenService, PasswordServicePort, TokenServicePort
 from app.features.audit_log.repository import AuditLogRepository
 from app.features.audit_log.service import AuditLogService, AuditLogServicePort
 from app.features.auth.repository import AuthRepository
 from app.features.auth.service import AuthService, AuthServicePort
+from app.features.health.service import ReadinessCheck, ReadinessCheckRegistry, ReadinessService
 from app.features.outbox.repository import OutboxRepository
 from app.features.outbox.service import OutboxService, OutboxServicePort
 from app.features.rbac.repository import RBACRepository
@@ -35,6 +38,54 @@ async def get_db_session():
 
 
 DbSessionDependency = Annotated[AsyncSession, Depends(get_db_session)]
+
+
+def get_database_readiness_check() -> ReadinessCheck:
+    async def check_database() -> None:
+        session_factory = get_async_session_factory()
+        async with session_factory() as session:
+            await session.execute(text("SELECT 1"))
+
+    return check_database
+
+
+DatabaseReadinessCheckDependency = Annotated[ReadinessCheck, Depends(get_database_readiness_check)]
+
+
+def get_readiness_settings() -> ReadinessSettings:
+    return ReadinessSettings()
+
+
+ReadinessSettingsDependency = Annotated[ReadinessSettings, Depends(get_readiness_settings)]
+
+
+def get_readiness_check_registry(
+    request: Request,
+    database_check: DatabaseReadinessCheckDependency,
+) -> ReadinessCheckRegistry:
+    registry = ReadinessCheckRegistry()
+    registry.register("database", database_check)
+    rate_limiter = getattr(request.app.state, "rate_limiter", None)
+    if isinstance(rate_limiter, RateLimiter) and rate_limiter.uses_shared_store:
+        registry.register("redis", rate_limiter.ping)
+    return registry
+
+
+ReadinessCheckRegistryDependency = Annotated[ReadinessCheckRegistry, Depends(get_readiness_check_registry)]
+
+
+def get_readiness_service(
+    registry: ReadinessCheckRegistryDependency,
+    settings: ReadinessSettingsDependency,
+) -> ReadinessService:
+    return ReadinessService(
+        registry,
+        timeout_seconds=settings.READINESS_TIMEOUT_SECONDS,
+        max_concurrency=settings.READINESS_MAX_CONCURRENCY,
+    )
+
+
+ReadinessServiceDependency = Annotated[ReadinessService, Depends(get_readiness_service)]
 
 
 async def get_unit_of_work(session: DbSessionDependency) -> UnitOfWorkPort:

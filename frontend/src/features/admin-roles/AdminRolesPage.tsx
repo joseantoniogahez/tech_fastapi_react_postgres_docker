@@ -131,7 +131,7 @@ export const AdminRolesPage = () => {
       <section className={ADMIN_CARD_CLASS_NAME}>
         <h2 className="text-lg font-semibold">{t("admin.roles.create.title")}</h2>
         <form className="mt-4 flex flex-wrap items-end gap-3" onSubmit={submitCreateRole}>
-          <label className="min-w-72 flex-1">
+          <label className="min-w-0 basis-72 flex-1">
             <span className={ADMIN_LABEL_CLASS_NAME}>{t("admin.roles.create.name")}</span>
             <input
               className={ADMIN_FIELD_CLASS_NAME}
@@ -167,7 +167,7 @@ export const AdminRolesPage = () => {
               key={role.id}
             >
               <div className="flex flex-wrap items-end gap-3">
-                <label className="min-w-72 flex-1">
+                <label className="min-w-0 basis-72 flex-1">
                   <span className={ADMIN_LABEL_CLASS_NAME}>{t("admin.roles.create.name")}</span>
                   <input
                     className={ADMIN_FIELD_CLASS_NAME}
@@ -201,7 +201,7 @@ export const AdminRolesPage = () => {
                 <article className={ADMIN_SUBCARD_CLASS_NAME}>
                   <h3 className="text-sm font-semibold">{t("admin.roles.card.parents")}</h3>
                   <div className="mt-3 flex flex-wrap items-end gap-2">
-                    <label className="min-w-52 flex-1">
+                    <label className="min-w-0 basis-52 flex-1">
                       <span className={ADMIN_INLINE_LABEL_CLASS_NAME}>{t("admin.roles.parents.select")}</span>
                       <select
                         className={`${ADMIN_FIELD_CLASS_NAME} text-sm`}

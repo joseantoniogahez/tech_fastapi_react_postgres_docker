@@ -22,6 +22,9 @@ Main providers:
 - `get_outbox_service`
 - `get_password_service`
 - `get_token_service`
+- `get_database_readiness_check`
+- `get_readiness_check_registry`
+- `get_readiness_service`
 
 Feature-local auth dependencies live in:
 
@@ -76,3 +79,11 @@ Clear overrides during teardown:
 ```python
 app.dependency_overrides.clear()
 ```
+
+## Readiness Wiring
+
+The health router consumes `ReadinessServiceDependency`; it does not load settings or construct
+checks. `get_readiness_check_registry` always registers the configured database under the stable
+name `database`. A capability adds its check at this provider boundary only when that capability is
+enabled. `ReadinessService` owns bounded concurrent execution, per-check timeout, deterministic
+ordering, and neutral result mapping.

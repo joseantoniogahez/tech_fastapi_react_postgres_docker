@@ -54,6 +54,39 @@ describe("accessibility route baseline", () => {
     expect((await axe.run(view.container, AXE_RUN_OPTIONS)).violations).toHaveLength(0);
   });
 
+  it("has no obvious accessibility violations on registration route", async () => {
+    const view = renderRoute(["/register"]);
+    expect(await screen.findByRole("heading", { name: t("auth.register.title") })).toBeInTheDocument();
+    expect((await axe.run(view.container, AXE_RUN_OPTIONS)).violations).toHaveLength(0);
+  });
+
+  it.each([
+    ["welcome", "/welcome", "welcome.greeting" as const],
+    ["profile", "/profile", "profile.title" as const],
+  ])("has no obvious accessibility violations on loaded %s route", async (_name, route, headingKey) => {
+    setAccessToken("loaded-route-token");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ id: 1, username: "a11y_user", disabled: false, permissions: [] }),
+      } satisfies Partial<Response>),
+    );
+    const view = renderRoute([route]);
+    const heading = headingKey === "welcome.greeting" ? t(headingKey, { username: "a11y_user" }) : t(headingKey);
+    expect(await screen.findByRole("heading", { name: heading })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: t("welcome.logout") })).toBeInTheDocument();
+    expect((await axe.run(view.container, AXE_RUN_OPTIONS)).violations).toHaveLength(0);
+  });
+
+  it("has no obvious accessibility violations on the not-found route", async () => {
+    clearAccessToken();
+    const view = renderRoute(["/missing"]);
+    expect(await screen.findByRole("heading", { name: t("routing.notFound.title") })).toBeInTheDocument();
+    expect((await axe.run(view.container, AXE_RUN_OPTIONS)).violations).toHaveLength(0);
+  });
+
   it("has no obvious accessibility violations on protected error state", async () => {
     setAccessToken("token-with-server-error");
 

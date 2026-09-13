@@ -1,7 +1,7 @@
-<!--
+---
 name: project-feature-builder
 description: Full-stack feature delivery for this FastAPI, React, PostgreSQL, and Docker starter kit. Use when Codex must add or change a user-facing capability that touches both backend and frontend, including API endpoints, data models, auth or RBAC behavior, OpenAPI contract sync, routes, UI state, tests, and project documentation.
--->
+---
 
 # Project Feature Builder
 
@@ -22,11 +22,13 @@ definition of done.
    - `frontend/docs/foundation_status.md`
 1. Read affected backend operation and architecture docs before editing backend behavior.
 1. Read affected frontend operation docs before editing frontend behavior.
+1. Read product documentation only when a derived application explicitly declares it canonical.
 1. Confirm scope, acceptance criteria, affected contracts, protected files, and validation gates.
-1. Use `python scripts/scaffold_feature.py full-stack <feature-name> --dry-run` to preview new
+1. Use `\.\.venv\Scripts\python.exe scripts\scaffold_feature.py --dry-run full-stack
+   <feature-name>` on PowerShell or `./.venv/bin/python scripts/scaffold_feature.py --dry-run
+   full-stack <feature-name>` on POSIX to preview new
    feature structure when adding a new vertical feature.
-1. Use `python scripts/scaffold_feature.py full-stack <feature-name>` only after the target paths and
-   scope are clear.
+1. Remove `--dry-run` only after the target paths and scope are clear.
 1. Implement the smallest coherent full-stack change.
 1. Update tests, OpenAPI artifacts, docs, and inventories in the same change when contracts move.
 1. Run matching validation commands and report outcomes.
@@ -86,8 +88,9 @@ Run the smallest complete gate set for the change.
 
 Backend:
 
-- `python -m pytest backend/tests`
-- `python -m pytest backend/tests --cov=app --cov-report=term-missing:skip-covered --cov-fail-under=100`
+- `\.\.venv\Scripts\python.exe -m pytest backend\tests` (PowerShell)
+- `./.venv/bin/python -m pytest backend/tests` (POSIX)
+- `\.\.venv\Scripts\python.exe -m pytest backend\tests --cov=app --cov-report=term-missing:skip-covered --cov-fail-under=100`
 
 Frontend:
 
@@ -97,7 +100,8 @@ Frontend:
 
 Repository:
 
-- `pre-commit run --all-files` when docs, hooks, formatting, Docker, or shared config changed.
+- `\.\.venv\Scripts\python.exe -m pre_commit run --all-files` when docs, hooks, formatting,
+  Docker, or shared config changed; use `./.venv/bin/python` on POSIX.
 
 ## Final Report
 

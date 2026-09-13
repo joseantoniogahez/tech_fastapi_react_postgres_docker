@@ -6,6 +6,7 @@ from typing import Annotated
 from fastapi import Depends, Request
 
 from app.core.authorization import PermissionScope, normalize_permission_scope
+from app.core.common.observability import sanitize_log_text
 from app.core.errors.services import ForbiddenError
 from app.core.setup.dependencies import AuthServiceDependency
 from app.features.auth.dependencies import CurrentActiveUserDependency
@@ -88,14 +89,14 @@ def _log_authorization_decision(
             "event=api_authorization_decision request_id=%s user_id=%s permission_id=%s "
             "required_scope=%s decision=%s method=%s path=%s route=%s"
         ),
-        _get_request_id(request),
+        sanitize_log_text(_get_request_id(request)),
         user_id,
-        permission_id,
-        required_scope,
-        decision,
-        request.method,
-        request.url.path,
-        _get_route_template(request),
+        sanitize_log_text(permission_id),
+        sanitize_log_text(required_scope),
+        sanitize_log_text(decision),
+        sanitize_log_text(request.method),
+        sanitize_log_text(request.url.path),
+        sanitize_log_text(_get_route_template(request)),
     )
 
 

@@ -16,7 +16,7 @@ This folder is the canonical frontend documentation set. It is organized for thr
 - `operations/api_contract_sync.md`: OpenAPI sync workflow and drift-prevention contract.
 - `operations/api_consumer_matrix.md`: frontend endpoint consumer and error-contract inventory.
 - `operations/mutation_policy.md`: mutation retry and invalidation policy contracts.
-- `operations/runtime_config.md`: runtime environment schema and fail-fast behavior contract.
+- `operations/runtime_config.md`: Vite build-input schema and browser-start fail-fast contract.
 - `operations/browser_security_baseline.md`: browser security policy baseline and enforcement ownership.
 - `operations/dependency_policy.md`: dependency audit thresholds and supply-chain gate rules.
 - `operations/observability_events.md`: structured observability event schema and redaction rules.

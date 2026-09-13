@@ -3,8 +3,8 @@ const DEFAULT_API_BASE_PATH = "/v1";
 
 interface FrontendEnvInput {
   [key: string]: unknown;
-  VITE_API_ORIGIN?: string;
-  VITE_API_BASE_PATH?: string;
+  VITE_API_ORIGIN?: unknown;
+  VITE_API_BASE_PATH?: unknown;
 }
 
 interface FrontendEnvConfig {
@@ -18,8 +18,6 @@ export class FrontendEnvError extends Error {
     this.name = "FrontendEnvError";
   }
 }
-
-const normalizeOrigin = (origin: string): string => origin.trim().replace(/\/+$/, "");
 
 const normalizeBasePath = (basePath: string): string => {
   const sanitized = basePath.trim().replace(/^\/+|\/+$/g, "");
@@ -42,13 +40,17 @@ const ensureString = (value: unknown, fieldName: string): string => {
 };
 
 const validateOrigin = (origin: string): string => {
-  const normalizedOrigin = normalizeOrigin(origin);
-
   try {
-    const url = new URL(normalizedOrigin);
+    const url = new URL(origin);
     if (url.protocol !== "http:" && url.protocol !== "https:") {
       throw new FrontendEnvError(`VITE_API_ORIGIN must use http/https protocol, received '${url.protocol}'`);
     }
+
+    if (url.username || url.password || url.href !== `${url.origin}/`) {
+      throw new FrontendEnvError("VITE_API_ORIGIN must be an origin");
+    }
+
+    return url.origin;
   } catch (error) {
     if (error instanceof FrontendEnvError) {
       throw error;
@@ -56,8 +58,6 @@ const validateOrigin = (origin: string): string => {
 
     throw new FrontendEnvError(`VITE_API_ORIGIN is invalid URL: '${origin}'`);
   }
-
-  return normalizedOrigin;
 };
 
 const validateBasePath = (basePath: string): string => {

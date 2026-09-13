@@ -12,6 +12,11 @@ const OUTPUT_PATH = path.join(REPO_DIR, "frontend", "contracts", "openapi", "bac
 const IS_CHECK_MODE = process.argv.includes("--check");
 const VENV_PYTHON_WINDOWS = path.join(REPO_DIR, ".venv", "Scripts", "python.exe");
 const VENV_PYTHON_POSIX = path.join(REPO_DIR, ".venv", "bin", "python");
+const explicitPython = process.env.OPENAPI_PYTHON?.trim();
+const EXPLICIT_PYTHON =
+  explicitPython && /[\\/]/u.test(explicitPython) && !path.isAbsolute(explicitPython)
+    ? path.resolve(REPO_DIR, explicitPython)
+    : explicitPython;
 
 const PYTHON_CODE = `
 import json
@@ -23,35 +28,25 @@ const execute = (command, args) =>
   spawnSync(command, args, {
     cwd: BACKEND_DIR,
     encoding: "utf8",
-    env: process.env,
+    env: { ...process.env, APP_ENV: "test" },
   });
 
 const runPythonExport = () => {
-  const candidates = process.env.BACKEND_PYTHON_BIN
-    ? [[process.env.BACKEND_PYTHON_BIN, ["-c", PYTHON_CODE]]]
-    : process.env.PYTHON_BIN
-    ? [[process.env.PYTHON_BIN, ["-c", PYTHON_CODE]]]
-    : [
-        [VENV_PYTHON_WINDOWS, ["-c", PYTHON_CODE]],
-        [VENV_PYTHON_POSIX, ["-c", PYTHON_CODE]],
-        ["python", ["-c", PYTHON_CODE]],
-        ["python3", ["-c", PYTHON_CODE]],
-        ["py", ["-3", "-c", PYTHON_CODE]],
-      ];
-
-  const errors = [];
-  for (const [command, args] of candidates) {
-    const result = execute(command, args);
-    if (result.status === 0 && result.stdout.trim()) {
-      return result.stdout;
-    }
-
-    const stderr = result.stderr?.trim();
-    const stdout = result.stdout?.trim();
-    errors.push(`${command} ${args.join(" ")} -> ${stderr || stdout || `exit=${result.status}`}`);
+  const command =
+    EXPLICIT_PYTHON ||
+    [VENV_PYTHON_WINDOWS, VENV_PYTHON_POSIX].find((candidate) => fs.existsSync(candidate));
+  if (!command) {
+    throw new Error(
+      "Repository root .venv Python not found. Create .venv or explicitly set OPENAPI_PYTHON.",
+    );
   }
 
-  throw new Error(`Unable to export backend OpenAPI.\n${errors.join("\n")}`);
+  const result = execute(command, ["-c", PYTHON_CODE]);
+  if (result.status === 0 && result.stdout.trim()) {
+    return result.stdout;
+  }
+  const detail = result.stderr?.trim() || result.stdout?.trim() || `exit=${result.status}`;
+  throw new Error(`Unable to export backend OpenAPI with ${command}.\n${detail}`);
 };
 
 const normalizeJson = (text) => `${JSON.stringify(JSON.parse(text), null, 2)}\n`;

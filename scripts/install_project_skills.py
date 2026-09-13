@@ -11,8 +11,14 @@ import filecmp
 import os
 import shutil
 import sys
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
+
+if __package__ is None:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from scripts.validate_project_skills import ValidationIssue, validate_skill
 
 SKILL_NAME_PATTERN = r"^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$"
 
@@ -45,17 +51,20 @@ def default_skills_dest() -> Path:
     return Path.home() / ".codex" / "skills"
 
 
-def discover_project_skills(skills_root: Path) -> dict[str, Path]:
-    skills: dict[str, Path] = {}
-    for child in sorted(skills_root.iterdir()):
-        if not child.is_dir():
-            continue
-        if not (child / "SKILL.md").is_file():
-            continue
-        skills[child.name] = child
-    if not skills:
+def _format_validation_issues(issues: list[ValidationIssue]) -> str:
+    return "\n".join(f"- {issue}" for issue in sorted(issues))
+
+
+def discover_project_skills(skills_root: Path, repository_root: Path) -> dict[str, Path]:
+    skill_dirs = sorted(child for child in skills_root.iterdir() if child.is_dir())
+    if not skill_dirs:
         raise SkillInstallError(f"No skills found in {skills_root}")
-    return skills
+
+    issues = [issue for skill_dir in skill_dirs for issue in validate_skill(skill_dir, repository_root)]
+    if issues:
+        raise SkillInstallError(f"Project skill pack is invalid:\n{_format_validation_issues(issues)}")
+
+    return {skill_dir.name: skill_dir for skill_dir in skill_dirs}
 
 
 def normalize_requested_skills(raw_skills: list[str] | None) -> list[str] | None:
@@ -137,24 +146,92 @@ def assert_target_within_destination(target: Path, destination_root: Path) -> No
         raise SkillInstallError(f"Refusing to write outside destination root: {resolved_target}")
 
 
+def _move_path(source: Path, target: Path) -> None:
+    """Atomically rename a staged or existing skill on the destination filesystem."""
+
+    source.replace(target)
+
+
+def _remove_path(path: Path) -> None:
+    if path.is_dir():
+        shutil.rmtree(path)
+    elif path.exists():
+        path.unlink()
+
+
 def apply_actions(actions: list[SkillAction], destination_root: Path) -> None:
-    destination_root.mkdir(parents=True, exist_ok=True)
+    conflicts = [action for action in actions if action.action == "conflict"]
+    if conflicts:
+        names = ", ".join(action.name for action in conflicts)
+        raise SkillInstallError(f"Existing non-matching skill(s) require --force: {names}")
 
-    for action in actions:
-        if action.action == "skip-identical":
-            continue
-        if action.action == "conflict":
-            raise SkillInstallError(f"Refusing to overwrite existing skill without --force: {action.target}")
+    write_actions = [action for action in actions if action.action in {"install", "overwrite"}]
+    if not write_actions:
+        return
+    if destination_root.exists() and not destination_root.is_dir():
+        raise SkillInstallError(f"Destination is not a directory: {destination_root}")
 
+    for action in write_actions:
         assert_target_within_destination(action.target, destination_root)
 
-        if action.target.exists():
-            if action.target.is_dir():
-                shutil.rmtree(action.target)
-            else:
-                action.target.unlink()
+    destination_existed = destination_root.exists()
+    destination_parent = destination_root.resolve().parent
+    destination_parent.mkdir(parents=True, exist_ok=True)
+    transaction_parent = destination_root if destination_existed else destination_parent
+    transaction_root = Path(tempfile.mkdtemp(prefix=".project-skills-", dir=transaction_parent))
+    stage_root = transaction_root / "stage"
+    backup_root = transaction_root / "backup"
+    mutations: list[tuple[Path, Path | None]] = []
+    retain_transaction = False
 
-        shutil.copytree(action.source, action.target)
+    try:
+        stage_root.mkdir()
+        backup_root.mkdir()
+        for action in write_actions:
+            staged_skill = stage_root / action.name
+            shutil.copytree(action.source, staged_skill)
+            staged_issues = validate_skill(staged_skill, transaction_root)
+            if staged_issues:
+                raise SkillInstallError(
+                    f"Staged skill '{action.name}' is invalid:\n{_format_validation_issues(staged_issues)}"
+                )
+
+        destination_root.mkdir(parents=True, exist_ok=True)
+        for action in write_actions:
+            backup = backup_root / action.name if action.target.exists() else None
+            if backup is not None:
+                _move_path(action.target, backup)
+            mutations.append((action.target, backup))
+            _move_path(stage_root / action.name, action.target)
+    except Exception as exc:
+        rollback_errors: list[str] = []
+        for target, backup in reversed(mutations):
+            try:
+                _remove_path(target)
+                if backup is not None and backup.exists():
+                    _move_path(backup, target)
+            except OSError as rollback_exc:
+                rollback_errors.append(f"{target}: {rollback_exc}")
+
+        if not destination_existed and destination_root.exists():
+            try:
+                destination_root.rmdir()
+            except OSError as rollback_exc:
+                rollback_errors.append(f"{destination_root}: {rollback_exc}")
+
+        if rollback_errors:
+            retain_transaction = True
+            detail = (
+                f"Skill installation failed and rollback was incomplete: {exc}; "
+                f"recovery data retained at {transaction_root}; "
+                f"rollback errors: {'; '.join(rollback_errors)}"
+            )
+        else:
+            detail = f"Skill installation failed; previous destinations restored: {exc}"
+        raise SkillInstallError(detail) from exc
+    finally:
+        if not retain_transaction:
+            shutil.rmtree(transaction_root, ignore_errors=True)
 
 
 def print_summary(actions: list[SkillAction], destination_root: Path, *, write: bool, force: bool) -> None:
@@ -194,15 +271,15 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     try:
         root = ensure_repo_root(Path(args.root))
         skills_root = root / "skills"
         destination_root = Path(args.dest).expanduser() if args.dest else default_skills_dest()
-        available_skills = discover_project_skills(skills_root)
+        available_skills = discover_project_skills(skills_root, root)
         requested_skills = normalize_requested_skills(args.skills)
         actions = collect_actions(
             available_skills=available_skills,
@@ -211,8 +288,6 @@ def main() -> int:
             force=args.force,
         )
 
-        print_summary(actions, destination_root, write=args.write, force=args.force)
-
         conflicts = [action for action in actions if action.action == "conflict"]
         if conflicts:
             conflict_list = ", ".join(action.name for action in conflicts)
@@ -220,11 +295,13 @@ def main() -> int:
 
         if args.write:
             apply_actions(actions, destination_root)
+            print_summary(actions, destination_root, write=True, force=args.force)
         else:
+            print_summary(actions, destination_root, write=False, force=args.force)
             print()
             print("preview only; rerun with --write to install")
         return 0
-    except SkillInstallError as exc:
+    except (OSError, SkillInstallError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
 

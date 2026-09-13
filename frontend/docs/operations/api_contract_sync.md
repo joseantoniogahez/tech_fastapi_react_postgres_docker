@@ -18,6 +18,9 @@ This document defines how frontend API contract artifacts stay synchronized with
 ## CI/Local Drift Gate
 
 - `npm --prefix frontend run check` must include `openapi:check`.
+- Local commands use the repository-root `.venv` interpreter. Environments that provision an
+  isolated interpreter without that directory, such as CI, must set `OPENAPI_PYTHON` explicitly;
+  CI binds it to the exact Python installed by `actions/setup-python`.
 - If backend contracts change and artifact is stale, check must fail.
 - Required remediation:
   1. Run `openapi:sync`.

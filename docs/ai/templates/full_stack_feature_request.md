@@ -109,14 +109,16 @@ Frontend tests:
 
 Commands to run:
 
-- `python -m pytest backend/tests`
-- `python -m pytest backend/tests --cov=app --cov-report=term-missing:skip-covered --cov-fail-under=100`
+- `.\.venv\Scripts\python.exe -m pytest backend\tests` (PowerShell; use
+  `./.venv/bin/python` and POSIX paths on POSIX)
+- `.\.venv\Scripts\python.exe -m pytest backend\tests --cov=app --cov-report=term-missing:skip-covered --cov-fail-under=100`
 - `npm --prefix frontend run openapi:sync` when backend OpenAPI output changes.
 - `npm --prefix frontend run openapi:check` when backend OpenAPI output should be unchanged.
 - `npm --prefix frontend run check`
 - `npm --prefix frontend run test:e2e:ci` when auth, routing, or error journeys change.
 - `npm --prefix frontend run build`
-- `pre-commit run --all-files` when docs, hooks, formatting, Docker, or shared config changed.
+- `.\.venv\Scripts\python.exe -m pre_commit run --all-files` when docs, hooks, formatting, Docker,
+  or shared config changed.
 
 ## Reviewer Validation Checklist
 

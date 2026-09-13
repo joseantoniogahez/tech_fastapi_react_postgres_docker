@@ -4,11 +4,17 @@ import { RouterProvider, createMemoryRouter } from "react-router-dom";
 
 import { createQueryClient } from "@/app/query-client";
 import { SESSION_QUERY_KEY, type AuthenticatedUser } from "@/shared/auth/session";
+import { clearAccessToken, setAccessToken } from "@/shared/auth/storage";
 import { ProtectedRoute } from "@/shared/routing/ProtectedRoute";
 
 const renderRoute = (sessionValue: AuthenticatedUser | null) => {
   const queryClient = createQueryClient();
   queryClient.setQueryData(SESSION_QUERY_KEY, sessionValue);
+  if (sessionValue) {
+    setAccessToken("protected-route-test-token");
+  } else {
+    clearAccessToken();
+  }
 
   const router = createMemoryRouter(
     [

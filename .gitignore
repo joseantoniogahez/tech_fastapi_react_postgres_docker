@@ -49,6 +49,7 @@ coverage.xml
 *.py,cover
 .hypothesis/
 .pytest_cache/
+.pytest_tmp/
 cover/
 
 # Translations
@@ -169,3 +170,10 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# Database backup artifacts are operational data, never source artifacts.
+backups/
+*.dump
+*.backup
+*.sql.gz
+*.dump.sha256

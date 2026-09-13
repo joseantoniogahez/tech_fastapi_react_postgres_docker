@@ -3,12 +3,66 @@ from typing import Annotated, Any
 from fastapi import Body, status
 
 from app.core.common.openapi import INTERNAL_ERROR_EXAMPLE, build_error_response
+from app.core.rate_limit import (
+    RATE_LIMIT_HEADER,
+    RATE_LIMIT_REMAINING_HEADER,
+    RATE_LIMIT_RESET_HEADER,
+    RETRY_AFTER_HEADER,
+)
 from app.features.auth.schemas import RegisterUserRequest, UpdateCurrentUserRequest
 
 TOKEN_RESPONSE_EXAMPLE: dict[str, Any] = {
     "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
     "token_type": "bearer",
 }
+
+QUOTA_RESPONSE_HEADERS: dict[str, Any] = {
+    RATE_LIMIT_HEADER: {
+        "description": "Maximum requests allowed in the fixed window.",
+        "schema": {"type": "integer", "minimum": 1},
+    },
+    RATE_LIMIT_REMAINING_HEADER: {
+        "description": "Requests remaining in the current fixed window.",
+        "schema": {"type": "integer", "minimum": 0},
+    },
+    RATE_LIMIT_RESET_HEADER: {
+        "description": "Whole seconds until the current fixed window resets.",
+        "schema": {"type": "integer", "minimum": 1},
+    },
+}
+
+RATE_LIMITED_RESPONSE_HEADERS: dict[str, Any] = {
+    **QUOTA_RESPONSE_HEADERS,
+    RETRY_AFTER_HEADER: {
+        "description": "Whole seconds to wait before retrying.",
+        "schema": {"type": "integer", "minimum": 1},
+    },
+}
+
+
+def _rate_limit_responses() -> dict[int, dict[str, Any]]:
+    return {
+        status.HTTP_429_TOO_MANY_REQUESTS: build_error_response(
+            description="The authentication surface quota is exhausted.",
+            example={
+                "detail": "Too many requests. Try again later.",
+                "status": 429,
+                "code": "rate_limited",
+                "meta": {"retry_after_seconds": 60},
+            },
+            additional_headers=RATE_LIMITED_RESPONSE_HEADERS,
+        ),
+        status.HTTP_503_SERVICE_UNAVAILABLE: build_error_response(
+            description="The required shared rate-limit store is unavailable.",
+            example={
+                "detail": "Service temporarily unavailable",
+                "status": 503,
+                "code": "service_unavailable",
+                "meta": {"dependency": "rate_limit_store"},
+            },
+        ),
+    }
+
 
 AUTHENTICATED_USER_EXAMPLE: dict[str, Any] = {
     "id": 1,
@@ -79,6 +133,7 @@ LOGIN_FOR_ACCESS_TOKEN_DOC: dict[str, Any] = {
         status.HTTP_200_OK: {
             "description": "Authentication successful.",
             "content": {"application/json": {"example": TOKEN_RESPONSE_EXAMPLE}},
+            "headers": QUOTA_RESPONSE_HEADERS,
         },
         status.HTTP_400_BAD_REQUEST: build_error_response(
             description="Invalid credential input format.",
@@ -106,6 +161,7 @@ LOGIN_FOR_ACCESS_TOKEN_DOC: dict[str, Any] = {
                 "code": "forbidden",
             },
         ),
+        **_rate_limit_responses(),
         status.HTTP_500_INTERNAL_SERVER_ERROR: build_error_response(
             description="Unhandled internal server error.",
             example=INTERNAL_ERROR_EXAMPLE,
@@ -138,6 +194,7 @@ REGISTER_USER_DOC: dict[str, Any] = {
         status.HTTP_201_CREATED: {
             "description": "User registered.",
             "content": {"application/json": {"example": AUTHENTICATED_USER_EXAMPLE}},
+            "headers": QUOTA_RESPONSE_HEADERS,
         },
         status.HTTP_400_BAD_REQUEST: build_error_response(
             description="Invalid registration input or password policy violation.",
@@ -157,6 +214,7 @@ REGISTER_USER_DOC: dict[str, Any] = {
                 "meta": {"username": "admin"},
             },
         ),
+        **_rate_limit_responses(),
         status.HTTP_500_INTERNAL_SERVER_ERROR: build_error_response(
             description="Unhandled internal server error.",
             example=INTERNAL_ERROR_EXAMPLE,

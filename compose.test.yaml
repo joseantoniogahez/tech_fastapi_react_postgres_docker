@@ -2,7 +2,7 @@ name: tech-tests
 
 services:
   backend-test:
-    image: python:${PYTHON_VERSION:-3.14.3}-slim
+    image: python:${PYTHON_VERSION:-3.14.6}-slim
     working_dir: /workspace/backend
     environment:
       PYTHONDONTWRITEBYTECODE: "1"
@@ -13,11 +13,11 @@ services:
       [
         "sh",
         "-c",
-        "python -m pip install --upgrade pip && python -m pip install --no-cache-dir -r requirements.txt -r tests/requirements.txt && pytest tests",
+        "python -m pip install pip==26.2.1 && python -m pip install --no-cache-dir -r requirements.txt -r tests/requirements.txt && python -m pytest tests",
       ]
 
   frontend-test:
-    image: node:22-alpine
+    image: node:22.23.1-alpine
     working_dir: /workspace/frontend
     environment:
       CI: "true"
@@ -26,7 +26,7 @@ services:
     volumes:
       - ./frontend:/workspace/frontend
       - frontend_test_node_modules:/workspace/frontend/node_modules
-    command: ["sh", "-c", "npm install -g npm@11.10.0 && npm ci && npm test"]
+    command: ["sh", "-c", "npm install -g npm@12.0.1 && npm ci && npm test"]
 
 volumes:
   frontend_test_node_modules:

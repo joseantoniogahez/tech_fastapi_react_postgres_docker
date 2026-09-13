@@ -1,4 +1,5 @@
 export const ES_MESSAGES = {
+  "api.error.invalidResponse": "Respuesta invalida del servidor",
   "admin.common.error.generic": "No fue posible completar la operacion, intenta nuevamente.",
   "admin.common.error.title": "Error del modulo administrador",
   "admin.common.loading": "Cargando modulo administrador...",

@@ -1,5 +1,5 @@
-import { ApiContractError } from "@/shared/api/contracts";
 import { buildApiUrl } from "@/shared/api/env";
+import { ApiError } from "@/shared/api/errors";
 import {
   CURRENT_USER_ENDPOINT_PATH,
   loginWithCredentials,
@@ -139,7 +139,7 @@ describe("session client", () => {
     expect(getAccessToken()).toBeNull();
   });
 
-  it("raises contract error when /users/me payload is invalid", async () => {
+  it("raises a normalized API error when /users/me payload is invalid", async () => {
     setAccessToken("valid-token");
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
@@ -154,7 +154,11 @@ describe("session client", () => {
     } satisfies Partial<Response>);
     vi.stubGlobal("fetch", fetchMock);
 
-    await expect(readCurrentUser()).rejects.toBeInstanceOf(ApiContractError);
+    await expect(readCurrentUser()).rejects.toMatchObject({
+      message: "Respuesta invalida del servidor",
+      status: 200,
+      code: "invalid_response",
+    } satisfies Partial<ApiError>);
   });
 
   it("clears token on logout", () => {

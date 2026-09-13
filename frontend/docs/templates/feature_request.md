@@ -62,6 +62,7 @@ Describe the product or user problem and the expected frontend outcome.
   - `npm --prefix frontend run check`
   - `npm --prefix frontend run test:e2e:ci` (required for auth/routing/error flow changes)
   - `npm --prefix frontend run build`
+  - `.\.venv\Scripts\python.exe -m pre_commit run --all-files`
 
 ## Reviewer Validation Checklist
 

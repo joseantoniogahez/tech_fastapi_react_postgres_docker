@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "generator": {
+    "name": "pip",
+    "version": "26.0.1",
+    "python": "3.14.6",
+    "platform": "windows-x86_64"
+  },
+  "installer": {
+    "name": "pip",
+    "version": "26.2.1"
+  },
+  "inputs": {
+    "requirements.txt": "5d6193953321f8aa858eca8f452e603857fc7f17e1728914680f26a5c65d363d",
+    "backend/requirements.txt": "fe42fedce5eeb45f2e317c8a57ba877b0e1f22041ddb0f17322d0e430a6f9758",
+    "backend/tests/requirements.txt": "b1b8c51ce05c664e84ed72cd13153d1662117e2286d7438f74786675234f1d2a"
+  },
+  "lock": {
+    "path": "pylock.windows-x86_64.toml",
+    "sha256": "b610563078ab4ad4901459175d30d67004dbb40efab0155075004249ba7bb7c8",
+    "packages": 82
+  },
+  "ci_lock": {
+    "path": "pylock.ubuntu-x86_64.toml",
+    "platform": "ubuntu-24.04-x86_64",
+    "status": "validated",
+    "generator": "pip==26.0.1",
+    "installer": "pip==26.2.1",
+    "sha256": "a4112af3c57634d4c3ef7317ca60650e9f8522a0a85d526f17dfb8d0d9508f70",
+    "packages": 81,
+    "proof": {
+      "clean_install": "pass",
+      "pip_check": "pass",
+      "pip_audit": "pass"
+    }
+  }
+}

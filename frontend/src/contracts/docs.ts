@@ -14,6 +14,16 @@ export const TEMPLATES_DIR = path.join(DOCS_DIR, "templates");
 export const FRONTEND_PLAYBOOK_PATH = path.join(DOCS_DIR, "frontend_playbook.md");
 export const FRONTEND_DOCS_INDEX_PATH = path.join(DOCS_DIR, "README.md");
 export const FRONTEND_FOUNDATION_STATUS_PATH = path.join(DOCS_DIR, "foundation_status.md");
+export const RUNTIME_CONFIG_PATH = path.join(DOCS_DIR, "operations", "runtime_config.md");
+export const API_CONSUMER_MATRIX_PATH = path.join(DOCS_DIR, "operations", "api_consumer_matrix.md");
+export const MUTATION_POLICY_PATH = path.join(DOCS_DIR, "operations", "mutation_policy.md");
+export const OBSERVABILITY_EVENTS_PATH = path.join(DOCS_DIR, "operations", "observability_events.md");
+export const RUNTIME_ERROR_PIPELINE_PATH = path.join(DOCS_DIR, "operations", "runtime_error_pipeline.md");
+export const SUPPORT_DIAGNOSTICS_RUNBOOK_PATH = path.join(
+  DOCS_DIR,
+  "operations",
+  "support_diagnostics_runbook.md",
+);
 
 export const FEATURE_REQUEST_TEMPLATE_PATH = path.join(TEMPLATES_DIR, "feature_request.md");
 export const INTEGRATION_REQUEST_TEMPLATE_PATH = path.join(TEMPLATES_DIR, "integration_request.md");

@@ -3,15 +3,16 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from time import perf_counter
 from typing import Any
-from uuid import uuid4
 
 from fastapi import FastAPI, Request, Response
 from fastapi.openapi.utils import get_openapi
 from pydantic import ValidationError
 
+from app.core.common.observability import resolve_request_id, sanitize_log_text
 from app.core.common.openapi import normalize_generated_openapi_schema
-from app.core.config.settings import ApiSettings, AuthSettings
+from app.core.config.settings import ApiSettings, AuthSettings, RateLimitSettings
 from app.core.errors.setup.handlers import REQUEST_ID_HEADER, configure_exception_handlers
+from app.core.rate_limit import build_rate_limiter
 from app.core.setup.cors import configure_cors
 from app.core.setup.routers import configure_routers
 
@@ -73,8 +74,11 @@ def configure_request_context_middleware(app: FastAPI) -> None:
 
     @app.middleware("http")
     async def request_context_middleware(request: Request, call_next) -> Response:
-        request_id = request.headers.get(REQUEST_ID_HEADER, "").strip() or uuid4().hex
+        request_id = resolve_request_id(request.headers.get(REQUEST_ID_HEADER))
         request.state.request_id = request_id
+        client_ip = sanitize_log_text(request.client.host if request.client is not None else "-")
+        method = sanitize_log_text(request.method)
+        path = sanitize_log_text(request.url.path)
 
         started_at = perf_counter()
         try:
@@ -83,10 +87,11 @@ def configure_request_context_middleware(app: FastAPI) -> None:
             duration_ms = (perf_counter() - started_at) * 1000
             logger.log(
                 logging.ERROR,
-                "event=api_request_completed request_id=%s method=%s path=%s status_code=%s duration_ms=%.2f",
+                "event=api_request_completed request_id=%s client_ip=%s method=%s path=%s status_code=%s duration_ms=%.2f",
                 request_id,
-                request.method,
-                request.url.path,
+                client_ip,
+                method,
+                path,
                 500,
                 duration_ms,
             )
@@ -103,10 +108,11 @@ def configure_request_context_middleware(app: FastAPI) -> None:
 
         logger.log(
             log_level,
-            "event=api_request_completed request_id=%s method=%s path=%s status_code=%s duration_ms=%.2f",
+            "event=api_request_completed request_id=%s client_ip=%s method=%s path=%s status_code=%s duration_ms=%.2f",
             request_id,
-            request.method,
-            request.url.path,
+            client_ip,
+            method,
+            path,
             response.status_code,
             duration_ms,
         )
@@ -117,16 +123,36 @@ def configure_request_context_middleware(app: FastAPI) -> None:
 async def app_lifespan(app: FastAPI) -> AsyncIterator[None]:
     logger = logging.getLogger("app.lifecycle")
     validate_auth_settings()
+    rate_limit_settings = getattr(app.state, "rate_limit_settings", RateLimitSettings())
+    rate_limiter = build_rate_limiter(rate_limit_settings)
+    app.state.rate_limiter = rate_limiter
     logger.info("Backend startup.")
-    yield
-    logger.info("Backend shutdown.")
+    try:
+        yield
+    finally:
+        await rate_limiter.aclose()
+        logger.info("Backend shutdown.")
 
 
-def create_app(settings: ApiSettings | None = None) -> FastAPI:
+def create_app(
+    settings: ApiSettings | None = None,
+    rate_limit_settings: RateLimitSettings | None = None,
+) -> FastAPI:
     api_settings = settings or ApiSettings()
+    limiter_settings = rate_limit_settings or RateLimitSettings(APP_ENV=api_settings.APP_ENV)
     configure_logging(api_settings)
 
-    app = _NormalizedOpenAPIFastAPI(root_path=api_settings.API_PATH, lifespan=app_lifespan)
+    docs_url = "/docs" if api_settings.openapi_enabled else None
+    redoc_url = "/redoc" if api_settings.openapi_enabled else None
+    openapi_url = "/openapi.json" if api_settings.openapi_enabled else None
+    app = _NormalizedOpenAPIFastAPI(
+        root_path=api_settings.API_PATH,
+        lifespan=app_lifespan,
+        docs_url=docs_url,
+        redoc_url=redoc_url,
+        openapi_url=openapi_url,
+    )
+    app.state.rate_limit_settings = limiter_settings
     configure_request_context_middleware(app)
     configure_cors(app, api_settings)
     configure_exception_handlers(app)

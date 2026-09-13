@@ -2,3 +2,9 @@ node_modules
 dist
 coverage
 .vite
+.generated
+backups
+*.dump
+*.backup
+*.sql.gz
+*.dump.sha256

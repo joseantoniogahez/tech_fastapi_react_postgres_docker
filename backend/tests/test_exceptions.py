@@ -106,6 +106,8 @@ def test_get_request_id_returns_none_when_request_has_no_context() -> None:
         (status.HTTP_403_FORBIDDEN, DomainErrorType.FORBIDDEN),
         (status.HTTP_404_NOT_FOUND, DomainErrorType.NOT_FOUND),
         (status.HTTP_409_CONFLICT, DomainErrorType.CONFLICT),
+        (status.HTTP_429_TOO_MANY_REQUESTS, DomainErrorType.RATE_LIMITED),
+        (status.HTTP_503_SERVICE_UNAVAILABLE, DomainErrorType.SERVICE_UNAVAILABLE),
         (status.HTTP_400_BAD_REQUEST, DomainErrorType.INVALID_INPUT),
         (status.HTTP_500_INTERNAL_SERVER_ERROR, DomainErrorType.INTERNAL_ERROR),
     ],

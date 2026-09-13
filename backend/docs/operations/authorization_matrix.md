@@ -20,6 +20,8 @@ Permission IDs follow `<resource>:<action>` with lowercase letters, numbers, and
 Permission policies are enforced by `app/core/authorization/dependencies.py` and
 `app/features/rbac/dependencies.py`.
 This table is contract-checked by `tests/routers/test_authorization_policy_coverage.py`.
+The exhaustive endpoint guard in `tests/contracts/test_documentation_contracts.py` also verifies that
+every runtime operation has the same authentication and permission declaration in the API inventory.
 
 | Method   | Path                                                   | Permission                | Required Scope | Dependency Alias              |
 | -------- | ------------------------------------------------------ | ------------------------- | -------------- | ----------------------------- |
@@ -75,11 +77,14 @@ Conditional deny responses return `403 forbidden` with:
 Canonical read-access definitions live in `READ_ACCESS_POLICY_CATALOG` in
 `app/core/authorization/catalog.py`.
 This table is contract-checked by `tests/routers/test_authorization_policy_coverage.py`.
+The exhaustive endpoint guard independently compares this read-access classification with runtime
+dependency markers for every `GET` operation.
 
 | Method | Path                             | Access Level    | Permission                |
 | ------ | -------------------------------- | --------------- | ------------------------- |
 | `GET`  | `/v1/audit-log`                  | `permission`    | `audit_logs:read`         |
 | `GET`  | `/v1/health`                     | `public`        | No                        |
+| `GET`  | `/v1/readiness`                  | `public`        | No                        |
 | `GET`  | `/v1/users/me`                   | `authenticated` | No                        |
 | `GET`  | `/v1/rbac/roles`                 | `permission`    | `roles:manage`            |
 | `GET`  | `/v1/rbac/permissions`           | `permission`    | `role_permissions:manage` |
@@ -100,4 +105,6 @@ Seed source: `utils/rbac_bootstrap.py`
 ## Notes
 
 - Missing permission returns `403 forbidden` with `meta.permission_id`.
-- Bootstrap command is idempotent: `python -m utils.rbac_bootstrap`.
+- Bootstrap command is idempotent: set `PYTHONPATH=backend`, then run
+  `.\.venv\Scripts\python.exe -m utils.rbac_bootstrap` from the repository root (use
+  `./.venv/bin/python` on POSIX).

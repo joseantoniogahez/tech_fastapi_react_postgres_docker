@@ -38,6 +38,7 @@ class PermissionId:
 
 READ_ACCESS_POLICY_CATALOG: tuple[ReadAccessPolicyDefinition, ...] = (
     ReadAccessPolicyDefinition(method="GET", path="/v1/health", access_level=ReadAccessLevel.PUBLIC),
+    ReadAccessPolicyDefinition(method="GET", path="/v1/readiness", access_level=ReadAccessLevel.PUBLIC),
     ReadAccessPolicyDefinition(method="GET", path="/v1/users/me", access_level=ReadAccessLevel.AUTHENTICATED),
     ReadAccessPolicyDefinition(
         method="GET",

@@ -3,6 +3,7 @@ import { Navigate, Outlet, useLocation } from "react-router-dom";
 
 import { appendRequestIdDiagnostic, getApiErrorRequestId } from "@/shared/api/errors";
 import { useSession } from "@/shared/auth/session";
+import { getAccessToken } from "@/shared/auth/storage";
 import { t } from "@/shared/i18n/ui-text";
 import { emitObservabilityEvent } from "@/shared/observability/events";
 import { CenteredMessage } from "@/shared/ui/CenteredMessage";
@@ -45,7 +46,7 @@ export const ProtectedRoute = () => {
     );
   }
 
-  if (!user) {
+  if (!getAccessToken() || !user) {
     return <Navigate replace to="/login" />;
   }
 

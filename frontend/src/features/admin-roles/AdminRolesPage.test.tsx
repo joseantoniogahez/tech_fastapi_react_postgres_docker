@@ -303,7 +303,7 @@ describe("AdminRolesPage", () => {
     expect(screen.queryByText("Manage users")).not.toBeInTheDocument();
   });
 
-  it("shows generic ui error for non-api exceptions", async () => {
+  it("shows the normalized API error for invalid role contracts", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const requestUrl = toRequestUrl(input);
       const method = init?.method ?? "GET";
@@ -322,12 +322,10 @@ describe("AdminRolesPage", () => {
     await waitFor(
       () => {
         expect(screen.getByRole("heading", { name: t("admin.common.error.title") })).toBeInTheDocument();
-        expect(screen.getByText(t("admin.common.error.generic"))).toBeInTheDocument();
+        expect(screen.getByText(t("api.error.invalidResponse"))).toBeInTheDocument();
       },
       { timeout: 4000 },
     );
-    await waitFor(() => {
-      expect(fetchMock.mock.calls.length).toBeGreaterThanOrEqual(2);
-    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });

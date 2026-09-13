@@ -1,5 +1,5 @@
 # Keep the config compatible with a modern pre-commit baseline.
-minimum_pre_commit_version: 3.0.0
+minimum_pre_commit_version: 4.6.0
 
 # Reuse the repository Python version for Python-based hooks.
 default_language_version:
@@ -9,6 +9,11 @@ default_language_version:
 default_install_hook_types:
   - pre-commit
   - pre-push
+
+# Hooks are commit-time by default. Expensive hooks opt into pre-push explicitly, keeping the two
+# stages disjoint locally and in CI.
+default_stages:
+  - pre-commit
 
 # Ignore generated caches and local build artifacts.
 exclude: |
@@ -67,7 +72,7 @@ repos:
     hooks:
       - id: detect-secrets
         args: [--baseline, .secrets.baseline]
-        exclude: ^(frontend/package-lock\.json|backend/alembic/versions/.*\.py|\.secrets\.baseline|\.mypy_cache/.*)$
+        exclude: ^(frontend/package-lock\.json|backend/alembic/versions/.*\.py|docs/ai/template_provenance\.json|python-tooling-lock\.json|pylock\.(windows|ubuntu)-x86_64\.toml|\.secrets\.baseline|\.mypy_cache/.*)$
 
   # Fast spelling checks on source and docs, with generated artifacts excluded.
   - repo: https://github.com/codespell-project/codespell
@@ -102,28 +107,48 @@ repos:
         files: ^frontend/(src/.*\.(ts|tsx)|vite\.config\.ts|eslint\.config\.mjs|tsconfig.*\.json|package(?:-lock)?\.json)$
       - id: compose-base-config
         name: docker compose config (base)
-        entry: docker compose -f compose.yaml config -q
+        entry: docker compose --env-file .env_examples -f compose.yaml config -q
         language: system
         pass_filenames: false
         files: ^compose\.yaml$
       - id: compose-override-config
         name: docker compose config (override)
-        entry: docker compose -f compose.yaml -f compose.override.yaml config -q
+        entry: docker compose --env-file .env_examples -f compose.yaml -f compose.override.yaml config -q
         language: system
         pass_filenames: false
         files: ^(compose\.yaml|compose\.override\.yaml)$
       - id: compose-test-config
-        name: docker compose config (test)
-        entry: docker compose -f compose.yaml -f compose.test.yaml config -q
+        name: docker compose config (test merge)
+        entry: docker compose --env-file .env_examples -f compose.yaml -f compose.test.yaml config -q
         language: system
         pass_filenames: false
         files: ^(compose\.yaml|compose\.test\.yaml)$
+      - id: compose-test-standalone-config
+        name: docker compose config (test standalone)
+        entry: docker compose --env-file .env_examples -f compose.test.yaml config -q
+        language: system
+        pass_filenames: false
+        files: ^compose\.test\.yaml$
       - id: compose-prod-config
         name: docker compose config (prod)
-        entry: docker compose -f compose.yaml -f compose.prod.yaml config -q
+        entry: docker compose --env-file .env_examples -f compose.yaml -f compose.prod.yaml config -q
         language: system
         pass_filenames: false
         files: ^(compose\.yaml|compose\.prod\.yaml)$
+      - id: python-tooling-lock-check
+        name: python tooling lock checksums
+        entry: python scripts/update_python_tooling_lock.py
+        language: python
+        pass_filenames: false
+        files: ^(requirements\.txt|backend/(requirements|tests/requirements)\.txt|pylock\.(windows|ubuntu)-x86_64\.toml|python-tooling-lock\.json|scripts/update_python_tooling_lock\.py)$
+      # npm 12 rejects the legacy --ignore-prepublish flag used by pre-commit's managed Node
+      # environments. Run the exact lockfile-owned CLI through the accepted system npm instead.
+      - id: markdownlint
+        name: markdownlint
+        entry: npm --prefix frontend exec --offline -- markdownlint
+        language: system
+        files: \.md$
+        args: [--disable, MD013, --]
 
   # Markdown formatting and linting.
   - repo: https://github.com/executablebooks/mdformat
@@ -131,16 +156,9 @@ repos:
     hooks:
       - id: mdformat
         additional_dependencies:
-          - mdformat-gfm
+          - mdformat-gfm==1.0.0
         files: \.md$
         exclude: ^skills/[^/]+/SKILL\.md$
-
-  - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.48.0
-    hooks:
-      - id: markdownlint
-        files: \.md$
-        args: [--disable, MD013]
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.15.12
@@ -178,12 +196,18 @@ repos:
         pass_filenames: false
         args: [backend]
         additional_dependencies:
+          - aiosqlite==0.22.1
           - alembic==1.18.4
           - argon2-cffi==25.1.0
           - asyncpg==0.31.0
-          - fastapi==0.129.0
+          - fastapi==0.133.0
+          - httpx2==2.12.0
           - pydantic==2.12.5
-          - pydantic-settings==2.13.0
-          - PyJWT==2.10.1
-          - pytest==9.0.2
+          - pydantic-settings==2.14.2
+          - PyJWT==2.13.0
+          - pytest==9.0.3
+          - pytest-cov==7.0.0
+          - python-multipart==0.0.32
+          - redis==8.0.1
           - sqlalchemy[mypy]==2.0.46
+          - uvicorn==0.40.0

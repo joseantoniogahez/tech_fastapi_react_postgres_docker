@@ -1,7 +1,7 @@
-<!--
+---
 name: backend-capability-builder
 description: Backend feature and capability delivery for this FastAPI starter kit. Use when Codex must add or change backend-only behavior such as API endpoints, vertical feature slices, services, repositories, schemas, SQLAlchemy models, Alembic migrations, auth, RBAC permissions, outbox behavior, integration ports, tests, and backend documentation.
--->
+---
 
 # Backend Capability Builder
 
@@ -17,13 +17,14 @@ and docs synchronized with behavior.
 1. Read `backend/docs/foundation_status.md`.
 1. Read affected operation docs in `backend/docs/operations/`.
 1. Read affected architecture annexes in `backend/docs/architecture/`.
+1. Read product documentation only when a derived application explicitly declares it canonical.
 1. Use `backend/docs/templates/feature_request.md`, `integration_request.md`, or
    `code_change_request.md` when the request needs clearer acceptance criteria.
 1. Confirm API, data, auth, RBAC, error, observability, and validation impact.
-1. Use `python scripts/scaffold_feature.py backend <feature-name> --dry-run` to preview new backend
-   feature structure when adding a new vertical feature.
-1. Use `python scripts/scaffold_feature.py backend <feature-name>` only after target paths and scope
-   are clear.
+1. Use `\.\.venv\Scripts\python.exe scripts\scaffold_feature.py --dry-run backend <feature-name>`
+   on PowerShell or `./.venv/bin/python scripts/scaffold_feature.py --dry-run backend
+   <feature-name>` on POSIX to preview new backend feature structure.
+1. Remove `--dry-run` only after target paths and scope are clear.
 1. Implement within the existing backend architecture.
 1. Add or update tests and docs in the same change.
 1. Run relevant backend validation gates.
@@ -75,12 +76,14 @@ Add focused tests for:
 
 Run:
 
-- `python -m pytest backend/tests`
-- `python -m pytest backend/tests --cov=app --cov-report=term-missing:skip-covered --cov-fail-under=100`
+- `\.\.venv\Scripts\python.exe -m pytest backend\tests` (PowerShell)
+- `./.venv/bin/python -m pytest backend/tests` (POSIX)
+- `\.\.venv\Scripts\python.exe -m pytest backend\tests --cov=app --cov-report=term-missing:skip-covered --cov-fail-under=100`
 
 Also run:
 
-- `pre-commit run --all-files` when docs, hooks, formatting, Docker, or shared config changed.
+- `\.\.venv\Scripts\python.exe -m pre_commit run --all-files` when docs, hooks, formatting,
+  Docker, or shared config changed; use `./.venv/bin/python` on POSIX.
 
 ## Final Report
 

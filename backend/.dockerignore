@@ -1,0 +1,11 @@
+__pycache__
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.coverage
+htmlcov
+backups
+*.dump
+*.backup
+*.sql.gz
+*.dump.sha256

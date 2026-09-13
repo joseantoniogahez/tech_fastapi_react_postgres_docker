@@ -6,6 +6,7 @@ import {
   createAdminUser,
   readAdminUser,
   readAdminUsers,
+  RBAC_USER_ENDPOINT_PATH_TEMPLATE,
   readRbacRoleUsers,
   readRbacUserRoles,
   removeRbacUserRole,
@@ -238,6 +239,22 @@ describe("rbac admin client", () => {
     expect(request.method).toBe("DELETE");
   });
 
+  it("rejects content responses from a migrated no-content operation", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: new Headers({ "X-Request-ID": "req-delete-contract" }),
+      json: () => Promise.resolve({ deleted: true }),
+    } satisfies Partial<Response>);
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(softDeleteAdminUser(5)).rejects.toMatchObject({
+      status: 200,
+      code: "invalid_response",
+      requestId: "req-delete-contract",
+    } satisfies Partial<ApiError>);
+  });
+
   it("sends delete for role inheritance removal", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
@@ -354,5 +371,23 @@ describe("rbac admin client", () => {
       code: "network_error",
       message: "Error de comunicacion con el servidor",
     } satisfies Partial<ApiError>);
+  });
+
+  it("uses the static route template for dynamic endpoint diagnostics", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const fetchMock = vi.fn().mockRejectedValue(new Error("Network down"));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(readAdminUser(987654321)).rejects.toMatchObject({
+      code: "network_error",
+    });
+
+    expect(errorSpy.mock.calls[0]?.[1]).toMatchObject({
+      event_name: "api.request.network_error",
+      context: {
+        path: RBAC_USER_ENDPOINT_PATH_TEMPLATE,
+      },
+    });
+    expect(JSON.stringify(errorSpy.mock.calls)).not.toContain("987654321");
   });
 });

@@ -17,6 +17,12 @@ This folder is the canonical backend documentation set. It is organized for thre
 - `operations/authentication.md`: authentication flow, bootstrap process, and account update policy.
 - `operations/authorization_matrix.md`: canonical permission matrix and read-access policy inventory.
 - `operations/error_mapping.md`: normalized error payload and domain-to-HTTP status mapping.
+- `operations/health_and_readiness.md`: liveness, traffic-admission readiness, dependency registry,
+  and deployment policy.
+- `operations/postgresql_backups.md`: manual PostgreSQL backup, checksum, encrypted retention, and
+  isolated restore-drill runbook.
+- `operations/rate_limiting.md`: authentication quotas, Redis topology, privacy boundary,
+  lifecycle, readiness, and outage policy.
 
 ## Architecture Annexes
 

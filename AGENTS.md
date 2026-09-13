@@ -79,11 +79,14 @@ New application bootstrap:
 
 - Read `docs/ai/start_new_project.md`.
 - Read `docs/ai/new_app_bootstrap_checklist.md`.
+- Read `docs/ai/template_reuse_contract.md`.
 - Read root and service READMEs.
 - Use `docs/ai/templates/new_app_request.md` when app identity, scope, or bootstrap mode is not
   already explicit.
-- Use `python scripts/bootstrap_new_app.py --app-name "<App Name>"` to preview identity changes
-  before applying an in-place bootstrap.
+- Use the root `.venv` to run `scripts/bootstrap_new_app.py` with required `--source-repository` and
+  `--source-revision`; preview before applying an in-place bootstrap.
+- Bootstrap only a clean compatible snapshot once, retain generated provenance, and use a separate
+  reviewed procedure for later identity changes.
 - Identify app name, domain, roles, initial routes, initial data model, integrations, deployment
   target, and branding terms before making broad renames.
 - Update project identity consistently across Compose names, env examples, JWT issuer/audience,
@@ -96,6 +99,14 @@ Documentation-only work:
   - `frontend/docs/README.md`
 - Keep docs aligned with contract tests.
 - Update foundation status only when foundation rules, contracts, or validation gates change.
+
+Application backlog work:
+
+- Do not create a default or example application backlog in this starter kit.
+- Use `docs/ai/backlog_tracking.md` only after a derived application explicitly declares its
+  canonical backlog, plan directories, ownership, status, and evidence policy.
+- Before activating an item, create its durable plan from
+  `docs/ai/templates/backlog_item_plan.md`; update the exact resumption point before every pause.
 
 ## Non-Negotiable Rules
 
@@ -111,6 +122,15 @@ Documentation-only work:
    strategy.
 1. Keep auth, authorization, and error behavior explicit and test-covered.
 1. Preserve unrelated user changes; do not revert files outside the requested work.
+
+## Governed Python Commands
+
+After the repository-root `.venv` exists, every local developer or agent Python command runs from
+the repository root with `.\.venv\Scripts\python.exe` on PowerShell or `./.venv/bin/python` on
+POSIX. Invoke Python tools as modules, for example `-m pytest`, `-m pre_commit`, `-m mypy`, and
+`-m pip_audit`. Global Python is allowed only to create `.venv`; CI jobs and containers may use
+their explicitly provisioned isolated interpreter. Scripts must not silently fall back to a global
+interpreter.
 
 ## Documentation Update Rules
 
@@ -148,14 +168,18 @@ AI governance docs to consider:
 - `docs/ai/start_new_project.md` when the new-project bootstrap workflow changes.
 - `docs/ai/templates/*.md` when full-stack or new-app request shape changes.
 - `docs/ai/new_app_bootstrap_checklist.md` when new-app identity or validation workflow changes.
+- `docs/ai/backlog_tracking.md` and `docs/ai/templates/backlog_item_plan.md` when a derived
+  application's backlog activation, status, evidence, archive, or handoff contract changes.
 
 ## Validation Matrix
 
 Backend-only change:
 
-- `python -m pytest backend/tests`
-- `python -m pytest backend/tests --cov=app --cov-report=term-missing:skip-covered --cov-fail-under=100`
-- `pre-commit run --all-files` when docs, hooks, formatting, Docker, or shared config changed.
+- `.\.venv\Scripts\python.exe -m pytest backend\tests` (PowerShell) or
+  `./.venv/bin/python -m pytest backend/tests` (POSIX).
+- Add `--cov=app --cov-report=term-missing:skip-covered --cov-fail-under=100` for the coverage gate.
+- Run `-m pre_commit run --all-files` through the same interpreter when docs, hooks, formatting,
+  Docker, or shared config changed.
 
 Frontend-only change:
 
@@ -169,19 +193,20 @@ Full-stack change:
 - Run `npm --prefix frontend run openapi:sync` when API output changed.
 - Run `npm --prefix frontend run openapi:check` when API output should be unchanged.
 - Run frontend validation.
-- Run `pre-commit run --all-files` before push-level confidence when practical.
+- Run `-m pre_commit run --all-files` through the root `.venv` before push-level confidence when
+  practical.
 
 Documentation-only change:
 
 - Run relevant documentation contract tests when available.
-- Run `pre-commit run --files <changed-docs>` or targeted markdown hooks when practical.
+- Run `-m pre_commit run --files <changed-docs>` through the root `.venv` or targeted Markdown
+  hooks when practical.
 
 New app bootstrap:
 
-- Validate Docker Compose configuration for affected profiles.
+- Validate all five canonical Docker Compose render forms with `.env_examples`.
 - Run backend tests.
-- Run frontend check and build.
-- Run smoke e2e after app-level route, auth, or error-flow changes.
+- Run frontend check, smoke e2e, and build.
 
 ## Delivery Workflow
 
@@ -233,8 +258,10 @@ they are not auto-discovered, invoke them by path or install/copy them into the 
 location.
 
 Use `skills/README.md` as the project skill catalog and manual activation guide.
-Use `python scripts/install_project_skills.py` to preview or install project skills into the active
-Codex skills directory.
+Use `.\.venv\Scripts\python.exe scripts\install_project_skills.py` on PowerShell or
+`./.venv/bin/python scripts/install_project_skills.py` on POSIX to preview or install project
+skills. The installer validates the complete local pack before discovery and commits a requested
+write batch transactionally.
 
 Project skill pack:
 
@@ -243,6 +270,9 @@ Project skill pack:
 - `skills/frontend-feature-builder`
 - `skills/project-reviewer`
 - `skills/new-app-bootstrapper`
+- `skills/backend-code-reviewer`
+- `skills/frontend-code-reviewer`
+- `skills/fastapi-agents`
 
 ## Scaffolds
 
@@ -253,19 +283,20 @@ or implement business logic.
 Examples:
 
 ```powershell
-python scripts/scaffold_feature.py backend audit-log --with-model
-python scripts/scaffold_feature.py frontend audit-log --route /admin/audit-log
-python scripts/scaffold_feature.py full-stack audit-log --route /admin/audit-log --with-model
+.\.venv\Scripts\python.exe scripts\scaffold_feature.py --dry-run backend audit-log --with-model
+.\.venv\Scripts\python.exe scripts\scaffold_feature.py --dry-run frontend audit-log --route /admin/audit-log
+.\.venv\Scripts\python.exe scripts\scaffold_feature.py --dry-run full-stack audit-log --route /admin/audit-log --with-model
 ```
 
 Use `--dry-run` first when exploring paths.
 
-Use `scripts/bootstrap_new_app.py` to preview or apply new-app identity changes. The script previews
-by default and only writes with `--write`.
+Use `scripts/bootstrap_new_app.py` to preview or apply one-time new-app identity changes. It requires
+an exact clean source snapshot, previews by default, uses a rollback-capable transaction for
+captured write failures, and records per-application provenance.
 
 Example:
 
 ```powershell
-python scripts/bootstrap_new_app.py --app-name "Example Portal" --description "A portal for example workflows."
-python scripts/bootstrap_new_app.py --app-name "Example Portal" --description "A portal for example workflows." --write
+.\.venv\Scripts\python.exe scripts\bootstrap_new_app.py --source-repository "https://github.com/example/foundation" --source-revision "<commit-or-tag>" --app-name "Example Portal" --description "A portal for example workflows."
+.\.venv\Scripts\python.exe scripts\bootstrap_new_app.py --source-repository "https://github.com/example/foundation" --source-revision "<commit-or-tag>" --app-name "Example Portal" --description "A portal for example workflows." --write
 ```

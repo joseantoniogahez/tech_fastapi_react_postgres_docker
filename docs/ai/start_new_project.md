@@ -5,10 +5,13 @@ applications.
 
 Use this guide when you want to turn the starter kit into a named product. Use `AGENTS.md` as the
 assistant operating guide and `docs/ai/new_app_bootstrap_checklist.md` as the detailed checklist.
+The immutable source and one-time boundary are defined in `docs/ai/template_reuse_contract.md`.
 
 ## Recommended Flow
 
-1. Create a new repository or branch from this starter kit.
+1. Create a new clean repository or branch at an explicitly reviewed starter-kit commit or tag.
+1. Record the credential-free source repository URL and either a full 40-character commit or an
+   existing reviewed tag; do not use a mutable branch or symbolic revision.
 1. Decide the app identity values before renaming files.
 1. Preview the bootstrap changes.
 1. Apply the bootstrap changes only after reviewing the preview.
@@ -36,7 +39,7 @@ When these are not clear, fill `docs/ai/templates/new_app_request.md` and give i
 Run from the repository root:
 
 ```powershell
-python scripts/bootstrap_new_app.py --app-name "Example Portal" --description "A portal for example workflows."
+.\.venv\Scripts\python.exe scripts\bootstrap_new_app.py --source-repository "https://github.com/example/foundation" --source-revision "<commit-or-tag>" --app-name "Example Portal" --description "A portal for example workflows."
 ```
 
 The script runs in dry-run mode by default. It prints the identity values it derived and the files it
@@ -45,7 +48,9 @@ would update.
 Use explicit overrides when defaults are not right:
 
 ```powershell
-python scripts/bootstrap_new_app.py `
+.\.venv\Scripts\python.exe scripts\bootstrap_new_app.py `
+  --source-repository "https://github.com/example/foundation" `
+  --source-revision "<commit-or-tag>" `
   --app-name "Example Portal" `
   --slug example-portal `
   --description "A portal for example workflows." `
@@ -59,7 +64,9 @@ python scripts/bootstrap_new_app.py `
 After reviewing the preview, rerun the command with `--write`:
 
 ```powershell
-python scripts/bootstrap_new_app.py `
+.\.venv\Scripts\python.exe scripts\bootstrap_new_app.py `
+  --source-repository "https://github.com/example/foundation" `
+  --source-revision "<commit-or-tag>" `
   --app-name "Example Portal" `
   --slug example-portal `
   --description "A portal for example workflows." `
@@ -71,6 +78,16 @@ python scripts/bootstrap_new_app.py `
 
 The script intentionally changes identity surfaces only. It does not design product features, change
 auth behavior, add routes, alter permissions, create migrations, or add integrations.
+
+The script also writes `docs/ai/template_provenance.json` with the source commit/tree and resulting
+identity. It refuses dirty/incompatible checkouts and every second run. Use a separate reviewed
+identity migration for an application that already exists.
+
+`--write` uses same-directory hardlinks and attempts whole-batch rollback for captured failures. It
+does not promise multi-file crash atomicity: after an incomplete-recovery diagnostic, `SIGKILL`, or
+power loss, stop and inspect retained `.bootstrap-*` backups and any reported adjacent install file.
+Windows replacements use the destination directory's inherited ACL; explicit per-file DACL migration
+requires a separate reviewed procedure.
 
 ## Review Generated Changes
 
@@ -93,21 +110,24 @@ Commonly changed files include:
 - `frontend/package-lock.json`
 - `frontend/index.html`
 - `frontend/src/shared/i18n/ui-text.ts`
+- `docs/ai/template_provenance.json`
 
 ## Validate the Bootstrapped App
 
 Run the gates that prove the renamed foundation still works:
 
 ```powershell
-docker compose config
-docker compose -f compose.test.yaml config
-docker compose -f compose.yaml -f compose.prod.yaml config
-python -m pytest backend/tests
-python -m pytest backend/tests --cov=app --cov-report=term-missing:skip-covered --cov-fail-under=100
+docker compose --env-file .env_examples -f compose.yaml config -q
+docker compose --env-file .env_examples -f compose.yaml -f compose.override.yaml config -q
+docker compose --env-file .env_examples -f compose.test.yaml config -q
+docker compose --env-file .env_examples -f compose.yaml -f compose.test.yaml config -q
+docker compose --env-file .env_examples -f compose.yaml -f compose.prod.yaml config -q
+.\.venv\Scripts\python.exe -m pytest backend/tests
+.\.venv\Scripts\python.exe -m pytest backend/tests --cov=app --cov-report=term-missing:skip-covered --cov-fail-under=100
 npm --prefix frontend run check
 npm --prefix frontend run test:e2e:ci
 npm --prefix frontend run build
-pre-commit run --all-files
+.\.venv\Scripts\python.exe -m pre_commit run --all-files
 ```
 
 If route, auth, RBAC, API, runtime, or feature behavior changes during bootstrap, update the affected
@@ -139,7 +159,7 @@ Seed an admin account when needed by following `backend/README.md`.
 For a new full-stack feature, preview the scaffold first:
 
 ```powershell
-python scripts/scaffold_feature.py --dry-run full-stack <feature-name> --route /your-route --with-model
+.\.venv\Scripts\python.exe scripts/scaffold_feature.py --dry-run full-stack <feature-name> --route /your-route --with-model
 ```
 
 Then implement the feature using:

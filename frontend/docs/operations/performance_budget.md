@@ -23,9 +23,15 @@ The gate evaluates production artifacts in `dist/assets`:
 
 ## Threshold Rationale
 
-- `max_total_js_bytes` is `380000` bytes after adding the admin-only Audit Log route and API
-  consumer. The production build measured `376910` raw JavaScript bytes with gzip still below the
-  existing `115000` byte limit.
+- `max_total_js_bytes` is `500000` bytes and `max_total_js_gzip_bytes` is `175000` bytes. The
+  thresholds were explicitly raised during the foundation upgrade on `2026-08-12` to provide
+  controlled headroom for the remaining required-core frontend work without disabling the four
+  metric gate. The accepted reference build measured `380239` raw and `112729` gzip JavaScript
+  bytes.
+- `max_total_css_bytes` remains `20000` bytes: it bounds the complete emitted stylesheet while
+  leaving modest room for required shared layout states.
+- `max_total_css_gzip_bytes` remains `6000` bytes: it catches compressible CSS growth that the raw
+  limit alone can obscure.
 
 ## Commands
 

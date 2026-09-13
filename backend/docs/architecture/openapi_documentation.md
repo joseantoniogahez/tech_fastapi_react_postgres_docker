@@ -47,4 +47,26 @@ CreateRolePayload = Annotated[CreateRoleRequest, Body(...)]
 1. Add metadata constants in the feature OpenAPI module.
 1. Import them in the feature router.
 1. Keep examples close to the feature, not in a global demo module.
-1. Run router tests after updating the docs.
+1. Update `docs/operations/api_endpoints.md` with the method, path, authentication, permission,
+   OpenAPI visibility, success status, and every documented error status.
+1. Run the documentation and router contract tests after updating the docs.
+
+## Preventive Contract
+
+`tests/contracts/test_documentation_contracts.py` compares application `APIRoute` objects, the endpoint
+inventory, and generated OpenAPI by exact method and path. For each operation it also requires exact
+success/error status equality and matching authentication, permission, and OpenAPI visibility.
+
+The generated schema is the runtime side of this contract. Do not maintain a separate hand-written
+OpenAPI operation inventory. CORS, request correlation, and readiness are implemented and
+documented; rate limiting is documented here only after its runtime behavior exists.
+
+## Runtime Exposure
+
+`APP_ENV` has a finite, validated vocabulary. The `/docs`, `/redoc`, and `/openapi.json` HTTP routes
+are enabled only for `local`, `test`, and `development`; they are absent in `staging` and
+`production`. Unknown environments fail settings validation instead of silently exposing docs.
+
+Programmatic artifact generation remains supported in the controlled `test` environment. The
+frontend OpenAPI sync script sets that environment explicitly and compares the normalized
+25-operation schema.

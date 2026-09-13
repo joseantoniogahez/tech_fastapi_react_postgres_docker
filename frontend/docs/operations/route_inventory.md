@@ -18,6 +18,12 @@ This document is the canonical inventory of runtime routes, access policies, and
 | `/admin/roles`       | `protected`   | `features/admin-roles/AdminRolesPage`             | Requires `roles:manage`; missing permission redirects to `/welcome`.                                                                                             |
 | `/*`                 | `public`      | `features/not-found/NotFoundPage`                 | Explicit catch-all for unknown routes.                                                                                                                           |
 
+Every authenticated route is rendered inside `shared/routing/RootLayout`, which owns the single
+global logout control. Logout clears the access token and session query state, replaces navigation
+with `/login`, and records logout outside history-restored session storage. Protected routes require
+both a current token and resolved user, so a stale Back/Forward Cache snapshot remains denied when
+the user navigates back; a later successful login clears that marker.
+
 ## Route-Level Error Handling
 
 - Root route uses `shared/routing/RouteErrorBoundary` as `errorElement`.

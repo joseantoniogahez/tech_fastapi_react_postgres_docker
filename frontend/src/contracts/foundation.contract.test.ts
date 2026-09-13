@@ -1,6 +1,6 @@
 import { QueryClient } from "@tanstack/react-query";
 
-import { MUTATION_POLICY_MATRIX, shouldRetryDefaultMutation } from "@/app/mutation-policy";
+import { MUTATION_POLICY_MATRIX } from "@/app/mutation-policy";
 import { createQueryClient } from "@/app/query-client";
 import { QUERY_POLICY_MATRIX, shouldRetryDefaultQuery } from "@/app/query-policy";
 import { buildApiUrl } from "@/shared/api/env";
@@ -39,14 +39,13 @@ describe("foundation contracts", () => {
     expect(defaults.queries?.staleTime).toBe(QUERY_POLICY_MATRIX.defaultQuery.staleTimeMs);
     expect(defaults.queries?.refetchOnWindowFocus).toBe(false);
     expect(typeof defaults.queries?.retry).toBe("function");
-    expect(typeof defaults.mutations?.retry).toBe("function");
+    expect(defaults.mutations?.retry).toBe(false);
   });
 
-  it("enforces default mutation retry contract and no-retry auth mutation policy", () => {
-    expect(shouldRetryDefaultMutation(0, new ApiError("Timeout", 503, "internal_error"))).toBe(true);
-    expect(shouldRetryDefaultMutation(1, new ApiError("Timeout", 503, "internal_error"))).toBe(false);
-    expect(shouldRetryDefaultMutation(0, new ApiError("Unauthorized", 401, "unauthorized"))).toBe(false);
+  it("enforces no-retry defaults for mutations while queries retain transient retry", () => {
+    expect(MUTATION_POLICY_MATRIX.defaultMutation.retry).toBe(false);
     expect(MUTATION_POLICY_MATRIX.authLoginMutation.retry).toBe(false);
     expect(MUTATION_POLICY_MATRIX.authLogoutMutation.retry).toBe(false);
+    expect(shouldRetryDefaultQuery(0, new ApiError("Timeout", 503, "internal_error"))).toBe(true);
   });
 });

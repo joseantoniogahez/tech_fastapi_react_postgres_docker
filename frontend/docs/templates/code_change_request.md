@@ -60,7 +60,7 @@ Describe what must change and what outcome is expected.
   - `npm --prefix frontend run check`
   - `npm --prefix frontend run test:e2e:ci` (required when auth/routing/error behavior changes)
   - `npm --prefix frontend run build`
-  - `.\.venv\Scripts\pre-commit.exe run --all-files`
+  - `.\.venv\Scripts\python.exe -m pre_commit run --all-files`
 
 ## Reviewer Validation Checklist
 

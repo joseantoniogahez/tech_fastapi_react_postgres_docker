@@ -1,6 +1,27 @@
 name: tech-dev
 
 services:
+  redis:
+    image: redis:8.8.1-alpine
+    command:
+      [
+        "sh",
+        "-c",
+        "exec redis-server --appendonly no --requirepass \"$$(cat /run/secrets/redis_password)\"",
+      ]
+    secrets:
+      - redis_password
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "REDISCLI_AUTH=$$(cat /run/secrets/redis_password) redis-cli ping | grep -q PONG",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
   database:
     image: postgres:18.2
     healthcheck:
@@ -18,9 +39,11 @@ services:
     build:
       context: backend
       args:
-        PYTHON_VERSION: "${PYTHON_VERSION:-3.14.3}"
+        PYTHON_VERSION: "${PYTHON_VERSION:-3.14.6}"
     depends_on:
       database:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     healthcheck:
       test:
@@ -42,15 +65,30 @@ services:
       DB_NAME: "${DB_NAME}"
       DB_PASSWORD: "${DB_PASSWORD}"
       DB_PORT: "${DB_PORT}"
+      DB_REQUIRE_POSTGRESQL: "true"
       DB_TYPE: "${DB_TYPE}"
       DB_USER: "${DB_USER}"
       JWT_ALGORITHM: "${JWT_ALGORITHM:-HS256}"
       JWT_ACCESS_TOKEN_EXPIRE_MINUTES: "${JWT_ACCESS_TOKEN_EXPIRE_MINUTES:-30}"
       JWT_ISSUER: "${JWT_ISSUER:-fastapi-template}"
       JWT_AUDIENCE: "${JWT_AUDIENCE:-fastapi-template-api}"
-      JWT_SECRET_KEY: "${JWT_SECRET_KEY:-local-dev-jwt-secret}"
+      JWT_SECRET_KEY: "${JWT_SECRET_KEY:-local-development-jwt-secret-32-bytes}"
       LOG_LEVEL: "${LOG_LEVEL:-INFO}"
       PORT: "${API_PORT}"
+      READINESS_MAX_CONCURRENCY: "${READINESS_MAX_CONCURRENCY:-4}"
+      READINESS_TIMEOUT_SECONDS: "${READINESS_TIMEOUT_SECONDS:-2}"
+      RATE_LIMIT_ENABLED: "${RATE_LIMIT_ENABLED:-true}"
+      RATE_LIMIT_LOGIN: "${RATE_LIMIT_LOGIN:-10}"
+      RATE_LIMIT_NAMESPACE: "${RATE_LIMIT_NAMESPACE:-foundation:rate-limit:v1}"
+      RATE_LIMIT_REGISTER: "${RATE_LIMIT_REGISTER:-5}"
+      RATE_LIMIT_STORAGE: "redis"
+      RATE_LIMIT_WINDOW_SECONDS: "${RATE_LIMIT_WINDOW_SECONDS:-60}"
+      REDIS_ALLOW_PLAINTEXT: "true"
+      REDIS_PASSWORD_FILE: "/run/secrets/redis_password"
+      REDIS_TIMEOUT_SECONDS: "${REDIS_TIMEOUT_SECONDS:-2}"
+      REDIS_URL: "redis://redis:6379/0"
+    secrets:
+      - redis_password
     logging:
       driver: "json-file"
       options:
@@ -67,6 +105,8 @@ services:
       backend:
         condition: service_healthy
     environment:
-      VITE_API_ORIGIN: "${VITE_API_ORIGIN:-http://localhost:8000}"
-      VITE_API_BASE_PATH: "${VITE_API_BASE_PATH:-/v1}"
       PORT: "${UI_PORT}"
+
+secrets:
+  redis_password:
+    environment: REDIS_PASSWORD

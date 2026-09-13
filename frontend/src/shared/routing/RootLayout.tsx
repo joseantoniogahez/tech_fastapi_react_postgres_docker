@@ -1,7 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { startTransition, useEffect, useMemo, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 
-import { useSession } from "@/shared/auth/session";
+import { authLogoutMutationPolicy } from "@/app/mutation-policy";
+import { SESSION_QUERY_KEY, logout, useSession } from "@/shared/auth/session";
+import { getAccessToken } from "@/shared/auth/storage";
 import { IAM_PERMISSION } from "@/shared/iam/contracts";
 import { userHasPermission } from "@/shared/iam/api";
 import { t } from "@/shared/i18n/ui-text";
@@ -63,12 +66,43 @@ const ADMIN_MENU_ITEMS: readonly AdminMenuItem[] = [
 
 export const RootLayout = () => {
   const { data: user } = useSession();
+  const queryClient = useQueryClient();
   const location = useLocation();
+  const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const logoutMutation = useMutation({
+    ...authLogoutMutationPolicy,
+    mutationFn: () => {
+      logout();
+    },
+    onSuccess: async () => {
+      queryClient.setQueryData(SESSION_QUERY_KEY, null);
+      await queryClient.invalidateQueries({ queryKey: SESSION_QUERY_KEY });
+      startTransition(() => {
+        void navigate("/login", { replace: true });
+      });
+    },
+  });
 
   useEffect(() => {
     setIsMenuOpen(false);
   }, [location.pathname]);
+
+  useEffect(() => {
+    const denyRestoredSession = () => {
+      if (!user || getAccessToken()) {
+        return;
+      }
+      queryClient.setQueryData(SESSION_QUERY_KEY, null);
+      if (location.pathname !== "/login") {
+        void navigate("/login", { replace: true });
+      }
+    };
+
+    window.addEventListener("pageshow", denyRestoredSession);
+    return () => window.removeEventListener("pageshow", denyRestoredSession);
+  }, [location.pathname, navigate, queryClient, user]);
 
   const visibleAdminItems = useMemo(() => {
     if (!user) {
@@ -77,7 +111,7 @@ export const RootLayout = () => {
     return ADMIN_MENU_ITEMS.filter((menuItem) => userHasPermission(user, menuItem.permissionId));
   }, [user]);
 
-  if (!user) {
+  if (!getAccessToken() || !user) {
     return <Outlet />;
   }
 
@@ -100,12 +134,20 @@ export const RootLayout = () => {
           <Link className="text-sm font-semibold" to="/welcome">
             {t("routing.nav.home")}
           </Link>
+          <button
+            className="text-sm font-semibold text-[var(--app-ink)] disabled:opacity-60"
+            disabled={logoutMutation.isPending}
+            onClick={() => logoutMutation.mutate()}
+            type="button"
+          >
+            {logoutMutation.isPending ? t("welcome.logout.pending") : t("welcome.logout")}
+          </button>
         </div>
       </header>
 
-      <div className="mx-auto flex w-full max-w-6xl">
+      <div className="mx-auto flex w-full max-w-6xl flex-col md:flex-row">
         <nav
-          className="w-64 shrink-0 border-r border-[var(--app-border)] bg-[var(--app-surface)] p-4"
+          className="w-full shrink-0 border-b border-[var(--app-border)] bg-[var(--app-surface)] p-4 md:w-64 md:border-r md:border-b-0"
           hidden={!isMenuOpen}
           id="app-navigation-panel"
         >

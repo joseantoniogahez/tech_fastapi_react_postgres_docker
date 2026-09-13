@@ -5,11 +5,13 @@ import { RouterProvider, createMemoryRouter } from "react-router-dom";
 import { appRoutes } from "@/app/routes";
 import { createQueryClient } from "@/app/query-client";
 import { SESSION_QUERY_KEY } from "@/shared/auth/session";
+import { clearAccessToken, setAccessToken } from "@/shared/auth/storage";
 import { t } from "@/shared/i18n/ui-text";
 
 type AdminRoutePath = "/admin/audit-log" | "/admin/assignments" | "/admin/permissions" | "/admin/users" | "/admin/roles";
 
 const renderAppAt = (path: AdminRoutePath) => {
+  setAccessToken("permission-route-test-token");
   const queryClient = createQueryClient();
   queryClient.setQueryData(SESSION_QUERY_KEY, {
     id: 7,
@@ -32,6 +34,10 @@ const renderAppAt = (path: AdminRoutePath) => {
 };
 
 describe("PermissionRoute", () => {
+  afterEach(() => {
+    clearAccessToken();
+  });
+
   it("redirects unauthorized direct navigation from /admin/users to /welcome", async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);

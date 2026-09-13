@@ -4,6 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import {
+  API_CONSUMER_MATRIX_PATH,
   CODE_CHANGE_REQUEST_TEMPLATE_PATH,
   DOCS_DIR,
   FEATURE_REQUEST_TEMPLATE_PATH,
@@ -12,10 +13,15 @@ import {
   FRONTEND_PLAYBOOK_PATH,
   FRONTEND_DIR,
   INTEGRATION_REQUEST_TEMPLATE_PATH,
+  MUTATION_POLICY_PATH,
+  OBSERVABILITY_EVENTS_PATH,
   REPO_DIR,
   REQUIRED_FOUNDATION_STATUS_SECTIONS,
   REQUIRED_PLAYBOOK_SECTIONS,
   REQUIRED_TEMPLATE_SECTIONS,
+  RUNTIME_CONFIG_PATH,
+  RUNTIME_ERROR_PIPELINE_PATH,
+  SUPPORT_DIAGNOSTICS_RUNBOOK_PATH,
 } from "@/contracts/docs";
 
 const SECTION_HEADING_PATTERN_TEMPLATE = /^## (.+)$/gm;
@@ -143,5 +149,44 @@ describe("documentation contracts", () => {
     const indexMarkdown = readMarkdown(FRONTEND_DOCS_INDEX_PATH);
 
     expect(indexMarkdown).toContain("foundation_status.md");
+  });
+
+  it("keeps the Vite build-time configuration contract explicit", () => {
+    const runtimeConfigMarkdown = readMarkdown(RUNTIME_CONFIG_PATH);
+
+    expect(runtimeConfigMarkdown).toContain("build time");
+    expect(runtimeConfigMarkdown).toContain("requires a new build");
+    expect(runtimeConfigMarkdown).toContain("canonical `URL.origin`");
+    expect(runtimeConfigMarkdown).toContain(
+      "must not contain user information, a non-root path, a query string, or a fragment",
+    );
+  });
+
+  it("keeps privacy-safe API diagnostics and cause correlation explicit", () => {
+    const observabilityMarkdown = readMarkdown(OBSERVABILITY_EVENTS_PATH);
+    const runtimeErrorMarkdown = readMarkdown(RUNTIME_ERROR_PIPELINE_PATH);
+    const supportMarkdown = readMarkdown(SUPPORT_DIAGNOSTICS_RUNBOOK_PATH);
+    const consumerMarkdown = readMarkdown(API_CONSUMER_MATRIX_PATH);
+
+    expect(observabilityMarkdown).toContain("`toDiagnosticApiPath`");
+    expect(observabilityMarkdown).toContain("caller-owned static `diagnosticPath`");
+    expect(observabilityMarkdown).toContain("never includes request bodies");
+    expect(runtimeErrorMarkdown).toContain("maximum depth of `8`");
+    expect(runtimeErrorMarkdown).toContain("stops on repeated objects to prevent cycles");
+    expect(supportMarkdown).toContain("Do not capture raw request URLs");
+    expect(consumerMarkdown).toContain("response `X-Request-ID` header takes precedence");
+  });
+
+  it("keeps mutation retry and response validation contracts explicit", () => {
+    const mutationMarkdown = readMarkdown(MUTATION_POLICY_PATH);
+    const consumerMarkdown = readMarkdown(API_CONSUMER_MATRIX_PATH);
+
+    expect(mutationMarkdown).toContain("No inherited automatic retry");
+    expect(mutationMarkdown).toContain("There is no current opt-in consumer");
+    expect(mutationMarkdown).toContain("Query retries are independent");
+    expect(consumerMarkdown).toContain("explicit runtime parser");
+    expect(consumerMarkdown).toContain("`apiNoContentRequest`");
+    expect(consumerMarkdown).toContain("`invalid_response`");
+    expect(consumerMarkdown).toContain("`X-Request-ID`");
   });
 });

@@ -84,6 +84,7 @@ def build_error_response(
     description: str,
     example: dict[str, Any],
     include_www_authenticate: bool = False,
+    additional_headers: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     response: dict[str, Any] = {
         "description": description,
@@ -97,6 +98,8 @@ def build_error_response(
     }
     if include_www_authenticate:
         response["headers"].update(WWW_AUTHENTICATE_HEADER)
+    if additional_headers:
+        response["headers"].update(additional_headers)
     return response
 
 

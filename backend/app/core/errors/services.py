@@ -56,6 +56,27 @@ class ConflictError(ServiceError):
         super().__init__(DomainErrorType.CONFLICT, message, details=details)
 
 
+class RateLimitedError(ServiceError):
+    def __init__(
+        self,
+        message: str = "Too many requests. Try again later.",
+        *,
+        details: Any | None = None,
+        headers: Mapping[str, str] | None = None,
+    ):
+        super().__init__(DomainErrorType.RATE_LIMITED, message, details=details, headers=headers)
+
+
+class ServiceUnavailableError(ServiceError):
+    def __init__(
+        self,
+        message: str = "Service temporarily unavailable",
+        *,
+        details: Any | None = None,
+    ):
+        super().__init__(DomainErrorType.SERVICE_UNAVAILABLE, message, details=details)
+
+
 class InternalError(ServiceError):
     def __init__(self, message: str = "Internal server error", *, details: Any | None = None):
         super().__init__(DomainErrorType.INTERNAL_ERROR, message, details=details)

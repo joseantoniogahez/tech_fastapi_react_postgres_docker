@@ -23,34 +23,47 @@ canonical docs and validation gates.
 Preview installation of all project skills:
 
 ```powershell
-python scripts/install_project_skills.py
+.\.venv\Scripts\python.exe scripts\install_project_skills.py
 ```
 
 Preview one skill:
 
 ```powershell
-python scripts/install_project_skills.py --skill new-app-bootstrapper
+.\.venv\Scripts\python.exe scripts\install_project_skills.py --skill new-app-bootstrapper
 ```
 
 Apply after reviewing the preview:
 
 ```powershell
-python scripts/install_project_skills.py --write
+.\.venv\Scripts\python.exe scripts\install_project_skills.py --write
 ```
+
+On POSIX, replace `.\.venv\Scripts\python.exe` with `./.venv/bin/python`.
 
 By default the installer targets `$CODEX_HOME/skills` or `~/.codex/skills` when `CODEX_HOME` is not
 set. Use `--dest <path>` for a custom destination. Existing non-matching skills are not overwritten
 unless `--force` is passed.
+
+The installer validates every local skill before it lists or copies any of them. A malformed skill
+blocks the complete operation, even when it was not selected. Write mode stages the requested batch
+on the destination filesystem and attempts to restore all previous targets if a later commit step
+fails. If restoration fails, it reports the affected paths and retains the `.project-skills-*`
+transaction directory and backups for manual recovery. Do not delete that directory or rerun the
+installation until the affected targets have been recovered.
+`--force` applies only to explicitly selected skill names; it never replaces adjacent destinations.
 
 ## Skill Matrix
 
 | Skill                        | Use When                                                                                                                                             | Main Docs to Read                                                                                                                            | Typical Validation                                                                                                                                      |
 | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `project-feature-builder`    | A feature touches both backend and frontend, including API, auth/RBAC, OpenAPI, route, UI, tests, or docs.                                           | `AGENTS.md`, backend and frontend playbooks, both foundation status files, affected operation docs, full-stack request template when needed. | Backend tests and coverage, OpenAPI sync/check, frontend check, e2e when auth/routing/error journeys change, frontend build, pre-commit when practical. |
-| `backend-capability-builder` | The change is backend-only: endpoint, service, repository, model, migration, auth/RBAC, outbox, integration port, tests, or backend docs.            | `AGENTS.md`, backend playbook, backend foundation status, affected backend operation and architecture docs.                                  | `python -m pytest backend/tests`, backend coverage gate, pre-commit when docs/config/shared files change.                                               |
+| `backend-capability-builder` | The change is backend-only: endpoint, service, repository, model, migration, auth/RBAC, outbox, integration port, tests, or backend docs.            | `AGENTS.md`, backend playbook, backend foundation status, affected backend operation and architecture docs.                                  | Root `.venv` backend tests and coverage gate; root `.venv` pre-commit when docs/config/shared files change.                                             |
 | `frontend-feature-builder`   | The change is frontend-only: route, page, shared UI, API consumer, auth-gated screen, RBAC UI, query/mutation behavior, a11y, e2e, or frontend docs. | `AGENTS.md`, frontend playbook, frontend foundation status, affected frontend operation docs.                                                | `npm --prefix frontend run check`, `npm --prefix frontend run build`, e2e when auth/routing/error journeys change.                                      |
 | `project-reviewer`           | The user asks for a review, readiness check, PR/diff assessment, or risk scan.                                                                       | `AGENTS.md`, changed-file context, affected backend/frontend playbooks and operation docs.                                                   | Review evidence, relevant targeted checks when needed, and explicit validation gaps.                                                                    |
 | `new-app-bootstrapper`       | The task turns this starter kit into a named product or previews/applies new-app identity changes.                                                   | `AGENTS.md`, new-project startup docs, bootstrap checklist, new-app request template, root and service READMEs.                              | Bootstrap dry-run, identity diff review, backend tests, frontend check/build, Docker Compose config, pre-commit; e2e when routes/auth/errors change.    |
+| `backend-code-reviewer`      | A review centers on backend behavior, FastAPI, persistence, auth/RBAC, integrations, OpenAPI, or backend docs.                                       | `AGENTS.md`, backend playbook and foundation status, affected operation and architecture docs.                                               | Focused backend checks, coverage and OpenAPI gates when affected, explicit validation gaps.                                                             |
+| `frontend-code-reviewer`     | A review centers on frontend routes, API consumers, state, accessibility, security, e2e, performance, or frontend docs.                              | `AGENTS.md`, frontend playbook and foundation status, affected operation docs.                                                               | Frontend check/build, affected e2e and OpenAPI gates, explicit validation gaps.                                                                         |
+| `fastapi-agents`             | FastAPI or Starlette behavior needs official framework guidance overlaid with repository contracts.                                                  | Official skill in the root `.venv` when present, then `AGENTS.md` and backend canonical docs.                                                | Verified delegation or the deterministic accepted unavailable diagnostic.                                                                               |
 
 ## Current Skills
 
@@ -137,7 +150,32 @@ Do not use for:
 - ordinary feature delivery after the app has already been bootstrapped,
 - backend-only or frontend-only feature work.
 
+### `backend-code-reviewer`
+
+Backend-focused review mode. Lead with concrete defects, contract drift, test gaps, and security or
+data-integrity risks; use `$fastapi-agents` when framework behavior is involved.
+
+### `frontend-code-reviewer`
+
+Frontend-focused review mode. Trace routes through access, API parsing, state policy, rendered
+states, accessibility, observability, e2e, and performance contracts.
+
+### `fastapi-agents`
+
+Adapter to the official FastAPI coding-agent skill shipped by the installed distribution. FastAPI
+0.129.0 in the governed environment does not ship it, so the adapter emits its documented
+deterministic unavailable diagnostic and does not trigger a dependency upgrade.
+
 ## Adding or Updating Skills
+
+Repository-local skills and the transactional installer are the supported distribution path.
+Consider plugin packaging only when repeated installation in derived applications has a measurable
+cost and an owner accepts versioning, compatibility, validation, and rollback responsibilities.
+
+Add an MCP integration only for a concrete, repeated need for structured external state that a
+script or an existing connector cannot satisfy. Define the consumer, authentication, authorization,
+privacy boundary, failure behavior, tests, and lifecycle owner before implementation. Neither this
+catalog nor an available integration activates an application backlog.
 
 When adding or updating a skill:
 
